@@ -17,6 +17,23 @@ import {
 } from '../lib/rateLimiter';
 import { CREDENTIAL_STORE } from '../lib/credentialStore';
 
+// Imported lazily to avoid circular deps at module init time
+const PROCUREOS_DATA_KEYS = [
+  'procureos_items',
+  'procureos_vendors',
+  'procureos_rfqs',
+  'procureos_quotations',
+  'procureos_purchase_orders',
+  'procureos_deliveries',
+  'procureos_payments',
+  'procureos_assets',
+  'procureos_active_module',
+];
+
+function clearProcureOSStore() {
+  PROCUREOS_DATA_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
 // ============================================================================
 // Security Constants
 // ============================================================================
@@ -323,6 +340,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ── Logout ──────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearSession();
+    clearProcureOSStore(); // wipe persisted app data so next user starts fresh
     setSession(null);
     setCurrentUser(null);
     setMustChangePassword(false);

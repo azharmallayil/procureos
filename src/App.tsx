@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CompanyProvider } from './context/CompanyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider, useToast } from './context/ToastContext';
+import { ToastProvider } from './context/ToastContext';
 import { DemoBanner } from './components/common/DemoBanner';
 import { LoginPage } from './components/auth/LoginPage';
 import { Sidebar } from './components/layout/Sidebar';
@@ -37,11 +37,11 @@ import {
   QuotationComparisonItem,
   QuoteLineItemPrice,
 } from './types/procurement';
+import { useLocalStorage } from './lib/useLocalStorage';
 
 const MainApplication: React.FC = () => {
-  const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeModule, setActiveModule] = useLocalStorage<ModuleId>('procureos_active_module', 'dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals for quick action triggers from Topbar
@@ -49,15 +49,15 @@ const MainApplication: React.FC = () => {
     'rfq' | 'po' | 'item' | 'delivery' | null
   >(null);
 
-  // In-memory persistent state initialized from mock data
-  const [items, setItems] = useState<Item[]>(MOCK_ITEMS);
-  const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
-  const [rfqs, setRfqs] = useState<RFQ[]>(MOCK_RFQS);
-  const [quotations, setQuotations] = useState(MOCK_QUOTATIONS);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(MOCK_PURCHASE_ORDERS);
-  const [deliveries, setDeliveries] = useState<Delivery[]>(MOCK_DELIVERIES);
-  const [payments, setPayments] = useState(MOCK_PAYMENTS);
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
+  // ── Persisted application state (survives page reload) ───────────────────
+  const [items, setItems] = useLocalStorage<Item[]>('procureos_items', MOCK_ITEMS);
+  const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', MOCK_VENDORS);
+  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', MOCK_RFQS);
+  const [quotations, setQuotations] = useLocalStorage('procureos_quotations', MOCK_QUOTATIONS);
+  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', MOCK_PURCHASE_ORDERS);
+  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', MOCK_DELIVERIES);
+  const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);
+  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
   // Transaction mutations
   const handleAddItem = (item: Item) => setItems((prev) => [item, ...prev]);
@@ -110,8 +110,12 @@ const MainApplication: React.FC = () => {
   };
 
   const handleAwardBid = (quoteEvaluationId: string, vendorId: string) => {
-    setQuotations((prev) =>
-      prev.map((qe) =>
+    // Use functional update to get the latest quotations, avoiding stale closure
+    let targetQE: typeof quotations[0] | undefined;
+    let targetBid: typeof quotations[0]['submissions'][0] | undefined;
+
+    setQuotations((prev) => {
+      const updated = prev.map((qe) =>
         qe.id === quoteEvaluationId
           ? {
               ...qe,
@@ -123,58 +127,62 @@ const MainApplication: React.FC = () => {
               ),
             }
           : qe
-      )
-    );
+      );
+      // Capture the awarded QE from the latest state
+      targetQE = prev.find((q) => q.id === quoteEvaluationId);
+      targetBid = targetQE?.submissions.find((s) => s.vendorId === vendorId);
+      return updated;
+    });
 
-    // Auto-create draft PO from the awarded bid
-    const targetQE = quotations.find((q) => q.id === quoteEvaluationId);
-    const targetBid = targetQE?.submissions.find((s) => s.vendorId === vendorId);
-    if (targetQE && targetBid) {
-      const net = targetBid.quotedTotalSAR;
-      const vat = net * 0.15;
-      const newPO: PurchaseOrder = {
-        id: `PO-${Date.now().toString().slice(-4)}`,
-        poNumber: `PO-${targetQE.entity === 'FITCO' ? 'FTC' : 'ARB'}-26-0${Math.floor(520 + Math.random() * 400)}`,
-        rfqNumber: targetQE.rfqNumber,
-        vendorId: targetBid.vendorId,
-        vendorName: targetBid.vendorName,
-        entity: targetQE.entity,
-        projectSite: targetQE.projectName,
-        issueDate: new Date().toISOString().split('T')[0],
-        expectedDeliveryDate: '2026-11-30',
-        totalAmountSAR: net,
-        taxAmountSAR: vat,
-        grandTotalSAR: net + vat,
-        status: 'Draft',
-        paymentTerms: 'Standard 30% Advance, 70% Handover',
-        approvalStage: 'Purchasing',
-        currentApproverRole: 'Procurement Director',
-        paymentStatus: 'Unpaid',
-        lineItems:
-          targetBid.lineItems && targetBid.lineItems.length > 0
-            ? targetBid.lineItems.map((li, idx) => ({
-                id: `POL-${idx + 1}`,
-                sku: `PKG-VAL-0${idx + 1}`,
-                description: li.description,
-                quantity: li.quantity,
-                uom: li.uom,
-                unitPriceSAR: li.unitPriceSAR,
-                totalPriceSAR: li.totalPriceSAR,
-              }))
-            : [
-                {
-                  id: 'POL-NEW',
-                  sku: 'PKG-VAL-01',
-                  description: `${targetQE.rfqTitle} awarded scope`,
-                  quantity: 1,
-                  uom: 'LOT',
-                  unitPriceSAR: net,
-                  totalPriceSAR: net,
-                },
-              ],
-      };
-      setPurchaseOrders((prev) => [newPO, ...prev]);
-    }
+    // Auto-create draft PO from the awarded bid (runs after setQuotations captures latest)
+    setTimeout(() => {
+      if (targetQE && targetBid) {
+        const net = targetBid.quotedTotalSAR;
+        const vat = net * 0.15;
+        const newPO: PurchaseOrder = {
+          id: `PO-${Date.now().toString().slice(-4)}`,
+          poNumber: `PO-${targetQE.entity === 'FITCO' ? 'FTC' : 'ARB'}-26-0${Math.floor(520 + Math.random() * 400)}`,
+          rfqNumber: targetQE.rfqNumber,
+          vendorId: targetBid.vendorId,
+          vendorName: targetBid.vendorName,
+          entity: targetQE.entity,
+          projectSite: targetQE.projectName,
+          issueDate: new Date().toISOString().split('T')[0],
+          expectedDeliveryDate: '2026-11-30',
+          totalAmountSAR: net,
+          taxAmountSAR: vat,
+          grandTotalSAR: net + vat,
+          status: 'Draft',
+          paymentTerms: 'Standard 30% Advance, 70% Handover',
+          approvalStage: 'Purchasing',
+          currentApproverRole: 'Procurement Director',
+          paymentStatus: 'Unpaid',
+          lineItems:
+            targetBid.lineItems && targetBid.lineItems.length > 0
+              ? targetBid.lineItems.map((li, idx) => ({
+                  id: `POL-${idx + 1}`,
+                  sku: `PKG-VAL-0${idx + 1}`,
+                  description: li.description,
+                  quantity: li.quantity,
+                  uom: li.uom,
+                  unitPriceSAR: li.unitPriceSAR,
+                  totalPriceSAR: li.totalPriceSAR,
+                }))
+              : [
+                  {
+                    id: 'POL-NEW',
+                    sku: 'PKG-VAL-01',
+                    description: `${targetQE.rfqTitle} awarded scope`,
+                    quantity: 1,
+                    uom: 'LOT',
+                    unitPriceSAR: net,
+                    totalPriceSAR: net,
+                  },
+                ],
+        };
+        setPurchaseOrders((prev) => [newPO, ...prev]);
+      }
+    }, 0);
   };
 
   const handleUpdateQuotePrice = (
@@ -337,6 +345,7 @@ const MainApplication: React.FC = () => {
                 purchaseOrders={purchaseOrders}
                 onAddPO={handleAddPO}
                 onApprovePO={handleApprovePO}
+                onRejectPO={handleRejectPO}
                 openCreateModal={quickCreateModal === 'po'}
                 onCloseCreateModal={() => setQuickCreateModal(null)}
               />

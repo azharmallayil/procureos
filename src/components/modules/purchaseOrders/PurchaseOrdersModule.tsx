@@ -25,6 +25,7 @@ interface PurchaseOrdersModuleProps {
   purchaseOrders: PurchaseOrder[];
   onAddPO: (newPO: PurchaseOrder) => void;
   onApprovePO: (poId: string) => void;
+  onRejectPO?: (poId: string) => void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
@@ -33,6 +34,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   purchaseOrders,
   onAddPO,
   onApprovePO,
+  onRejectPO,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
@@ -78,6 +80,21 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
     success('Purchase Order Approved', `${po.poNumber} authorized.`);
     if (selectedPO?.id === po.id) {
       setSelectedPO({ ...po, status: 'Approved' });
+    }
+  };
+
+  const handleReject = (po: PurchaseOrder) => {
+    if (!permissions.canApprovePO) {
+      warning(
+        'Authorization Denied',
+        `Role '${activeRole}' cannot reject Purchase Orders.`
+      );
+      return;
+    }
+    if (onRejectPO) onRejectPO(po.id);
+    warning('Purchase Order Rejected', `${po.poNumber} returned to Draft.`);
+    if (selectedPO?.id === po.id) {
+      setSelectedPO({ ...po, status: 'Draft' });
     }
   };
 
@@ -265,6 +282,14 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                           >
                             Approve
                           </Button>
+                        )}
+                        {po.status === 'Pending Approval' && onRejectPO && (
+                          <button
+                            onClick={() => handleReject(po)}
+                            className="text-[11px] py-1 px-2.5 rounded-lg bg-rose-950/60 border border-rose-700/40 text-rose-300 hover:bg-rose-900/60 transition-colors font-semibold"
+                          >
+                            Reject
+                          </button>
                         )}
                       </div>
                     </td>
