@@ -93,6 +93,23 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
 
   // Add User Form State
   const [newName, setNewName] = useState('');
+
+  // Handle ESC key to exit panel
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('Procurement Engineer');
   const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('FITCO');
@@ -315,8 +332,16 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in">
-      <div className="bg-[#0b101b] border border-amber-500/30 rounded-2xl w-full max-w-6xl h-[94vh] max-h-[880px] shadow-2xl flex flex-col overflow-hidden relative shadow-amber-950/20">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#0b101b] border border-amber-500/30 rounded-2xl w-full max-w-6xl h-[92vh] max-h-[880px] shadow-2xl flex flex-col overflow-hidden relative shadow-amber-950/20 m-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Top Header Bar */}
         <header className="px-5 py-4 border-b border-slate-800/90 bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-[#0b101b] flex items-center justify-between shrink-0">
@@ -345,13 +370,15 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-semibold shadow-sm hover:border-slate-600 cursor-pointer"
+              title="Close Admin Panel (Esc)"
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-slate-400 group-hover:text-white" />
+              <span>Exit Panel</span>
             </button>
           </div>
         </header>
