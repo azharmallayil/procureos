@@ -44,7 +44,7 @@ export const EditQuotePriceModal: React.FC<EditQuotePriceModalProps> = ({
   rfq,
   onSave,
 }) => {
-  const { permissions, activeRole } = useAuth();
+  const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
 
   const [items, setItems] = useState<QuoteLineItemPrice[]>([]);

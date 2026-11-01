@@ -63,7 +63,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   onUpdateQuotePrice,
 }) => {
   const { matchesCompany } = useCompany();
-  const { permissions, activeRole } = useAuth();
+  const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
 
   const [selectedEvaluationIndex, setSelectedEvaluationIndex] = useState<number>(0);

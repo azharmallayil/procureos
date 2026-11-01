@@ -36,7 +36,7 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
   onCloseCreateModal,
 }) => {
   const { matchesCompany } = useCompany();
-  const { permissions, activeRole } = useAuth();
+  const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
 
   const [search, setSearch] = useState('');

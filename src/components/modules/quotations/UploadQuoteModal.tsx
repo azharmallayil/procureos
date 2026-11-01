@@ -45,7 +45,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   selectedRfqId,
 }) => {
   const { success, warning } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser: _cu } = useAuth(); const currentUser = _cu!;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initialRfq = selectedRfqId || (quotations[0]?.rfqId || (rfqs[0]?.id || ''));

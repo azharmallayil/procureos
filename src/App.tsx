@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { CompanyProvider } from './context/CompanyContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { DemoBanner } from './components/common/DemoBanner';
+import { LoginPage } from './components/auth/LoginPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 import { DashboardModule } from './components/modules/dashboard/DashboardModule';
@@ -392,12 +393,36 @@ const MainApplication: React.FC = () => {
   );
 };
 
+// ── Auth Gate: wraps the main app with login requirement ────────────────────
+const AuthGate: React.FC = () => {
+  const { isAuthenticated, isLoading, mustChangePassword } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#090d16] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Verifying session…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in, or needs to change password first → show login/change page
+  if (!isAuthenticated || mustChangePassword) {
+    return <LoginPage />;
+  }
+
+  // Fully authenticated — render the full application
+  return <MainApplication />;
+};
+
 export const App: React.FC = () => {
   return (
     <CompanyProvider>
       <AuthProvider>
         <ToastProvider>
-          <MainApplication />
+          <AuthGate />
         </ToastProvider>
       </AuthProvider>
     </CompanyProvider>

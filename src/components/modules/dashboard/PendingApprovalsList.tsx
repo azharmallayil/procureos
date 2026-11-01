@@ -18,7 +18,7 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
   onApprovePO,
   onRejectPO,
 }) => {
-  const { permissions, activeRole } = useAuth();
+  const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
 
