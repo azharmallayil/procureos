@@ -51,3 +51,4 @@ export function formatLockDuration(ms: number): string {
   if (ms < 60_000) return `${Math.ceil(ms / 1000)}s`;
   return `${Math.ceil(ms / 60_000)} min`;
 }
+
