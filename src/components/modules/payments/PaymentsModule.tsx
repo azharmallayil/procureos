@@ -19,6 +19,7 @@ import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 
 interface PaymentsModuleProps {
   payments: PaymentMilestone[];
@@ -36,6 +37,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedPayment, setSelectedPayment] = useState<PaymentMilestone | null>(null);
+  const [confirmReleasePayment, setConfirmReleasePayment] = useState<PaymentMilestone | null>(null);
 
   const filteredPayments = payments.filter((pay) => {
     const matchesScope = matchesCompany(pay.entity);
@@ -55,12 +57,17 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
       );
       return;
     }
+    setConfirmReleasePayment(pay);
+  };
+
+  const executeRelease = (pay: PaymentMilestone) => {
     onReleasePayment(pay.id);
     success(
       'SARIE Wire Dispatched',
       `Payment of SAR ${pay.amountSAR.toLocaleString()} released to ${pay.vendorName}.`
     );
     setSelectedPayment(null);
+    setConfirmReleasePayment(null);
   };
 
   const totalOutstandingSAR = filteredPayments
@@ -257,6 +264,27 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Confirmation Modal: Release Payment */}
+      {confirmReleasePayment && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmReleasePayment)}
+          onClose={() => setConfirmReleasePayment(null)}
+          onConfirm={() => executeRelease(confirmReleasePayment)}
+          title="Confirm Treasury Payment Disbursement"
+          description={`Are you sure you want to release the disbursement of SAR ${confirmReleasePayment.amountSAR.toLocaleString()} for Invoice ${confirmReleasePayment.invoiceNumber}? This executes an automated SARIE interbank wire transfer.`}
+          confirmText="Yes, Release SARIE Payment"
+          cancelText="Cancel"
+          intent="success"
+          details={[
+            { label: 'Invoice Number', value: confirmReleasePayment.invoiceNumber },
+            { label: 'Vendor Payee', value: confirmReleasePayment.vendorName },
+            { label: 'Amount Payable', value: `SAR ${confirmReleasePayment.amountSAR.toLocaleString()}` },
+            { label: 'Linked PO', value: confirmReleasePayment.poNumber },
+            { label: 'Payment Channel', value: confirmReleasePayment.paymentMethod },
+          ]}
+        />
       )}
     </div>
   );

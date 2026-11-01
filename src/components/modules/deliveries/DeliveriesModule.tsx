@@ -19,6 +19,7 @@ import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 
 interface DeliveriesModuleProps {
   deliveries: Delivery[];
@@ -43,6 +44,7 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
+  const [confirmInspectDelivery, setConfirmInspectDelivery] = useState<Delivery | null>(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -75,9 +77,14 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
       );
       return;
     }
+    setConfirmInspectDelivery(del);
+  };
+
+  const executeInspect = (del: Delivery) => {
     onMarkInspected(del.id);
     success('Goods Receipt Note (GRN) Verified', `${del.trackingNumber} inspected and cleared.`);
     setSelectedDelivery(null);
+    setConfirmInspectDelivery(null);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -442,6 +449,27 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Confirmation Modal: Mark Inspected (GRN) */}
+      {confirmInspectDelivery && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmInspectDelivery)}
+          onClose={() => setConfirmInspectDelivery(null)}
+          onConfirm={() => executeInspect(confirmInspectDelivery)}
+          title="Accept Delivery & Issue GRN"
+          description={`Are you sure you want to verify and accept shipment ${confirmInspectDelivery.trackingNumber}? This generates the Goods Receipt Note (GRN) and authorizes the warehouse receipt.`}
+          confirmText="Yes, Issue GRN & Accept"
+          cancelText="Cancel"
+          intent="success"
+          details={[
+            { label: 'Tracking #', value: confirmInspectDelivery.trackingNumber },
+            { label: 'PO Reference', value: confirmInspectDelivery.poNumber },
+            { label: 'Supplier', value: confirmInspectDelivery.vendorName },
+            { label: 'Destination Site', value: confirmInspectDelivery.destinationSite },
+            { label: 'Carrier', value: confirmInspectDelivery.carrier },
+          ]}
+        />
+      )}
     </div>
   );
 };

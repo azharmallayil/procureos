@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertTriangle, Phone, CheckCircle2, MapPin, Truck } from 'lucide-react';
 import { Delivery } from '../../../types/procurement';
 import { Badge } from '../../common/Badge';
 import { Button } from '../../common/Button';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 import { useToast } from '../../../context/ToastContext';
 
 interface OverdueDeliveriesTableProps {
@@ -15,10 +16,17 @@ export const OverdueDeliveriesTable: React.FC<OverdueDeliveriesTableProps> = ({
   onMarkInspected,
 }) => {
   const { info, success } = useToast();
+  const [confirmDelivery, setConfirmDelivery] = useState<Delivery | null>(null);
 
   const flaggedDeliveries = deliveries.filter(
     (d) => d.isOverdue || d.status === 'Delayed' || d.status === 'In Transit'
   );
+
+  const executeAccept = (del: Delivery) => {
+    onMarkInspected(del.id);
+    success('QC Receipt Completed', `${del.trackingNumber} inspected and accepted.`);
+    setConfirmDelivery(null);
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -100,10 +108,7 @@ export const OverdueDeliveriesTable: React.FC<OverdueDeliveriesTableProps> = ({
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => {
-                      onMarkInspected(del.id);
-                      success('QC Receipt Completed', `${del.trackingNumber} inspected and accepted.`);
-                    }}
+                    onClick={() => setConfirmDelivery(del)}
                     className="text-[11px] py-1 px-2.5"
                   >
                     <CheckCircle2 className="w-3 h-3 mr-1" />
@@ -115,6 +120,25 @@ export const OverdueDeliveriesTable: React.FC<OverdueDeliveriesTableProps> = ({
           ))}
         </tbody>
       </table>
+
+      {confirmDelivery && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmDelivery)}
+          onClose={() => setConfirmDelivery(null)}
+          onConfirm={() => executeAccept(confirmDelivery)}
+          title="Verify & Accept Delivery"
+          description={`Are you sure you want to mark ${confirmDelivery.trackingNumber} as Inspected & Accepted?`}
+          confirmText="Yes, Accept Delivery"
+          cancelText="Cancel"
+          intent="success"
+          details={[
+            { label: 'Tracking #', value: confirmDelivery.trackingNumber },
+            { label: 'PO Reference', value: confirmDelivery.poNumber },
+            { label: 'Supplier', value: confirmDelivery.vendorName },
+            { label: 'Destination', value: confirmDelivery.destinationSite },
+          ]}
+        />
+      )}
     </div>
   );
 };

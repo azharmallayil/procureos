@@ -4,6 +4,7 @@ import { PurchaseOrder } from '../../../types/procurement';
 import { Badge } from '../../common/Badge';
 import { Button } from '../../common/Button';
 import { Modal } from '../../common/Modal';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 
@@ -21,6 +22,8 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
   const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+  const [confirmApprovalPO, setConfirmApprovalPO] = useState<PurchaseOrder | null>(null);
+  const [confirmRejectPO, setConfirmRejectPO] = useState<PurchaseOrder | null>(null);
 
   const pendingPOs = purchaseOrders.filter((po) => po.status === 'Pending Approval');
 
@@ -39,15 +42,25 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
       );
       return;
     }
+    setConfirmApprovalPO(po);
+  };
+
+  const executeApproval = (po: PurchaseOrder) => {
     onApprovePO(po.id);
     success('Purchase Order Approved', `${po.poNumber} authorized and queued for issuance.`);
     setSelectedPO(null);
+    setConfirmApprovalPO(null);
   };
 
   const handleReject = (po: PurchaseOrder) => {
+    setConfirmRejectPO(po);
+  };
+
+  const executeReject = (po: PurchaseOrder) => {
     onRejectPO(po.id);
     warning('Purchase Order Returned', `${po.poNumber} sent back to originator for revisions.`);
     setSelectedPO(null);
+    setConfirmRejectPO(null);
   };
 
   return (
@@ -217,6 +230,44 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Confirmation Modal: Approve PO */}
+      {confirmApprovalPO && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmApprovalPO)}
+          onClose={() => setConfirmApprovalPO(null)}
+          onConfirm={() => executeApproval(confirmApprovalPO)}
+          title="Authorize Purchase Order"
+          description={`Confirm signature and authorization for ${confirmApprovalPO.poNumber}? This digitally signs the contract and releases it to the supplier.`}
+          confirmText="Yes, Authorize PO"
+          cancelText="Cancel"
+          intent="success"
+          details={[
+            { label: 'PO Number', value: confirmApprovalPO.poNumber },
+            { label: 'Vendor', value: confirmApprovalPO.vendorName },
+            { label: 'Amount', value: `SAR ${confirmApprovalPO.grandTotalSAR.toLocaleString()}` },
+          ]}
+        />
+      )}
+
+      {/* Confirmation Modal: Reject PO */}
+      {confirmRejectPO && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmRejectPO)}
+          onClose={() => setConfirmRejectPO(null)}
+          onConfirm={() => executeReject(confirmRejectPO)}
+          title="Return Purchase Order for Revision"
+          description={`Are you sure you want to return ${confirmRejectPO.poNumber} to the originator?`}
+          confirmText="Yes, Return to Originator"
+          cancelText="Cancel"
+          intent="warning"
+          details={[
+            { label: 'PO Number', value: confirmRejectPO.poNumber },
+            { label: 'Vendor', value: confirmRejectPO.vendorName },
+            { label: 'Amount', value: `SAR ${confirmRejectPO.grandTotalSAR.toLocaleString()}` },
+          ]}
+        />
       )}
     </div>
   );

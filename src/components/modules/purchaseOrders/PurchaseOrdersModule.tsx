@@ -20,6 +20,7 @@ import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 
 interface PurchaseOrdersModuleProps {
   purchaseOrders: PurchaseOrder[];
@@ -47,6 +48,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(openCreateModal);
+
+  // Confirmation Modals State
+  const [confirmApprovalPO, setConfirmApprovalPO] = useState<PurchaseOrder | null>(null);
+  const [confirmRejectPO, setConfirmRejectPO] = useState<PurchaseOrder | null>(null);
 
   // New PO Form State
   const [form, setForm] = useState({
@@ -76,11 +81,16 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
       );
       return;
     }
+    setConfirmApprovalPO(po);
+  };
+
+  const executeApproval = (po: PurchaseOrder) => {
     onApprovePO(po.id);
     success('Purchase Order Approved', `${po.poNumber} authorized.`);
     if (selectedPO?.id === po.id) {
       setSelectedPO({ ...po, status: 'Approved' });
     }
+    setConfirmApprovalPO(null);
   };
 
   const handleReject = (po: PurchaseOrder) => {
@@ -91,11 +101,16 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
       );
       return;
     }
+    setConfirmRejectPO(po);
+  };
+
+  const executeReject = (po: PurchaseOrder) => {
     if (onRejectPO) onRejectPO(po.id);
     warning('Purchase Order Rejected', `${po.poNumber} returned to Draft.`);
     if (selectedPO?.id === po.id) {
       setSelectedPO({ ...po, status: 'Draft' });
     }
+    setConfirmRejectPO(null);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -540,6 +555,45 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Confirmation Modal: Approve PO */}
+      {confirmApprovalPO && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmApprovalPO)}
+          onClose={() => setConfirmApprovalPO(null)}
+          onConfirm={() => executeApproval(confirmApprovalPO)}
+          title="Confirm Purchase Order Authorization"
+          description={`Are you sure you want to authorize ${confirmApprovalPO.poNumber}? This commits the organization to the commercial terms and triggers procurement fulfillment.`}
+          confirmText="Yes, Authorize PO"
+          cancelText="Review Again"
+          intent="success"
+          details={[
+            { label: 'PO Number', value: confirmApprovalPO.poNumber },
+            { label: 'Supplier', value: confirmApprovalPO.vendorName },
+            { label: 'Total Value', value: `SAR ${confirmApprovalPO.grandTotalSAR.toLocaleString()}` },
+            { label: 'Project Site', value: confirmApprovalPO.projectSite },
+          ]}
+        />
+      )}
+
+      {/* Confirmation Modal: Reject PO */}
+      {confirmRejectPO && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmRejectPO)}
+          onClose={() => setConfirmRejectPO(null)}
+          onConfirm={() => executeReject(confirmRejectPO)}
+          title="Confirm Purchase Order Rejection"
+          description={`Are you sure you want to reject ${confirmRejectPO.poNumber}? The status will revert to Draft and require revisions before re-submission.`}
+          confirmText="Yes, Reject to Draft"
+          cancelText="Cancel"
+          intent="warning"
+          details={[
+            { label: 'PO Number', value: confirmRejectPO.poNumber },
+            { label: 'Supplier', value: confirmRejectPO.vendorName },
+            { label: 'Total Value', value: `SAR ${confirmRejectPO.grandTotalSAR.toLocaleString()}` },
+          ]}
+        />
+      )}
     </div>
   );
 };
