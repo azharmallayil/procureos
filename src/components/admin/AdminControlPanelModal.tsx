@@ -943,6 +943,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           title="Provision New Enterprise User"
+          zIndex={70}
         >
           <form onSubmit={handleAddUserSubmit} className="space-y-4">
             {formError && (
@@ -1083,6 +1084,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           isOpen={Boolean(editingUser)}
           onClose={() => setEditingUser(null)}
           title={`Edit User: ${editingUser.name}`}
+          zIndex={70}
         >
           <form onSubmit={handleEditUserSubmit} className="space-y-4">
             {formError && (
@@ -1217,6 +1219,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           isOpen={Boolean(deletingUser)}
           onClose={() => setDeletingUser(null)}
           title="Confirm User Account Revocation"
+          zIndex={70}
         >
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800/50 flex items-start gap-3">
@@ -1250,6 +1253,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           isOpen={showRestoreModal}
           onClose={() => setShowRestoreModal(false)}
           title="Restore Enterprise Database"
+          zIndex={70}
         >
           <div className="space-y-4 text-xs">
             <p className="text-slate-300">
@@ -1300,6 +1304,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           isOpen={showResetConfirmModal}
           onClose={() => setShowResetConfirmModal(false)}
           title="Reset to Factory Baseline Data"
+          zIndex={70}
         >
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-700/60 text-xs text-rose-200 leading-relaxed">

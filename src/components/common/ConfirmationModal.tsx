@@ -16,6 +16,7 @@ export interface ConfirmationModalProps {
   intent?: ConfirmationIntent;
   details?: { label: string; value: string | React.ReactNode }[];
   isProcessing?: boolean;
+  zIndex?: number;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -29,6 +30,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   intent = 'primary',
   details,
   isProcessing = false,
+  zIndex = 60,
 }) => {
   if (!isOpen) return null;
 
@@ -89,7 +91,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} zIndex={zIndex}>
       <div className="space-y-4 text-xs">
         {/* Banner with icon and description */}
         <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${getHeaderBg()}`}>
