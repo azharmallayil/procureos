@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Users,
   Shield,
@@ -331,7 +332,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const content = (
     <div
       role="dialog"
       aria-modal="true"
@@ -1328,4 +1329,8 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
       )}
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(content, document.body)
+    : content;
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -20,7 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidth = 'lg',
-  zIndex = 60,
+  zIndex = 9999,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({
     '4xl': 'max-w-4xl',
   }[maxWidth];
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
@@ -75,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -94,4 +95,8 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };
