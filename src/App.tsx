@@ -38,8 +38,10 @@ import {
   QuoteLineItemPrice,
 } from './types/procurement';
 import { useLocalStorage } from './lib/useLocalStorage';
+import { recordAuditLog } from './lib/liveSync';
 
 const MainApplication: React.FC = () => {
+  const { currentUser, activeRole } = useAuth();
   const [activeModule, setActiveModule] = useLocalStorage<ModuleId>('procureos_active_module', 'dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,23 +62,72 @@ const MainApplication: React.FC = () => {
   const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
   // Transaction mutations
-  const handleAddItem = (item: Item) => setItems((prev) => [item, ...prev]);
-  const handleAddVendor = (vendor: Vendor) => setVendors((prev) => [vendor, ...prev]);
-  const handleAddRfq = (rfq: RFQ) => setRfqs((prev) => [rfq, ...prev]);
-  const handleAddPO = (po: PurchaseOrder) => setPurchaseOrders((prev) => [po, ...prev]);
-  const handleAddDelivery = (del: Delivery) => setDeliveries((prev) => [del, ...prev]);
-  const handleAddAsset = (asset: Asset) => setAssets((prev) => [asset, ...prev]);
+  const handleAddItem = (item: Item) => {
+    setItems((prev) => [item, ...prev]);
+    recordAuditLog('Item Cataloged', 'Item', item.id, `Created inventory SKU ${item.sku}: ${item.name}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleAddVendor = (vendor: Vendor) => {
+    setVendors((prev) => [vendor, ...prev]);
+    recordAuditLog('Vendor Registered', 'Vendor', vendor.id, `Registered supplier ${vendor.name} (CR: ${vendor.crNumber})`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleAddRfq = (rfq: RFQ) => {
+    setRfqs((prev) => [rfq, ...prev]);
+    recordAuditLog('RFQ Published', 'RFQ', rfq.id, `Published competitive tender ${rfq.rfqNumber}: ${rfq.title}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleAddPO = (po: PurchaseOrder) => {
+    setPurchaseOrders((prev) => [po, ...prev]);
+    recordAuditLog('Purchase Order Issued', 'PurchaseOrder', po.id, `Issued PO ${po.poNumber} for SAR ${po.grandTotalSAR.toLocaleString()}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleAddDelivery = (del: Delivery) => {
+    setDeliveries((prev) => [del, ...prev]);
+    recordAuditLog('Shipment Created', 'Delivery', del.id, `Created delivery tracking ${del.trackingNumber}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleAddAsset = (asset: Asset) => {
+    setAssets((prev) => [asset, ...prev]);
+    recordAuditLog('Asset Tagged', 'Asset', asset.id, `Added enterprise asset ${asset.assetTag}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
 
   const handleApprovePO = (poId: string) => {
     setPurchaseOrders((prev) =>
       prev.map((po) => (po.id === poId ? { ...po, status: 'Approved' as const } : po))
     );
+    recordAuditLog('PO Approved', 'PurchaseOrder', poId, `Approved purchase order authorization`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
   };
 
   const handleRejectPO = (poId: string) => {
     setPurchaseOrders((prev) =>
       prev.map((po) => (po.id === poId ? { ...po, status: 'Draft' as const } : po))
     );
+    recordAuditLog('PO Rejected', 'PurchaseOrder', poId, `Rejected PO and reverted to Draft stage`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
   };
 
   const handleMarkInspected = (deliveryId: string) => {
@@ -92,6 +143,10 @@ const MainApplication: React.FC = () => {
           : d
       )
     );
+    recordAuditLog('Delivery Accepted (GRN)', 'Delivery', deliveryId, `QC Inspection passed and materials accepted`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
   };
 
   const handleReleasePayment = (paymentId: string) => {
@@ -107,9 +162,17 @@ const MainApplication: React.FC = () => {
           : p
       )
     );
+    recordAuditLog('Payment Released', 'Payment', paymentId, `Treasury released SARIE wire transfer payment`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
   };
 
   const handleAwardBid = (quoteEvaluationId: string, vendorId: string) => {
+    recordAuditLog('Bid Awarded', 'Quotation', quoteEvaluationId, `Awarded commercial tender to vendor ${vendorId}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
     // Use functional update to get the latest quotations, avoiding stale closure
     let targetQE: typeof quotations[0] | undefined;
     let targetBid: typeof quotations[0]['submissions'][0] | undefined;

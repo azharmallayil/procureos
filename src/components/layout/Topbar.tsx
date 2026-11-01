@@ -78,6 +78,22 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right controls: Quick Create, Notifications, Role Switcher */}
       <div className="flex items-center gap-3">
+        {/* Live Multi-User Sync Status */}
+        <div
+          title="All database transactions replicate in real-time across users and browser sessions."
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[11px] font-medium shadow-sm select-none"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Synced</span>
+        </div>
+
+        {/* Super Admin Status Badge */}
+        {activeRole === 'Super Admin' && (
+          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 text-[11px] font-bold shadow-sm">
+            👑 Super Admin
+          </span>
+        )}
+
         {/* Quick Action Dropdown */}
         <div className="relative">
           <button

@@ -2,17 +2,19 @@
 // ProcureOS – Secure Credential Store
 // Pre-hashed PBKDF2-SHA-256 credentials with 310,000 iterations.
 // Passwords are NEVER stored in plaintext.
+// Lifelong persistence in localStorage with live cross-tab replication.
 // ============================================================================
 
 /**
- * DEFAULT CREDENTIALS (Temporary - users must change on first login):
+ * DEFAULT SYSTEM CREDENTIALS:
  *
- * aitzaz@fitcotech.com          →  Fitco@2026!Aitzaz
- * muhammed.azhar@arabitra.com   →  Procure@2026!Azhar
- * omer.khalil@arabitra.com      →  Arabitra@2026!Omer
- * khalid.shehri@fitco-group.com →  Fitco@2026!Khalid
- * mona.otaibi@fitco-group.com   →  Fitco@2026!Mona
- * ibrahim.harbi@fitco-group.com →  Fitco@2026!Ibrahim
+ * 👑 admin@procureos.com          →  Admin@2026!Procure  (Super Admin)
+ * aitzaz@fitcotech.com          →  Fitco@2026!Aitzaz   (Procurement Director)
+ * muhammed.azhar@arabitra.com   →  Procure@2026!Azhar  (Procurement Engineer)
+ * omer.khalil@arabitra.com      →  Arabitra@2026!Omer  (Purchasing Specialist)
+ * khalid.shehri@fitco-group.com →  Fitco@2026!Khalid   (Site Receiving Officer)
+ * mona.otaibi@fitco-group.com   →  Fitco@2026!Mona     (Financial Controller)
+ * ibrahim.harbi@fitco-group.com →  Fitco@2026!Ibrahim  (Internal Auditor)
  */
 
 export interface StoredCredential {
@@ -23,7 +25,16 @@ export interface StoredCredential {
   mustChangePassword: boolean;
 }
 
-export const CREDENTIAL_STORE: StoredCredential[] = [
+export const CREDENTIALS_KEY = 'procureos_credentials';
+
+export const INITIAL_CREDENTIAL_STORE: StoredCredential[] = [
+  {
+    userId: 'USR-000',
+    email: 'admin@procureos.com',
+    passwordHash:
+      '310000$3bd1814a0fb2dc11f1ecd352034bb2a6$7ad9322e1925daf8ce0889e2e7a16e61f54cfc19c35533841e5f4e53700b4c49',
+    mustChangePassword: false,
+  },
   {
     userId: 'USR-001',
     email: 'aitzaz@fitcotech.com',
@@ -67,3 +78,66 @@ export const CREDENTIAL_STORE: StoredCredential[] = [
     mustChangePassword: true,
   },
 ];
+
+export const CREDENTIAL_STORE = INITIAL_CREDENTIAL_STORE;
+
+/**
+ * Reads credentials with persistent fallback.
+ */
+export function getStoredCredentials(): StoredCredential[] {
+  try {
+    const raw = localStorage.getItem(CREDENTIALS_KEY);
+    if (raw) {
+      const parsed: StoredCredential[] = JSON.parse(raw);
+      // Ensure Super Admin is present even in existing storage
+      if (!parsed.some((c) => c.userId === 'USR-000' || c.email === 'admin@procureos.com')) {
+        const merged = [INITIAL_CREDENTIAL_STORE[0], ...parsed];
+        localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(INITIAL_CREDENTIAL_STORE));
+  } catch {
+    // ignore
+  }
+  return INITIAL_CREDENTIAL_STORE;
+}
+
+/**
+ * Saves all credentials to localStorage.
+ */
+export function saveStoredCredentials(creds: StoredCredential[]): void {
+  try {
+    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(creds));
+  } catch (err) {
+    console.error('[ProcureOS] Failed to save credentials', err);
+  }
+}
+
+/**
+ * Adds or updates a single user credential.
+ */
+export function addOrUpdateCredential(cred: StoredCredential): void {
+  const current = getStoredCredentials();
+  const index = current.findIndex((c) => c.userId === cred.userId || c.email.toLowerCase() === cred.email.toLowerCase());
+  if (index >= 0) {
+    current[index] = { ...current[index], ...cred };
+  } else {
+    current.push(cred);
+  }
+  saveStoredCredentials(current);
+}
+
+/**
+ * Deletes credentials for a user.
+ */
+export function deleteStoredCredential(userId: string): void {
+  const current = getStoredCredentials();
+  const filtered = current.filter((c) => c.userId !== userId);
+  saveStoredCredentials(filtered);
+}

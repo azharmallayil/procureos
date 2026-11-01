@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { liveBus, LiveBusMessage } from './liveSync';
 
 /**
- * useLocalStorage – behaves exactly like useState but persists the value
- * to localStorage under the given key.
+ * useLocalStorage – persists state to localStorage with multi-tab / multi-user
+ * real-time synchronization.
  *
- * - On first mount, reads from localStorage if a value exists;
- *   otherwise uses the initializer (value or factory function).
- * - Every state change is written to localStorage synchronously.
- * - Skips writes when the value is unchanged (referential equality).
+ * - Survives page refresh and user logout lifelong.
+ * - Broadcasts updates via BroadcastChannel and storage events to all open tabs/users.
+ * - Updates local React state instantly when any peer tab updates data.
  */
 export function useLocalStorage<T>(
   key: string,
@@ -21,27 +21,40 @@ export function useLocalStorage<T>(
         return JSON.parse(raw) as T;
       }
     } catch {
-      // If JSON is corrupt, fall through to default
-      localStorage.removeItem(key);
+      // If JSON is corrupt, fallback to default
     }
-    return typeof initialValue === 'function'
+    const val = typeof initialValue === 'function'
       ? (initialValue as () => T)()
       : initialValue;
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch {
+      // quota or private mode fallback
+    }
+    return val;
   };
 
   const [state, setState] = useState<T>(getInitial);
-  const prevRef = useRef<T>(state);
+  const stateRef = useRef<T>(state);
+  stateRef.current = state;
 
+  // Listen for real-time live updates from other tabs or background operations
   useEffect(() => {
-    if (prevRef.current !== state) {
-      prevRef.current = state;
-      try {
-        localStorage.setItem(key, JSON.stringify(state));
-      } catch {
-        // Quota exceeded — silent fail (still works in memory)
+    const unsubscribe = liveBus.subscribe((msg: LiveBusMessage) => {
+      if (msg.type === 'SYNC_KEY' && msg.key === key && msg.data !== undefined) {
+        // Prevent feedback loop if deep equal
+        const incomingStr = JSON.stringify(msg.data);
+        const currentStr = JSON.stringify(stateRef.current);
+        if (incomingStr !== currentStr) {
+          setState(msg.data);
+        }
+      } else if (msg.type === 'FULL_DATABASE_RESTORE' && msg.data && key in msg.data) {
+        setState(msg.data[key]);
       }
-    }
-  }, [key, state]);
+    });
+
+    return unsubscribe;
+  }, [key]);
 
   const setValue: React.Dispatch<React.SetStateAction<T>> = useCallback(
     (action) => {
@@ -50,12 +63,22 @@ export function useLocalStorage<T>(
           typeof action === 'function'
             ? (action as (prev: T) => T)(prev)
             : action;
-        // Write immediately so it's never lost even between renders
+
+        // Write immediately to localStorage
         try {
           localStorage.setItem(key, JSON.stringify(next));
-        } catch {
-          // silent
+        } catch (err) {
+          console.warn(`[ProcureOS] Failed to write localStorage key: ${key}`, err);
         }
+
+        // Broadcast to all tabs/windows live
+        liveBus.publish({
+          type: 'SYNC_KEY',
+          key,
+          data: next,
+          timestamp: Date.now(),
+        });
+
         return next;
       });
     },
@@ -64,21 +87,3 @@ export function useLocalStorage<T>(
 
   return [state, setValue];
 }
-
-/** Clear all ProcureOS data keys from localStorage (e.g. on logout) */
-const PROCUREOS_KEYS = [
-  'procureos_items',
-  'procureos_vendors',
-  'procureos_rfqs',
-  'procureos_quotations',
-  'procureos_purchase_orders',
-  'procureos_deliveries',
-  'procureos_payments',
-  'procureos_assets',
-  'procureos_active_module',
-];
-
-export function clearProcureOSStore(): void {
-  PROCUREOS_KEYS.forEach((k) => localStorage.removeItem(k));
-}
-

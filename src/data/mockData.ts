@@ -15,6 +15,17 @@ export const DEMO_DATA_DISCLAIMER =
 
 export const MOCK_USERS: UserProfile[] = [
   {
+    id: 'USR-000',
+    name: 'System Administrator (Super Admin)',
+    email: 'admin@procureos.com',
+    role: 'Super Admin',
+    entity: 'GROUP',
+    department: 'Enterprise IT & Security Governance',
+    status: 'Active',
+    twoFactorEnabled: true,
+    lastLogin: 'Just now',
+  },
+  {
     id: 'USR-001',
     name: 'Aitzaz Baig',
     email: 'aitzaz@fitcotech.com',

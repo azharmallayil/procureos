@@ -15,24 +15,14 @@ import {
   clearFailures,
   formatLockDuration,
 } from '../lib/rateLimiter';
-import { CREDENTIAL_STORE } from '../lib/credentialStore';
-
-// Imported lazily to avoid circular deps at module init time
-const PROCUREOS_DATA_KEYS = [
-  'procureos_items',
-  'procureos_vendors',
-  'procureos_rfqs',
-  'procureos_quotations',
-  'procureos_purchase_orders',
-  'procureos_deliveries',
-  'procureos_payments',
-  'procureos_assets',
-  'procureos_active_module',
-];
-
-function clearProcureOSStore() {
-  PROCUREOS_DATA_KEYS.forEach((k) => localStorage.removeItem(k));
-}
+import {
+  getStoredCredentials,
+  saveStoredCredentials,
+  addOrUpdateCredential,
+  deleteStoredCredential,
+  StoredCredential,
+} from '../lib/credentialStore';
+import { liveBus, recordAuditLog, LiveBusMessage } from '../lib/liveSync';
 
 // ============================================================================
 // Security Constants
@@ -40,6 +30,7 @@ function clearProcureOSStore() {
 const SESSION_KEY = 'procureos_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;    // 30 min idle auto-logout
+export const USERS_STORAGE_KEY = 'procureos_users';
 
 // ============================================================================
 // Types
@@ -74,7 +65,19 @@ interface AuthContextType {
   logout: () => void;
   changePassword: (oldPass: string, newPass: string) => Promise<{ ok: boolean; error?: string }>;
 
-  // Helpers (legacy compat – only usable when authenticated)
+  // Super Admin User Governance (Strictly restricted to Super Admin)
+  addUser: (
+    userData: Omit<UserProfile, 'id' | 'lastLogin'>,
+    initialPassword: string
+  ) => Promise<{ ok: boolean; error?: string; user?: UserProfile }>;
+  updateUser: (
+    userId: string,
+    updates: Partial<UserProfile>,
+    newPassword?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  deleteUser: (userId: string) => Promise<{ ok: boolean; error?: string }>;
+
+  // Helpers
   setActiveRole: (role: UserRole) => void;
   availableUsers: UserProfile[];
   securityDisclaimer: string;
@@ -164,6 +167,40 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
 };
 
 // ============================================================================
+// Stored Users Helper
+// ============================================================================
+export function getStoredUsers(): UserProfile[] {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed: UserProfile[] = JSON.parse(raw);
+      if (!parsed.some((u) => u.id === 'USR-000' || u.email === 'admin@procureos.com')) {
+        const merged = [MOCK_USERS[0], ...parsed];
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(MOCK_USERS));
+  } catch {
+    // fallback
+  }
+  return MOCK_USERS;
+}
+
+export function saveStoredUsers(users: UserProfile[]): void {
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  } catch (err) {
+    console.error('[ProcureOS] Failed to save users', err);
+  }
+}
+
+// ============================================================================
 // Session helpers (sessionStorage – never localStorage for tokens)
 // ============================================================================
 interface SessionPayload {
@@ -207,25 +244,6 @@ function touchSession(): void {
 }
 
 // ============================================================================
-// Credential store (mutable, per-session only – persisted in sessionStorage)
-// ============================================================================
-const CRED_STORE_KEY = 'procureos_creds';
-type MutableCreds = Record<string, string>; // userId → passwordHash
-
-function readCreds(): MutableCreds {
-  try {
-    const raw = sessionStorage.getItem(CRED_STORE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeCreds(c: MutableCreds): void {
-  sessionStorage.setItem(CRED_STORE_KEY, JSON.stringify(c));
-}
-
-// ============================================================================
 // Context
 // ============================================================================
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -235,18 +253,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(getStoredUsers);
 
   // ── Bootstrap: restore session on mount ────────────────────────────────
   useEffect(() => {
     const s = readSession();
+    const users = getStoredUsers();
+    setAvailableUsers(users);
+
     if (s) {
-      const user = MOCK_USERS.find((u) => u.id === s.userId) ?? null;
+      const user = users.find((u) => u.id === s.userId) ?? null;
       setSession(s);
       setCurrentUser(user);
       setMustChangePassword(s.mustChangePassword);
     }
     setIsLoading(false);
   }, []);
+
+  // ── Live sync across tabs / windows ───────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = liveBus.subscribe((msg: LiveBusMessage) => {
+      if (
+        msg.type === 'USER_SYNC' ||
+        (msg.type === 'SYNC_KEY' && msg.key === USERS_STORAGE_KEY) ||
+        msg.type === 'FULL_DATABASE_RESTORE'
+      ) {
+        const freshUsers = getStoredUsers();
+        setAvailableUsers(freshUsers);
+
+        // Update active user profile if it changed
+        if (currentUser) {
+          const freshCurrent = freshUsers.find((u) => u.id === currentUser.id);
+          if (freshCurrent) {
+            setCurrentUser(freshCurrent);
+          }
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
 
   // ── Idle-timeout watcher ────────────────────────────────────────────────
   useEffect(() => {
@@ -283,28 +329,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
     }
 
-    // Basic input sanitisation
     if (!emailNorm || !password) {
       return { ok: false, error: 'Email and password are required.' };
     }
 
-    // Find credential record
-    const cred = CREDENTIAL_STORE.find(
-      (c) => c.email.toLowerCase() === emailNorm
-    );
+    // Load persisted credentials
+    const creds = getStoredCredentials();
+    const cred = creds.find((c) => c.email.toLowerCase() === emailNorm);
 
     if (!cred) {
-      // Don't reveal user existence – same timing as hash check
       await new Promise((r) => setTimeout(r, 300 + Math.random() * 200));
       recordFailure(emailNorm);
       return { ok: false, error: 'Invalid email or password.' };
     }
 
-    // Check for a user-changed password in session store
-    const mutableCreds = readCreds();
-    const activeHash = mutableCreds[cred.userId] ?? cred.passwordHash;
-
-    const valid = await verifyPassword(password, activeHash);
+    const valid = await verifyPassword(password, cred.passwordHash);
 
     if (!valid) {
       const newLock = recordFailure(emailNorm);
@@ -320,60 +359,290 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     clearFailures(emailNorm);
 
-    const user = MOCK_USERS.find((u) => u.id === cred.userId)!;
+    const users = getStoredUsers();
+    let user = users.find((u) => u.id === cred.userId || u.email.toLowerCase() === emailNorm);
+
+    if (!user) {
+      // Fallback user profile creation if credentials existed but user was missing
+      user = {
+        id: cred.userId,
+        name: cred.email.split('@')[0],
+        email: cred.email,
+        role: cred.userId === 'USR-000' ? 'Super Admin' : 'Procurement Director',
+        entity: 'GROUP',
+        department: 'Operations',
+        status: 'Active',
+        twoFactorEnabled: true,
+        lastLogin: 'Just now',
+      };
+      saveStoredUsers([...users, user]);
+    } else {
+      // Update last login
+      const updatedUsers = users.map((u) =>
+        u.id === user!.id ? { ...u, lastLogin: 'Just now' } : u
+      );
+      saveStoredUsers(updatedUsers);
+      setAvailableUsers(updatedUsers);
+    }
+
     const token = generateSessionToken();
     const payload: SessionPayload = {
       userId: user.id,
       token,
       expiresAt: Date.now() + SESSION_TTL_MS,
       lastActivity: Date.now(),
-      mustChangePassword: mutableCreds[cred.userId] ? false : cred.mustChangePassword,
+      mustChangePassword: cred.mustChangePassword,
     };
+
     writeSession(payload);
     setSession(payload);
     setCurrentUser(user);
     setMustChangePassword(payload.mustChangePassword);
+
+    recordAuditLog(
+      'User Authenticated',
+      'Session',
+      user.id,
+      `User ${user.name} (${user.email}) signed in successfully as ${user.role}.`,
+      { name: user.name, role: user.role }
+    );
 
     return { ok: true };
   }, []);
 
   // ── Logout ──────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
+    if (currentUser) {
+      recordAuditLog(
+        'User Signed Out',
+        'Session',
+        currentUser.id,
+        `User ${currentUser.name} signed out.`,
+        { name: currentUser.name, role: currentUser.role }
+      );
+    }
     clearSession();
-    clearProcureOSStore(); // wipe persisted app data so next user starts fresh
+    // NEVER wipe enterprise data store on logout! Data persists lifelong.
     setSession(null);
     setCurrentUser(null);
     setMustChangePassword(false);
-  }, []);
+  }, [currentUser]);
 
   // ── Change Password ─────────────────────────────────────────────────────
   const changePassword = useCallback(
     async (oldPass: string, newPass: string): Promise<{ ok: boolean; error?: string }> => {
       if (!session || !currentUser) return { ok: false, error: 'Not authenticated.' };
 
-      const cred = CREDENTIAL_STORE.find((c) => c.userId === currentUser.id)!;
-      const mutableCreds = readCreds();
-      const activeHash = mutableCreds[cred.userId] ?? cred.passwordHash;
+      const creds = getStoredCredentials();
+      const cred = creds.find((c) => c.userId === currentUser.id);
+      if (!cred) return { ok: false, error: 'User credential record not found.' };
 
-      const oldValid = await verifyPassword(oldPass, activeHash);
+      const oldValid = await verifyPassword(oldPass, cred.passwordHash);
       if (!oldValid) return { ok: false, error: 'Current password is incorrect.' };
 
-      // Password policy
       const policyError = validatePasswordPolicy(newPass);
       if (policyError) return { ok: false, error: policyError };
 
       const newHash = await hashPassword(newPass);
-      writeCreds({ ...mutableCreds, [currentUser.id]: newHash });
+      addOrUpdateCredential({
+        userId: currentUser.id,
+        email: currentUser.email,
+        passwordHash: newHash,
+        mustChangePassword: false,
+      });
 
-      // Clear mustChangePassword flag
       const updatedSession = { ...session, mustChangePassword: false };
       writeSession(updatedSession);
       setSession(updatedSession);
       setMustChangePassword(false);
 
+      recordAuditLog(
+        'Password Changed',
+        'Credential',
+        currentUser.id,
+        `User ${currentUser.name} changed their password.`,
+        { name: currentUser.name, role: currentUser.role }
+      );
+
       return { ok: true };
     },
     [session, currentUser]
+  );
+
+  // ── Super Admin: Add User ────────────────────────────────────────────────
+  const addUser = useCallback(
+    async (
+      userData: Omit<UserProfile, 'id' | 'lastLogin'>,
+      initialPassword: string
+    ): Promise<{ ok: boolean; error?: string; user?: UserProfile }> => {
+      if (currentUser?.role !== 'Super Admin') {
+        return { ok: false, error: 'Access denied: Only Super Admin can provision new users.' };
+      }
+
+      if (!userData.name.trim() || !userData.email.trim()) {
+        return { ok: false, error: 'User name and valid email are required.' };
+      }
+
+      const policyError = validatePasswordPolicy(initialPassword);
+      if (policyError) {
+        return { ok: false, error: `Initial password policy check failed: ${policyError}` };
+      }
+
+      const users = getStoredUsers();
+      const emailLower = userData.email.trim().toLowerCase();
+      if (users.some((u) => u.email.toLowerCase() === emailLower)) {
+        return { ok: false, error: `A user with email '${userData.email}' already exists.` };
+      }
+
+      // Generate new sequential or unique ID
+      const newId = `USR-${Date.now().toString().slice(-4)}`;
+      const newUser: UserProfile = {
+        ...userData,
+        id: newId,
+        email: emailLower,
+        lastLogin: 'Never',
+      };
+
+      // Hash password & store credential
+      const passHash = await hashPassword(initialPassword);
+      addOrUpdateCredential({
+        userId: newId,
+        email: emailLower,
+        passwordHash: passHash,
+        mustChangePassword: true,
+      });
+
+      // Update user list
+      const updatedUsers = [...users, newUser];
+      saveStoredUsers(updatedUsers);
+      setAvailableUsers(updatedUsers);
+
+      recordAuditLog(
+        'User Provisioned',
+        'User',
+        newId,
+        `Super Admin created user ${newUser.name} (${newUser.email}) with role ${newUser.role} in ${newUser.entity}.`,
+        { name: currentUser.name, role: currentUser.role }
+      );
+
+      liveBus.publish({
+        type: 'USER_SYNC',
+        data: updatedUsers,
+        timestamp: Date.now(),
+        actor: currentUser.name,
+      });
+
+      return { ok: true, user: newUser };
+    },
+    [currentUser]
+  );
+
+  // ── Super Admin: Update User ─────────────────────────────────────────────
+  const updateUser = useCallback(
+    async (
+      userId: string,
+      updates: Partial<UserProfile>,
+      newPassword?: string
+    ): Promise<{ ok: boolean; error?: string }> => {
+      if (currentUser?.role !== 'Super Admin') {
+        return { ok: false, error: 'Access denied: Only Super Admin can modify user accounts.' };
+      }
+
+      const users = getStoredUsers();
+      const targetUser = users.find((u) => u.id === userId);
+      if (!targetUser) return { ok: false, error: 'Target user not found.' };
+
+      // If email changed, check conflict
+      if (updates.email && updates.email.toLowerCase() !== targetUser.email.toLowerCase()) {
+        const conflict = users.some(
+          (u) => u.id !== userId && u.email.toLowerCase() === updates.email!.toLowerCase()
+        );
+        if (conflict) {
+          return { ok: false, error: `Email '${updates.email}' is already taken by another user.` };
+        }
+      }
+
+      // If password update requested
+      if (newPassword && newPassword.trim()) {
+        const policyErr = validatePasswordPolicy(newPassword);
+        if (policyErr) return { ok: false, error: policyErr };
+        const passHash = await hashPassword(newPassword);
+        addOrUpdateCredential({
+          userId,
+          email: (updates.email || targetUser.email).toLowerCase(),
+          passwordHash: passHash,
+          mustChangePassword: false,
+        });
+      }
+
+      const updatedUsers = users.map((u) =>
+        u.id === userId ? { ...u, ...updates } : u
+      );
+      saveStoredUsers(updatedUsers);
+      setAvailableUsers(updatedUsers);
+
+      if (currentUser.id === userId) {
+        setCurrentUser({ ...currentUser, ...updates });
+      }
+
+      recordAuditLog(
+        'User Profile Updated',
+        'User',
+        userId,
+        `Super Admin updated user ${targetUser.name} (${targetUser.email}).`,
+        { name: currentUser.name, role: currentUser.role }
+      );
+
+      liveBus.publish({
+        type: 'USER_SYNC',
+        data: updatedUsers,
+        timestamp: Date.now(),
+        actor: currentUser.name,
+      });
+
+      return { ok: true };
+    },
+    [currentUser]
+  );
+
+  // ── Super Admin: Delete User ─────────────────────────────────────────────
+  const deleteUser = useCallback(
+    async (userId: string): Promise<{ ok: boolean; error?: string }> => {
+      if (currentUser?.role !== 'Super Admin') {
+        return { ok: false, error: 'Access denied: Only Super Admin can delete user accounts.' };
+      }
+
+      if (currentUser.id === userId) {
+        return { ok: false, error: 'Safety Violation: You cannot delete your own active administrator account.' };
+      }
+
+      const users = getStoredUsers();
+      const targetUser = users.find((u) => u.id === userId);
+      if (!targetUser) return { ok: false, error: 'User does not exist.' };
+
+      deleteStoredCredential(userId);
+      const filtered = users.filter((u) => u.id !== userId);
+      saveStoredUsers(filtered);
+      setAvailableUsers(filtered);
+
+      recordAuditLog(
+        'User Deprovisioned',
+        'User',
+        userId,
+        `Super Admin deleted user ${targetUser.name} (${targetUser.email}) with role ${targetUser.role}.`,
+        { name: currentUser.name, role: currentUser.role }
+      );
+
+      liveBus.publish({
+        type: 'USER_SYNC',
+        data: filtered,
+        timestamp: Date.now(),
+        actor: currentUser.name,
+      });
+
+      return { ok: true };
+    },
+    [currentUser]
   );
 
   // ── Derived values ──────────────────────────────────────────────────────
@@ -381,12 +650,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const permissions = activeRole ? ROLE_PERMISSIONS[activeRole] ?? null : null;
   const isAuthenticated = Boolean(session && currentUser);
 
-  // setActiveRole: preserved for legacy TeamModule compatibility only (does not bypass auth)
-  const setActiveRole = useCallback((role: UserRole) => {
-    if (!currentUser) return;
-    const matched = MOCK_USERS.find((u) => u.role === role);
-    if (matched) setCurrentUser(matched);
-  }, [currentUser]);
+  // setActiveRole: switches persona among available users
+  const setActiveRole = useCallback(
+    (role: UserRole) => {
+      if (!currentUser) return;
+      const matched = availableUsers.find((u) => u.role === role);
+      if (matched) {
+        setCurrentUser(matched);
+        if (session) {
+          const updatedSession = { ...session, userId: matched.id };
+          writeSession(updatedSession);
+          setSession(updatedSession);
+        }
+      }
+    },
+    [currentUser, availableUsers, session]
+  );
 
   const securityDisclaimer =
     'Enterprise Security Architecture Note: Authorization is enforced at the API, database Row-Level Security (PostgreSQL RLS), and cryptographically-signed JWT scopes. Client-side role display mirrors server state.';
@@ -403,8 +682,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         logout,
         changePassword,
+        addUser,
+        updateUser,
+        deleteUser,
         setActiveRole,
-        availableUsers: MOCK_USERS,
+        availableUsers,
         securityDisclaimer,
       }}
     >
@@ -423,7 +705,7 @@ export const useAuth = (): AuthContextType => {
 // Password Policy Validator
 // ============================================================================
 export function validatePasswordPolicy(password: string): string | null {
-  if (password.length < 12) return 'Password must be at least 12 characters.';
+  if (password.length < 10) return 'Password must be at least 10 characters.';
   if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
   if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter.';
   if (!/[0-9]/.test(password)) return 'Password must contain at least one digit.';
