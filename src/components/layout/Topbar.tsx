@@ -14,10 +14,14 @@ import {
   AlertTriangle,
   LogOut,
   ShieldCheck,
+  Settings,
+  Database,
+  Users,
 } from 'lucide-react';
 import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { AdminControlPanelModal } from '../admin/AdminControlPanelModal';
 
 interface TopbarProps {
   onOpenMobileMenu: () => void;
@@ -35,6 +39,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
+  const [showAdminControlPanel, setShowAdminControlPanel] = useState(false);
 
   const notifications = [
     {
@@ -87,11 +92,16 @@ export const Topbar: React.FC<TopbarProps> = ({
           <span>Live Synced</span>
         </div>
 
-        {/* Super Admin Status Badge */}
+        {/* Super Admin Status Badge / Control Panel Trigger */}
         {activeRole === 'Super Admin' && (
-          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 text-[11px] font-bold shadow-sm">
-            👑 Super Admin
-          </span>
+          <button
+            onClick={() => setShowAdminControlPanel(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 border border-amber-400/60 text-white text-xs font-bold shadow-md shadow-amber-950/50 transition-all cursor-pointer transform hover:scale-[1.02] active:scale-95"
+            title="Open Super Admin Control Panel"
+          >
+            <span>👑</span>
+            <span>Admin Control Panel</span>
+          </button>
         )}
 
         {/* Quick Action Dropdown */}
@@ -261,6 +271,22 @@ export const Topbar: React.FC<TopbarProps> = ({
                 </div>
               </div>
 
+              {/* Super Admin Control Panel Link */}
+              {activeRole === 'Super Admin' && (
+                <div className="px-2 py-1.5 border-b border-slate-800">
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowAdminControlPanel(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 font-bold transition-colors cursor-pointer"
+                  >
+                    <span>👑</span>
+                    <span>Admin Control Panel</span>
+                  </button>
+                </div>
+              )}
+
               {/* Logout */}
               <div className="px-2 pt-1">
                 <button
@@ -278,6 +304,14 @@ export const Topbar: React.FC<TopbarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Super Admin Control Panel Modal */}
+      {showAdminControlPanel && (
+        <AdminControlPanelModal
+          isOpen={showAdminControlPanel}
+          onClose={() => setShowAdminControlPanel(false)}
+        />
+      )}
     </header>
   );
 };
