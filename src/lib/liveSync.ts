@@ -1,8 +1,11 @@
 // ============================================================================
-// ProcureOS Enterprise Live Sync & Audit Bus
-// Real-time cross-tab, cross-window, and multi-session data synchronization
-// with immutable transaction audit trail.
+// ProcureOS Enterprise Live Sync & Global Cloud Realtime Bus
+// Dual-layer Synchronization:
+// 1. Supabase Realtime WebSocket for cross-network, multi-computer live sync
+// 2. Local BroadcastChannel + Storage events for instant cross-tab sync
 // ============================================================================
+
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export interface AuditLogEntry {
   id: string;
@@ -16,45 +19,56 @@ export interface AuditLogEntry {
 }
 
 export interface LiveBusMessage {
-  type: 'SYNC_KEY' | 'AUDIT_ENTRY' | 'FULL_DATABASE_RESTORE' | 'USER_SYNC';
+  type: 'SYNC_KEY' | 'AUDIT_ENTRY' | 'FULL_DATABASE_RESTORE' | 'USER_SYNC' | 'REQUEST_LATEST_STATE';
   key?: string;
   data?: any;
   timestamp: number;
   actor?: string;
+  senderId?: string;
 }
 
 const BROADCAST_CHANNEL_NAME = 'procureos_enterprise_live_bus';
 const LOCAL_EVENT_NAME = 'procureos:live-event';
 const AUDIT_LOGS_KEY = 'procureos_audit_logs';
+const SUPABASE_CHANNEL_NAME = 'procureos_global_live_sync';
+
+// Generate a unique client instance ID to filter out self-echoed broadcasts
+const CLIENT_INSTANCE_ID = `client_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
 class ProcureOSLiveBus {
-  private channel: BroadcastChannel | null = null;
+  private localChannel: BroadcastChannel | null = null;
+  private supabaseChannel: any = null;
   private listeners: Set<(msg: LiveBusMessage) => void> = new Set();
+  public isCloudConnected = false;
 
   constructor() {
+    // 1. Local BroadcastChannel
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        this.channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-        this.channel.onmessage = (event: MessageEvent<LiveBusMessage>) => {
-          this.notify(event.data);
+        this.localChannel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+        this.localChannel.onmessage = (event: MessageEvent<LiveBusMessage>) => {
+          if (event.data?.senderId !== CLIENT_INSTANCE_ID) {
+            this.handleIncoming(event.data, false);
+          }
         };
       } catch (err) {
-        console.warn('[ProcureOS LiveSync] BroadcastChannel init fallback', err);
+        console.warn('[ProcureOS LiveSync] Local BroadcastChannel fallback', err);
       }
     }
 
-    // Fallback to storage event for browsers/contexts without BroadcastChannel
+    // 2. Storage event listener (fallback for older browser contexts)
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key && e.newValue) {
           try {
             const parsed = JSON.parse(e.newValue);
-            this.notify({
+            this.handleIncoming({
               type: 'SYNC_KEY',
               key: e.key,
               data: parsed,
               timestamp: Date.now(),
-            });
+              senderId: 'storage_event',
+            }, false);
           } catch {
             // Ignore non-json
           }
@@ -63,27 +77,81 @@ class ProcureOSLiveBus {
 
       // Internal in-window event dispatcher
       window.addEventListener(LOCAL_EVENT_NAME, (e: any) => {
-        if (e.detail) {
-          this.notify(e.detail);
+        if (e.detail && e.detail.senderId !== CLIENT_INSTANCE_ID) {
+          this.handleIncoming(e.detail, false);
         }
       });
+    }
+
+    // 3. Supabase Realtime WebSocket for global cloud sync across all devices
+    if (typeof window !== 'undefined' && isSupabaseConfigured && supabase) {
+      try {
+        this.supabaseChannel = supabase.channel(SUPABASE_CHANNEL_NAME, {
+          config: {
+            broadcast: { self: false },
+          },
+        });
+
+        this.supabaseChannel
+          .on('broadcast', { event: 'PROCUREOS_LIVE_SYNC' }, ({ payload }: { payload: LiveBusMessage }) => {
+            if (payload && payload.senderId !== CLIENT_INSTANCE_ID) {
+              this.handleIncoming(payload, false);
+            }
+          })
+          .subscribe((status: string) => {
+            if (status === 'SUBSCRIBED') {
+              this.isCloudConnected = true;
+              console.info('[ProcureOS Cloud Sync] 🟢 Connected to Supabase Global Realtime');
+              // Ask active peers for any updates made while disconnected
+              this.publish({
+                type: 'REQUEST_LATEST_STATE',
+                timestamp: Date.now(),
+                senderId: CLIENT_INSTANCE_ID,
+              });
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              this.isCloudConnected = false;
+            }
+          });
+      } catch (err) {
+        console.warn('[ProcureOS Cloud Sync] Realtime init notice:', err);
+      }
     }
   }
 
   public publish(msg: LiveBusMessage): void {
-    if (this.channel) {
+    const enrichedMsg: LiveBusMessage = {
+      ...msg,
+      senderId: CLIENT_INSTANCE_ID,
+    };
+
+    // 1. Notify local in-tab listeners
+    this.notify(enrichedMsg);
+
+    // 2. Broadcast across local tabs/windows
+    if (this.localChannel) {
       try {
-        this.channel.postMessage(msg);
+        this.localChannel.postMessage(enrichedMsg);
       } catch (err) {
-        console.warn('[ProcureOS LiveSync] Failed to post to channel', err);
+        console.warn('[ProcureOS LiveSync] Local broadcast failed', err);
       }
     }
-    // Also notify local listeners in the same window
-    this.notify(msg);
 
-    // Also dispatch custom event for components outside React tree
+    // 3. Broadcast across the internet to all devices via Supabase Realtime
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'PROCUREOS_LIVE_SYNC',
+          payload: enrichedMsg,
+        });
+      } catch (err) {
+        console.warn('[ProcureOS Cloud Sync] Supabase broadcast failed', err);
+      }
+    }
+
+    // 4. Dispatch custom local event
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent(LOCAL_EVENT_NAME, { detail: msg }));
+      window.dispatchEvent(new CustomEvent(LOCAL_EVENT_NAME, { detail: enrichedMsg }));
     }
   }
 
@@ -92,6 +160,62 @@ class ProcureOSLiveBus {
     return () => {
       this.listeners.delete(callback);
     };
+  }
+
+  private handleIncoming(msg: LiveBusMessage, shouldRelay: boolean = false): void {
+    // Write directly to local storage so persistence is automatic
+    if (msg.type === 'SYNC_KEY' && msg.key && msg.data !== undefined) {
+      try {
+        localStorage.setItem(msg.key, JSON.stringify(msg.data));
+      } catch (err) {
+        console.warn(`[ProcureOS] Failed to write key ${msg.key} to localStorage`, err);
+      }
+    } else if (msg.type === 'USER_SYNC' && msg.data) {
+      try {
+        localStorage.setItem('procureos_users', JSON.stringify(msg.data));
+      } catch (err) {
+        console.warn('[ProcureOS] Failed to write users to localStorage', err);
+      }
+    } else if (msg.type === 'FULL_DATABASE_RESTORE' && msg.data) {
+      try {
+        ALL_DATA_KEYS.forEach((k) => {
+          if (k in msg.data) {
+            localStorage.setItem(k, JSON.stringify(msg.data[k]));
+          }
+        });
+      } catch (err) {
+        console.warn('[ProcureOS] Failed to restore database locally', err);
+      }
+    } else if (msg.type === 'REQUEST_LATEST_STATE') {
+      // Peer asked for latest state snapshot; respond with our current database
+      try {
+        const backup = generateFullBackup('Active Peer Sync');
+        if (this.supabaseChannel) {
+          this.supabaseChannel.send({
+            type: 'broadcast',
+            event: 'PROCUREOS_LIVE_SYNC',
+            payload: {
+              type: 'FULL_DATABASE_RESTORE',
+              data: backup.data,
+              timestamp: Date.now(),
+              senderId: CLIENT_INSTANCE_ID,
+            },
+          });
+        }
+      } catch {
+        // silent
+      }
+    }
+
+    this.notify(msg);
+
+    if (shouldRelay && this.localChannel) {
+      try {
+        this.localChannel.postMessage(msg);
+      } catch {
+        // silent
+      }
+    }
   }
 
   private notify(msg: LiveBusMessage): void {
@@ -131,7 +255,6 @@ export function recordAuditLog(
     const raw = localStorage.getItem(AUDIT_LOGS_KEY);
     const logs: AuditLogEntry[] = raw ? JSON.parse(raw) : [];
     logs.unshift(entry);
-    // Keep last 1,000 entries
     if (logs.length > 1000) logs.length = 1000;
     localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(logs));
   } catch (err) {
@@ -261,7 +384,7 @@ export function restoreFullBackup(
       { name: restoredBy, role: 'Super Admin' }
     );
 
-    // Notify all tabs and active hooks to reload memory state
+    // Notify all tabs, windows, and remote peers globally
     liveBus.publish({
       type: 'FULL_DATABASE_RESTORE',
       data: backup.data,
@@ -271,7 +394,7 @@ export function restoreFullBackup(
 
     return {
       ok: true,
-      message: 'Enterprise database successfully restored and synchronized.',
+      message: 'Enterprise database successfully restored and synchronized globally.',
       counts: backup.counts,
     };
   } catch (err: any) {
