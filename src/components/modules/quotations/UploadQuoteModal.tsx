@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   FileUp,
   Coins,
+  Sparkles,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
@@ -29,6 +32,7 @@ import {
   uploadPdfToCloudStorage,
   generateSyntheticQuotationPdf,
 } from '../../../lib/pdfStorage';
+import { analyzeQuotePdf, ParsedQuoteReview } from '../../../lib/pdfParser';
 
 interface UploadQuoteModalProps {
   isOpen: boolean;
@@ -123,8 +127,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isSimulatingUpload, setIsSimulatingUpload] = useState<boolean>(false);
+  const [isExtractingPdf, setIsExtractingPdf] = useState<boolean>(false);
+  const [aiExtractionNotice, setAiExtractionNotice] = useState<string | null>(null);
 
-  const handleFileChange = (file: File) => {
+  const handleFileChange = async (file: File) => {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       warning('Invalid File Type', 'Please upload a PDF document (.pdf)');
       return;
@@ -132,16 +138,63 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
 
     setUploadedFile(file);
     setIsSimulatingUpload(true);
-    setUploadProgress(20);
+    setUploadProgress(25);
+    setAiExtractionNotice(null);
 
     // Read Data URL for previewing or opening
     const reader = new FileReader();
-    reader.onload = () => {
-      setFileDataUrl(reader.result as string);
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setFileDataUrl(dataUrl);
+
+      // Trigger automatic quote inspection & data extraction
+      setIsExtractingPdf(true);
+      try {
+        const review: ParsedQuoteReview = await analyzeQuotePdf(
+          file,
+          currentRfq?.lineItems?.map(li => ({
+            id: li.id,
+            description: li.description,
+            quantity: li.quantity,
+            uom: li.uom,
+            targetPriceSAR: li.targetPriceSAR,
+          }))
+        );
+
+        if (review.proposalRefNumber) {
+          setProposalRefNumber(review.proposalRefNumber);
+        }
+        if (review.totalAmountSAR && review.totalAmountSAR > 0) {
+          setQuotedTotalSAR(review.totalAmountSAR.toString());
+        }
+        if (review.leadTimeDays) {
+          setLeadTimeDays(review.leadTimeDays.toString());
+        }
+        if (review.validityDate) {
+          setValidityDate(review.validityDate);
+        }
+
+        // Auto-fill line item unit prices
+        if (review.lineItems && review.lineItems.length > 0) {
+          const updatedPrices: Record<string, number> = {};
+          review.lineItems.forEach((item) => {
+            updatedPrices[item.id] = item.unitPriceSAR;
+          });
+          setLineItemUnitPrices((prev) => ({ ...prev, ...updatedPrices }));
+        }
+
+        setAiExtractionNotice(
+          `Auto-analyzed "${file.name}". Extracted proposal ref, commercial pricing & itemized BOQ.`
+        );
+      } catch (err) {
+        console.warn('PDF automatic analysis notice:', err);
+      } finally {
+        setIsExtractingPdf(false);
+      }
     };
     reader.readAsDataURL(file);
 
-    // Simulate progress animation
+    // Upload progress animation
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
@@ -410,6 +463,26 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                   className="bg-cyan-400 h-1.5 transition-all duration-300 rounded-full"
                   style={{ width: `${uploadProgress}%` }}
                 />
+              </div>
+            )}
+
+            {/* AI Quote Auto-Extraction Banner */}
+            {isExtractingPdf && (
+              <div className="mt-3 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
+                <span>Reading PDF content and extracting BOQ items, description & prices...</span>
+              </div>
+            )}
+
+            {aiExtractionNotice && !isExtractingPdf && (
+              <div className="mt-3 p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{aiExtractionNotice}</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-900/60 px-2 py-0.5 rounded">
+                  Editable Below
+                </span>
               </div>
             )}
           </div>

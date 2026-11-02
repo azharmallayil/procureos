@@ -262,3 +262,4 @@ export function generateSyntheticQuotationPdf(params: {
 
   return `data:text/html;charset=utf-8,${encodeURIComponent(docHtml)}`;
 }
+

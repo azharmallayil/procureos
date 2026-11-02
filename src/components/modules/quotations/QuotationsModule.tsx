@@ -39,7 +39,7 @@ import { Badge } from '../../common/Badge';
 import { Modal } from '../../common/Modal';
 import { UploadQuoteModal } from './UploadQuoteModal';
 import { EditQuotePriceModal } from './EditQuotePriceModal';
-import { generateSyntheticQuotationPdf } from '../../../lib/pdfStorage';
+import { getPdfLocally, generateSyntheticQuotationPdf } from '../../../lib/pdfStorage';
 
 interface QuotationsModuleProps {
   quotations: QuotationEvaluation[];
@@ -95,6 +95,31 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     bid: QuotationComparisonItem;
     evaluation: QuotationEvaluation;
   } | null>(null);
+  const [activeRawPdfUrl, setActiveRawPdfUrl] = useState<string | null>(null);
+
+  // When a dossier is opened, check if raw original uploaded PDF is in IndexedDB or attachment
+  useEffect(() => {
+    if (!selectedPdfBid) {
+      setActiveRawPdfUrl(null);
+      return;
+    }
+    const docId = `DOC-${selectedPdfBid.evaluation.rfqId}-${selectedPdfBid.bid.vendorId}`;
+    let isCancelled = false;
+    getPdfLocally(docId).then((localUrl) => {
+      if (!isCancelled) {
+        if (localUrl) {
+          setActiveRawPdfUrl(localUrl);
+        } else if (selectedPdfBid.bid.attachment?.pdfDataUrl) {
+          setActiveRawPdfUrl(selectedPdfBid.bid.attachment.pdfDataUrl);
+        } else {
+          setActiveRawPdfUrl(null);
+        }
+      }
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedPdfBid]);
 
   const [awardModalQuote, setAwardModalQuote] = useState<{
     evaluation: QuotationEvaluation;
@@ -213,24 +238,27 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   };
 
   const handleOpenPdfWindow = (bid: QuotationComparisonItem) => {
-    const url = bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
-      vendorName: bid.vendorName,
-      proposalRef: bid.attachment?.proposalRefNumber || `PROP-${bid.vendorId}`,
-      rfqNumber: selectedEvaluation?.rfqNumber || 'RFQ',
-      totalAmountSAR: bid.quotedTotalSAR,
-      leadTimeDays: bid.leadTimeDays,
-      validityDate: bid.validityDate,
-      lineItems: bid.lineItems,
-      notes: bid.notes,
-      uploadedBy: bid.attachment?.uploadedBy,
-    });
+    const docId = `DOC-${selectedEvaluation?.rfqId}-${bid.vendorId}`;
+    getPdfLocally(docId).then((localUrl) => {
+      const url = localUrl || bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
+        vendorName: bid.vendorName,
+        proposalRef: bid.attachment?.proposalRefNumber || `PROP-${bid.vendorId}`,
+        rfqNumber: selectedEvaluation?.rfqNumber || 'RFQ',
+        totalAmountSAR: bid.quotedTotalSAR,
+        leadTimeDays: bid.leadTimeDays,
+        validityDate: bid.validityDate,
+        lineItems: bid.lineItems,
+        notes: bid.notes,
+        uploadedBy: bid.attachment?.uploadedBy,
+      });
 
-    const win = window.open();
-    if (win) {
-      win.document.write(
-        `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
-      );
-    }
+      const win = window.open();
+      if (win) {
+        win.document.write(
+          `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+        );
+      }
+    });
   };
 
   if (!selectedEvaluation) {
@@ -924,7 +952,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               </div>
 
               {(() => {
-                const renderUrl = selectedPdfBid.bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
+                const renderUrl = activeRawPdfUrl || selectedPdfBid.bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
                   vendorName: selectedPdfBid.bid.vendorName,
                   proposalRef: selectedPdfBid.bid.attachment?.proposalRefNumber || `PROP-${selectedPdfBid.bid.vendorId}`,
                   rfqNumber: selectedPdfBid.evaluation.rfqNumber,
