@@ -10,8 +10,7 @@ import {
   UserProfile,
 } from '../types/procurement';
 
-export const DEMO_DATA_DISCLAIMER =
-  'DEMO ENVIRONMENT — Sample enterprise data for FITCO & Arabitra. Demo values are mocked for demonstration purposes and do not represent live production ledgers.';
+export const DEMO_DATA_DISCLAIMER = '';
 
 export const MOCK_USERS: UserProfile[] = [
   {

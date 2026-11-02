@@ -650,21 +650,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const permissions = activeRole ? ROLE_PERMISSIONS[activeRole] ?? null : null;
   const isAuthenticated = Boolean(session && currentUser);
 
-  // setActiveRole: switches persona among available users
+  // setActiveRole: disabled in production office mode (switching requires actual login with credentials)
   const setActiveRole = useCallback(
-    (role: UserRole) => {
-      if (!currentUser) return;
-      const matched = availableUsers.find((u) => u.role === role);
-      if (matched) {
-        setCurrentUser(matched);
-        if (session) {
-          const updatedSession = { ...session, userId: matched.id };
-          writeSession(updatedSession);
-          setSession(updatedSession);
-        }
-      }
+    (_role: UserRole) => {
+      // Direct impersonation without credentials is intentionally disabled for office security
     },
-    [currentUser, availableUsers, session]
+    []
   );
 
   const securityDisclaimer =

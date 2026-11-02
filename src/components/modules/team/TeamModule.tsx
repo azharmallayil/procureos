@@ -44,7 +44,6 @@ export const TeamModule: React.FC = () => {
     availableUsers,
     currentUser,
     activeRole,
-    setActiveRole,
     addUser,
     updateUser,
     deleteUser,
@@ -530,19 +529,11 @@ export const TeamModule: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-slate-500" />
-                <span>
-                  Viewing directory as <strong>{activeRole}</strong>. User creation, editing, and deletion are strictly restricted to <strong>Super Admin</strong>.
-                </span>
-              </div>
-              <button
-                onClick={() => setActiveRole('Super Admin')}
-                className="text-cyan-400 hover:text-cyan-300 font-semibold underline cursor-pointer"
-              >
-                Switch to Super Admin Persona
-              </button>
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2 text-xs text-slate-400">
+              <Shield className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>
+                Viewing directory as <strong>{activeRole}</strong>. User creation, editing, and deletion are strictly restricted to <strong>Super Admin</strong>.
+              </span>
             </div>
           )}
 
@@ -707,17 +698,6 @@ export const TeamModule: React.FC = () => {
                               </button>
                             )}
 
-                            {/* Switch persona */}
-                            <button
-                              onClick={() => setActiveRole(user.role)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                                isActivePersona
-                                  ? 'bg-cyan-600 text-white shadow-sm'
-                                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                              }`}
-                            >
-                              {isActivePersona ? 'Active Persona' : 'Simulate'}
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -742,12 +722,6 @@ export const TeamModule: React.FC = () => {
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Disaster recovery snapshots contain full enterprise datasets, cryptographic keys, and sensitive financial records. Only users with the <strong>Super Admin</strong> role are authorized to export or restore system data.
               </p>
-              <button
-                onClick={() => setActiveRole('Super Admin')}
-                className="mt-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Switch to Super Admin Persona
-              </button>
             </div>
           ) : (
             <div className="space-y-6">
@@ -1396,11 +1370,11 @@ export const TeamModule: React.FC = () => {
         <Modal
           isOpen={showResetConfirmModal}
           onClose={() => setShowResetConfirmModal(false)}
-          title="Reset to Factory Simulation Data"
+          title="Reset to Baseline Enterprise Data"
         >
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-700/60 text-xs text-rose-200 leading-relaxed">
-              <strong>Warning:</strong> This operation clears all custom-created items, vendors, purchase orders, shipments, and restored tables, reloading the factory simulation data.
+              <strong>Warning:</strong> This operation clears all custom-created items, vendors, purchase orders, shipments, and restored tables, reloading the initial baseline records.
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

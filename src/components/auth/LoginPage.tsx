@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   LogIn,
   ShieldAlert,
-  KeyRound,
 } from 'lucide-react';
 import { useAuth, validatePasswordPolicy } from '../../context/AuthContext';
 
@@ -428,96 +427,6 @@ export const LoginPage: React.FC = () => {
               <Lock className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
               Brute-force protection · Idle auto-logout · Audit logging active
             </div>
-          </div>
-        </div>
-
-        {/* Quick Demo Credentials Panel */}
-        <div className="mt-4 bg-slate-900/70 border border-slate-800/90 rounded-2xl p-4 text-xs shadow-xl backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
-            <span className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              Enterprise Role Quick Access (1-Click Sign In)
-            </span>
-            <span className="text-[10px] text-emerald-400 font-mono font-semibold">PBKDF2 Secured</span>
-          </div>
-
-          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-            {/* Super Admin */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('admin@procureos.com');
-                setPassword('Admin@2026!Procure');
-                setError('');
-              }}
-              className="w-full flex items-center justify-between p-2 rounded-xl bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 text-left transition-colors cursor-pointer group"
-            >
-              <div>
-                <div className="font-bold text-amber-300 text-[11px] flex items-center gap-1">
-                  <span>👑 Super Admin</span>
-                  <span className="text-slate-400 font-normal">admin@procureos.com</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">Admin@2026!Procure (User mgmt & backup)</div>
-              </div>
-              <span className="text-[10px] text-amber-400 font-semibold group-hover:underline shrink-0">1-Click Fill</span>
-            </button>
-
-            {/* Procurement Director */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('aitzaz@fitcotech.com');
-                setPassword('Fitco@2026!Aitzaz');
-                setError('');
-              }}
-              className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-left transition-colors cursor-pointer group"
-            >
-              <div>
-                <div className="font-semibold text-slate-200 text-[11px]">
-                  Procurement Director <span className="text-slate-400 font-normal">aitzaz@fitcotech.com</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">Fitco@2026!Aitzaz</div>
-              </div>
-              <span className="text-[10px] text-cyan-400 font-semibold group-hover:underline shrink-0">1-Click Fill</span>
-            </button>
-
-            {/* Procurement Engineer */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('muhammed.azhar@arabitra.com');
-                setPassword('Procure@2026!Azhar');
-                setError('');
-              }}
-              className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-left transition-colors cursor-pointer group"
-            >
-              <div>
-                <div className="font-semibold text-slate-200 text-[11px]">
-                  Procurement Engineer <span className="text-slate-400 font-normal">muhammed.azhar@arabitra.com</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">Procure@2026!Azhar</div>
-              </div>
-              <span className="text-[10px] text-cyan-400 font-semibold group-hover:underline shrink-0">1-Click Fill</span>
-            </button>
-
-            {/* Financial Controller */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('mona.otaibi@fitco-group.com');
-                setPassword('Fitco@2026!Mona');
-                setError('');
-              }}
-              className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-left transition-colors cursor-pointer group"
-            >
-              <div>
-                <div className="font-semibold text-slate-200 text-[11px]">
-                  Financial Controller <span className="text-slate-400 font-normal">mona.otaibi@fitco-group.com</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">Fitco@2026!Mona (Disbursements)</div>
-              </div>
-              <span className="text-[10px] text-cyan-400 font-semibold group-hover:underline shrink-0">1-Click Fill</span>
-            </button>
           </div>
         </div>
 

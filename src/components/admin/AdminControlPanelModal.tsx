@@ -1310,7 +1310,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
         >
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-700/60 text-xs text-rose-200 leading-relaxed">
-              <strong>Warning:</strong> This clears custom items, vendors, purchase orders, shipments, and restored tables, resetting back to the initial standard simulation dataset.
+              <strong>Warning:</strong> This clears custom items, vendors, purchase orders, shipments, and restored tables, resetting back to the initial standard baseline dataset.
             </div>
 
             <div className="flex justify-end gap-2.5 pt-2">

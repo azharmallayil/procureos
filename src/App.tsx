@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { CompanyProvider } from './context/CompanyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import { DemoBanner } from './components/common/DemoBanner';
 import { LoginPage } from './components/auth/LoginPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -582,9 +581,6 @@ const MainApplication: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col font-sans">
-      {/* Universal Demo & Security Disclaimer Banner */}
-      <DemoBanner />
-
       <div className="flex-1 flex overflow-hidden">
         {/* Navigation Sidebar */}
         <Sidebar
