@@ -14,11 +14,21 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  Building,
 } from 'lucide-react';
 import { ModuleId } from '../../types/procurement';
-import { useCompany } from '../../context/CompanyContext';
 import { useAuth } from '../../context/AuthContext';
+
+export interface ModuleCounts {
+  items?: number;
+  vendors?: number;
+  requisitions?: number;
+  rfqs?: number;
+  quotations?: number;
+  purchaseOrders?: number;
+  deliveries?: number;
+  payments?: number;
+  assets?: number;
+}
 
 interface SidebarProps {
   activeModule: ModuleId;
@@ -27,6 +37,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  counts?: ModuleCounts;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,8 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   mobileOpen,
   onCloseMobile,
+  counts,
 }) => {
-  const { activeCompany } = useCompany();
   const { activeRole } = useAuth();
 
   const navigationItems: {
@@ -56,60 +67,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'items',
       label: 'Items & Catalog',
       icon: <Boxes className="w-5 h-5" />,
-      badge: '7 SKUs',
+      badge: `${counts?.items ?? 73} SKUs`,
     },
     {
       id: 'vendors',
       label: 'Vendors & Suppliers',
       icon: <Building2 className="w-5 h-5" />,
-      badge: '7 Total',
+      badge: `${counts?.vendors ?? 7} Total`,
     },
     {
       id: 'requisitions',
       label: 'Purchase Requisitions',
       icon: <ClipboardList className="w-5 h-5" />,
-      badge: 'PR',
+      badge: counts?.requisitions ? `${counts.requisitions} Active` : undefined,
       badgeVariant: 'amber',
     },
     {
       id: 'rfqs',
       label: 'RFQs & Tenders',
       icon: <FileQuestion className="w-5 h-5" />,
-      badge: '2 Open',
+      badge: counts?.rfqs !== undefined ? `${counts.rfqs} Open` : '2 Open',
       badgeVariant: 'cyan',
     },
     {
       id: 'quotations',
       label: 'Quotations & Bids',
       icon: <FileSpreadsheet className="w-5 h-5" />,
-      badge: 'Eval',
+      badge: counts?.quotations !== undefined ? `${counts.quotations} Packages` : 'Eval',
       badgeVariant: 'amber',
     },
     {
       id: 'purchaseOrders',
       label: 'Purchase Orders',
       icon: <FileCheck2 className="w-5 h-5" />,
-      badge: '2 Pending',
+      badge: counts?.purchaseOrders !== undefined && counts.purchaseOrders > 0 ? `${counts.purchaseOrders} Pending` : undefined,
       badgeVariant: 'amber',
     },
     {
       id: 'deliveries',
       label: 'Deliveries & Logistics',
       icon: <Truck className="w-5 h-5" />,
-      badge: '1 Overdue',
+      badge: counts?.deliveries !== undefined && counts.deliveries > 0 ? `${counts.deliveries} Alert` : undefined,
       badgeVariant: 'rose',
     },
     {
       id: 'payments',
       label: 'Payments & Milestones',
       icon: <CreditCard className="w-5 h-5" />,
-      badge: '4 Records',
+      badge: counts?.payments !== undefined ? `${counts.payments} Due` : undefined,
     },
     {
       id: 'assets',
       label: 'Assets & Equipment',
       icon: <Wrench className="w-5 h-5" />,
-      badge: '4 Units',
+      badge: counts?.assets !== undefined ? `${counts.assets} Units` : undefined,
     },
     {
       id: 'team',
@@ -171,29 +182,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
-
-        {/* Company Context Chip */}
-        {!isCollapsed && (
-          <div className="px-4 py-3 bg-slate-950/50 border-b border-slate-800/80">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
-                <Building className="w-3 h-3 text-cyan-400" />
-                Active Scope
-              </span>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  activeCompany === 'FITCO'
-                    ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
-                    : activeCompany === 'ARABITRA'
-                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                    : 'bg-slate-800 text-slate-300 border-slate-600'
-                }`}
-              >
-                {activeCompany === 'ALL' ? 'Group Consolidated' : activeCompany}
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Navigation Modules */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">

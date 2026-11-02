@@ -18,12 +18,23 @@ export interface ExtractedLineItem {
   totalPriceSAR: number;
 }
 
+export interface ParsedVendorInfo {
+  name?: string;
+  crNumber?: string;
+  vatNumber?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+}
+
 export interface ParsedQuoteReview {
   proposalRefNumber?: string;
   totalAmountSAR?: number;
   leadTimeDays?: number;
   validityDate?: string;
+  paymentTerms?: string;
   lineItems: ExtractedLineItem[];
+  vendorInfo?: ParsedVendorInfo;
   rawTextSample?: string;
   confidenceScore: number; // 0 - 100
 }
@@ -108,6 +119,76 @@ export async function analyzeQuotePdf(
   let totalAmount: number | undefined;
   let leadTime: number | undefined;
   let validity: string | undefined;
+  let paymentTerms: string | undefined;
+  let vendorInfo: ParsedVendorInfo | undefined;
+
+  // 0. Extract Vendor / Supplier Details (Company Name, CR, VAT, Email, Phone, City)
+  let detectedVendorName: string | undefined;
+  let detectedCr: string | undefined;
+  let detectedVat: string | undefined;
+  let detectedEmail: string | undefined;
+  let detectedPhone: string | undefined;
+  let detectedCity: string | undefined;
+
+  // CR Number (10 digits starting with 1, 2, 4, etc.)
+  const crMatch = fullText.match(/(?:C\.?R\.?|CR\s*No\.?|Commercial\s*Reg(?:istration)?|سجل\s*تجاري)[:\s#]*([1-4][0-9]{9})/i);
+  if (crMatch) detectedCr = crMatch[1].trim();
+
+  // VAT Number (15 digits usually starting with 3 and ending with 3 in KSA)
+  const vatMatch = fullText.match(/(?:VAT|VAT\s*No\.?|Tax\s*ID|Tax\s*Number|الرقم\s*الضريبي)[:\s#]*(3[0-9]{13,14})/i);
+  if (vatMatch) detectedVat = vatMatch[1].trim();
+
+  // Email
+  const emailMatch = fullText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch && !emailMatch[1].toLowerCase().includes('procureos') && !emailMatch[1].toLowerCase().includes('fitco') && !emailMatch[1].toLowerCase().includes('arabitra')) {
+    detectedEmail = emailMatch[1].trim();
+  }
+
+  // Phone
+  const phoneMatch = fullText.match(/(?:\+?966[\s-]?[0-9]{1,2}[\s-]?[0-9]{3}[\s-]?[0-9]{4}|05[0-9]{8})/);
+  if (phoneMatch) detectedPhone = phoneMatch[0].trim();
+
+  // City
+  const cityMatch = fullText.match(/\b(Riyadh|Dammam|Jeddah|Khobar|Jubail|Yanbu|Tabuk|Makkah|Madinah)\b/i);
+  if (cityMatch) detectedCity = cityMatch[1].trim();
+
+  // Company / Supplier Name detection from top lines or explicit "From:" / "Supplier:" / "Company:" tags
+  const supplierTagMatch = fullText.match(/(?:Supplier|Vendor|From|Company|Issued\s*By|المورد|الشركة)[:\s]+([^\n\r,]{4,60})/i);
+  if (supplierTagMatch && !supplierTagMatch[1].toLowerCase().includes('procureos') && !supplierTagMatch[1].toLowerCase().includes('fitco') && !supplierTagMatch[1].toLowerCase().includes('arabitra')) {
+    detectedVendorName = supplierTagMatch[1].trim();
+  } else {
+    // Scan top 8 lines for likely company headers (containing Ltd, Est, Co, Trading, Solutions, Telematics, Tech)
+    for (let i = 0; i < Math.min(lines.length, 8); i++) {
+      const line = lines[i].trim();
+      if (
+        line.length > 5 &&
+        line.length < 65 &&
+        !line.match(/quotation|proposal|invoice|rfq|purchase\s*order|page\s*[0-9]|date/i) &&
+        !line.match(/fitco|arabitra|procureos/i) &&
+        line.match(/(?:Est\.?|Co\.?|Ltd\.?|Trading|Solutions|Telematics|Technology|Wireless|Systems|General|Corporation|Enterprises)/i)
+      ) {
+        detectedVendorName = line;
+        break;
+      }
+    }
+  }
+
+  if (detectedVendorName || detectedCr || detectedVat || detectedEmail) {
+    vendorInfo = {
+      name: detectedVendorName,
+      crNumber: detectedCr,
+      vatNumber: detectedVat,
+      email: detectedEmail,
+      phone: detectedPhone,
+      city: detectedCity,
+    };
+  }
+
+  // Payment Terms
+  const termsMatch = fullText.match(/(?:Payment\s*Terms|Terms\s*of\s*Payment|شروط\s*الدفع)[:\s]*([^\n\r;]{5,50})/i);
+  if (termsMatch) {
+    paymentTerms = termsMatch[1].trim();
+  }
 
   // 1. Extract Proposal / Quotation Reference
   const refMatches = [
@@ -236,7 +317,9 @@ export async function analyzeQuotePdf(
     totalAmountSAR: totalAmount,
     leadTimeDays: leadTime,
     validityDate: validity,
+    paymentTerms,
     lineItems: extractedLines,
+    vendorInfo,
     rawTextSample: lines.slice(0, 8).join(' | '),
     confidenceScore,
   };

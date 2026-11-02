@@ -51,7 +51,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const filteredDeliveries = deliveries.filter((d) => matchesCompany(d.entity));
 
   // Compute live KPI metrics
-  const totalSpendSAR = filteredPOs.reduce((acc, curr) => acc + curr.grandTotalSAR, 0) + 74500000;
+  const totalSpendSAR = filteredPOs.reduce((acc, curr) => acc + curr.grandTotalSAR, 0);
+  const formattedSpend =
+    totalSpendSAR >= 1000000
+      ? `SAR ${(totalSpendSAR / 1000000).toFixed(2)}M`
+      : totalSpendSAR >= 1000
+      ? `SAR ${(totalSpendSAR / 1000).toFixed(1)}K`
+      : `SAR ${Math.round(totalSpendSAR).toLocaleString()}`;
+
   const activeRfqsCount = filteredRfqs.filter((r) => r.status === 'Open' || r.status === 'Under Evaluation').length;
   const pendingApprovalsCount = filteredPOs.filter((p) => p.status === 'Pending Approval').length;
   const openPosCount = filteredPOs.filter((p) => p.status !== 'Closed' && p.status !== 'Cancelled').length;
@@ -77,10 +84,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
         <KpiCard
           title="Total Spend YTD"
-          value={`SAR ${(totalSpendSAR / 1000000).toFixed(1)}M`}
+          value={formattedSpend}
           change="+14.2% vs 2025"
           isPositive={true}
           subtitle="Capital & Opex"

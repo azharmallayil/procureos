@@ -68,7 +68,7 @@ const MainApplication: React.FC = () => {
   const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);
   const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
-  // Auto-migrate cached items/vendors to latest Excel Master Data if outdated
+  // Auto-migrate cached tables to latest Telematics, AI Safety, LMI & Cold Chain datasets if outdated
   useEffect(() => {
     const hasOldSkus = items.some((item) => item.sku.startsWith('FIT-MECH'));
     const hasNewSkus = items.some((item) => item.sku.startsWith('IOT-TEL'));
@@ -76,10 +76,25 @@ const MainApplication: React.FC = () => {
       setItems(MOCK_ITEMS);
       localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
     }
-    const hasNewVendors = vendors.some((v) => v.id === 'VND-008' || v.id === 'VND-009');
-    if (!hasNewVendors) {
+    const hasOldVendors = vendors.some((v) => v.name.includes('Al-Tamimi Industrial Flow'));
+    if (hasOldVendors || !vendors.some((v) => v.id === 'VND-008')) {
       setVendors(MOCK_VENDORS);
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
+    }
+    const hasOldRfqs = rfqs.some((r) => r.title.includes('Valves') || r.projectName.includes('Shedgum'));
+    if (hasOldRfqs) {
+      setRfqs(MOCK_RFQS);
+      localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
+      setQuotations(MOCK_QUOTATIONS);
+      localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
+      setPurchaseOrders(MOCK_PURCHASE_ORDERS);
+      localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
+      setDeliveries(MOCK_DELIVERIES);
+      localStorage.setItem('procureos_deliveries', JSON.stringify(MOCK_DELIVERIES));
+      setPayments(MOCK_PAYMENTS);
+      localStorage.setItem('procureos_payments', JSON.stringify(MOCK_PAYMENTS));
+      setAssets(MOCK_ASSETS);
+      localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
     }
   }, []);
 
@@ -590,6 +605,17 @@ const MainApplication: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           mobileOpen={mobileOpen}
           onCloseMobile={() => setMobileOpen(false)}
+          counts={{
+            items: items.length,
+            vendors: vendors.length,
+            requisitions: requisitions.length,
+            rfqs: rfqs.filter((r) => r.status === 'Open' || r.status === 'Under Evaluation').length,
+            quotations: quotations.length,
+            purchaseOrders: purchaseOrders.filter((p) => p.status === 'Pending Approval').length,
+            deliveries: deliveries.filter((d) => d.isOverdue || d.status === 'Delayed').length,
+            payments: payments.filter((p) => p.status === 'Processing' || p.status === 'Pending Approval' || p.status === 'Scheduled').length,
+            assets: assets.length,
+          }}
         />
 
         {/* Main Application Area */}
@@ -660,6 +686,7 @@ const MainApplication: React.FC = () => {
                 vendors={vendors}
                 onAwardBid={handleAwardBid}
                 onQuoteUploaded={handleQuoteUploaded}
+                onAddVendor={handleAddVendor}
                 onUpdateQuotePrice={handleUpdateQuotePrice}
               />
             )}

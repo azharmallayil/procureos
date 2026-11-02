@@ -49,6 +49,7 @@ interface QuotationsModuleProps {
   vendors?: Vendor[];
   onAwardBid: (quoteEvaluationId: string, vendorId: string) => void;
   onQuoteUploaded?: (rfqId: string, newSubmission: QuotationComparisonItem) => void;
+  onAddVendor?: (vendor: Vendor) => void;
   onUpdateQuotePrice?: (
     rfqId: string,
     vendorId: string,
@@ -65,6 +66,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   vendors = [],
   onAwardBid,
   onQuoteUploaded,
+  onAddVendor,
   onUpdateQuotePrice,
 }) => {
   const { matchesCompany } = useCompany();
@@ -992,6 +994,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
             onQuoteUploaded(rfqId, newSubmission);
           }
         }}
+        onAddVendor={onAddVendor}
       />
 
       {/* Edit Itemized Quote Price Modal */}

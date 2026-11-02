@@ -41,6 +41,7 @@ interface UploadQuoteModalProps {
   rfqs: RFQ[];
   vendors: Vendor[];
   onQuoteUploaded: (rfqId: string, newSubmission: QuotationComparisonItem) => void;
+  onAddVendor?: (vendor: Vendor) => void;
   selectedRfqId?: string;
 }
 
@@ -51,6 +52,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   rfqs,
   vendors,
   onQuoteUploaded,
+  onAddVendor,
   selectedRfqId,
 }) => {
   const { success, warning } = useToast();
@@ -67,6 +69,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [technicalScore, setTechnicalScore] = useState<string>('95');
   const [validityDate, setValidityDate] = useState<string>('2026-12-31');
   const [notes, setNotes] = useState<string>('');
+  const [detectedNewVendor, setDetectedNewVendor] = useState<Vendor | null>(null);
 
   const currentRfq = rfqs.find((r) => r.id === targetRfqId);
   const existingEvaluation = quotations.find((evaluation) => evaluation.rfqId === targetRfqId);
@@ -173,6 +176,50 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
         if (review.validityDate) {
           setValidityDate(review.validityDate);
         }
+        if (review.paymentTerms) {
+          setNotes((prev) => (prev ? `${prev} | ${review.paymentTerms}` : `Payment Terms: ${review.paymentTerms}`));
+        }
+
+        // Automatic Supplier Matching & New Supplier Detection
+        if (review.vendorInfo?.name || review.vendorInfo?.crNumber) {
+          const vName = (review.vendorInfo.name || '').toLowerCase();
+          const vCr = review.vendorInfo.crNumber || '';
+          
+          const matchedVendor = vendors.find(
+            (v) =>
+              (vCr && v.crNumber === vCr) ||
+              (vName && (v.name.toLowerCase().includes(vName) || vName.includes(v.name.toLowerCase())))
+          );
+
+          if (matchedVendor) {
+            setSelectedVendorId(matchedVendor.id);
+            setDetectedNewVendor(null);
+          } else if (review.vendorInfo.name) {
+            // Unregistered supplier discovered in PDF
+            const newVend: Vendor = {
+              id: `VND-${Math.floor(100 + Math.random() * 900)}`,
+              name: review.vendorInfo.name,
+              code: `V-${review.vendorInfo.name.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'VND'}-${Math.floor(10 + Math.random() * 90)}`,
+              crNumber: review.vendorInfo.crNumber || '1010' + Math.floor(100000 + Math.random() * 900000),
+              vatNumber: review.vendorInfo.vatNumber || '3100' + Math.floor(10000000000 + Math.random() * 90000000000),
+              category: 'IT & Automation',
+              tier: 'Tier 2',
+              status: 'Approved',
+              entityScope: currentRfq?.entity === 'FITCO' ? 'FITCO Approved' : (currentRfq?.entity === 'ARABITRA' ? 'Arabitra Approved' : 'Joint / Group'),
+              rating: 4.6,
+              onTimeDeliveryRate: 95.0,
+              qualityComplianceRate: 98.0,
+              contactPerson: 'Commercial Sales Dept',
+              contactEmail: review.vendorInfo.email || `sales@${review.vendorInfo.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'supplier'}.com.sa`,
+              contactPhone: review.vendorInfo.phone || '+966 11 400 1234',
+              city: review.vendorInfo.city || 'Riyadh',
+              country: 'Saudi Arabia',
+              totalSpendSAR: 0,
+              activeContractsCount: 1,
+            };
+            setDetectedNewVendor(newVend);
+          }
+        }
 
         // Auto-fill line item unit prices
         if (review.lineItems && review.lineItems.length > 0) {
@@ -213,6 +260,16 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFileChange(e.dataTransfer.files[0]);
     }
+  };
+
+  const handleRegisterDetectedVendor = () => {
+    if (!detectedNewVendor) return;
+    if (onAddVendor) {
+      onAddVendor(detectedNewVendor);
+    }
+    setSelectedVendorId(detectedNewVendor.id);
+    success('Vendor Registered', `${detectedNewVendor.name} registered as an approved supplier and selected!`);
+    setDetectedNewVendor(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -486,6 +543,38 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* New Supplier Detected from PDF Banner */}
+          {detectedNewVendor && (
+            <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-amber-950/40 border border-amber-500/60 shadow-lg shadow-amber-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-amber-200 text-sm">{detectedNewVendor.name}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-900/80 text-amber-300 border border-amber-600/50">
+                      New Supplier Discovered in PDF
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span>CR: <strong className="text-white">{detectedNewVendor.crNumber}</strong></span>
+                    <span>VAT: <strong className="text-white">{detectedNewVendor.vatNumber}</strong></span>
+                    <span>Email: <strong className="text-white">{detectedNewVendor.contactEmail}</strong></span>
+                    <span>City: <strong className="text-white">{detectedNewVendor.city}</strong></span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRegisterDetectedVendor}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs shadow-md transition-all cursor-pointer shrink-0"
+              >
+                + Add & Select Supplier
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Commercial & Technical Quotation Parameters */}

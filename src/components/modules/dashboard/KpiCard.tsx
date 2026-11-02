@@ -56,15 +56,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         accentStyles.border
       } ${accentStyles.glow} ${alert ? 'border-rose-500/50 bg-rose-950/10' : ''}`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-slate-400 tracking-wide truncate">{title}</p>
-          <h4 className="text-2xl font-bold text-white mt-1.5 tracking-tight font-sans truncate">
+          <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mt-1.5 tracking-tight font-sans whitespace-nowrap overflow-visible">
             {value}
           </h4>
         </div>
         <div
-          className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105 ${accentStyles.iconBg}`}
+          className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105 ${accentStyles.iconBg}`}
         >
           {icon}
         </div>

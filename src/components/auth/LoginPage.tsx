@@ -307,12 +307,23 @@ export const LoginPage: React.FC = () => {
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo + Branding */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-cyan-900/40 mb-4">
-            <Shield className="w-8 h-8 text-white" />
+        <div className="flex flex-col items-center mb-6">
+          <div className="px-5 py-3 rounded-2xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-950/60 mb-3 backdrop-blur-md">
+            <img
+              src="/fitco-logo.png"
+              alt="Fitco"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">ProcureOS</h1>
-          <p className="text-sm text-slate-400 mt-0.5">by Fitco | Enterprise Procurement Platform</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">
+              Procure<span className="text-emerald-400">OS</span>
+            </h1>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              Enterprise
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">Telematics & Industrial Procurement Platform</p>
         </div>
 
         {/* Login Card */}
