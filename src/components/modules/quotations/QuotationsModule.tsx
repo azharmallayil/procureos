@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   FileSpreadsheet,
   CheckCircle2,
@@ -42,6 +42,8 @@ import { EditQuotePriceModal } from './EditQuotePriceModal';
 
 interface QuotationsModuleProps {
   quotations: QuotationEvaluation[];
+  selectedRfqId?: string;
+  onSelectRfqId?: (rfqId: string) => void;
   rfqs?: RFQ[];
   vendors?: Vendor[];
   onAwardBid: (quoteEvaluationId: string, vendorId: string) => void;
@@ -56,6 +58,8 @@ interface QuotationsModuleProps {
 
 export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   quotations,
+  selectedRfqId: initialSelectedRfqId,
+  onSelectRfqId,
   rfqs = [],
   vendors = [],
   onAwardBid,
@@ -66,8 +70,24 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
   const { success, warning } = useToast();
 
-  const [selectedEvaluationIndex, setSelectedEvaluationIndex] = useState<number>(0);
-  const selectedEvaluation = quotations[selectedEvaluationIndex] || quotations[0];
+  const [activeRfqId, setActiveRfqId] = useState<string>(initialSelectedRfqId || quotations[0]?.rfqId || '');
+  const lastExternalRfqId = useRef<string | undefined>(undefined);
+  const selectedEvaluation = quotations.find((evaluation) => evaluation.rfqId === activeRfqId) || quotations[0];
+
+  useEffect(() => {
+    if (
+      initialSelectedRfqId &&
+      initialSelectedRfqId !== lastExternalRfqId.current &&
+      quotations.some((evaluation) => evaluation.rfqId === initialSelectedRfqId)
+    ) {
+      lastExternalRfqId.current = initialSelectedRfqId;
+      setActiveRfqId(initialSelectedRfqId);
+      return;
+    }
+    if (!quotations.some((evaluation) => evaluation.rfqId === activeRfqId) && quotations[0]) {
+      setActiveRfqId(quotations[0].rfqId);
+    }
+  }, [initialSelectedRfqId, quotations, activeRfqId]);
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedPdfBid, setSelectedPdfBid] = useState<{
@@ -89,7 +109,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     evaluation: QuotationEvaluation;
   } | null>(null);
 
-  const currentRfq = rfqs.find((r) => r.id === selectedEvaluation.rfqId);
+  const currentRfq = rfqs.find((r) => r.id === selectedEvaluation?.rfqId);
 
   // Helper to get or extrapolate line items for a submission
   const getSubmissionLineItems = (sub: QuotationComparisonItem): QuoteLineItemPrice[] => {
@@ -204,6 +224,18 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     }
   };
 
+  if (!selectedEvaluation) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold text-white">Quotations & Bid Evaluation</h1>
+        <div className="glass-panel p-8 rounded-xl border border-slate-800 text-center">
+          <p className="text-slate-200 font-semibold">No published RFQs are ready for quotation collection.</p>
+          <p className="text-xs text-slate-400 mt-2">Create and publish an RFQ first. It will appear here automatically.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Module Header */}
@@ -242,11 +274,36 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
             variant="primary"
             size="sm"
             icon={<Upload className="w-4 h-4" />}
+            disabled={['Awarded', 'Closed', 'Cancelled'].includes(currentRfq?.status || 'Closed')}
             onClick={() => setIsUploadModalOpen(true)}
           >
             Upload Received Quote (PDF)
           </Button>
         </div>
+      </div>
+
+      {/* RFQ work queue: every RFQ has its own quotation workspace */}
+      <div className="glass-panel p-4 rounded-xl border border-slate-800">
+        <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-2">Select RFQ quotation workspace</label>
+        <select
+          value={selectedEvaluation.rfqId}
+          onChange={(event) => {
+            setActiveRfqId(event.target.value);
+            onSelectRfqId?.(event.target.value);
+          }}
+          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+        >
+          {quotations.map((evaluation) => {
+            const rfq = rfqs.find((item) => item.id === evaluation.rfqId);
+            const invited = rfq?.invitedVendorsCount || 0;
+            const received = evaluation.submissions.length;
+            return (
+              <option key={evaluation.rfqId} value={evaluation.rfqId}>
+                {evaluation.rfqNumber} — {evaluation.rfqTitle} ({received}/{invited} quotations)
+              </option>
+            );
+          })}
+        </select>
       </div>
 
       {/* Tender Package Selector & Header summary */}
@@ -323,6 +380,17 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
+              {selectedEvaluation.submissions.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="py-10 px-4 text-center">
+                    <div className="font-semibold text-slate-200">No supplier quotations received yet</div>
+                    <p className="text-xs text-slate-400 mt-1">This RFQ is already linked to this workspace. Invitees can submit their quotation here.</p>
+                    <Button variant="outline" size="sm" className="mt-3" onClick={() => setIsUploadModalOpen(true)}>
+                      Upload first quotation
+                    </Button>
+                  </td>
+                </tr>
+              )}
               {selectedEvaluation.submissions.map((sub) => {
                 const variance =
                   ((sub.quotedTotalSAR - selectedEvaluation.totalBudgetSAR) /

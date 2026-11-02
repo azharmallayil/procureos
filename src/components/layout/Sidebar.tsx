@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Boxes,
   Building2,
+  ClipboardList,
   FileQuestion,
   FileSpreadsheet,
   FileCheck2,
@@ -62,6 +63,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Vendors & Suppliers',
       icon: <Building2 className="w-5 h-5" />,
       badge: '7 Total',
+    },
+    {
+      id: 'requisitions',
+      label: 'Purchase Requisitions',
+      icon: <ClipboardList className="w-5 h-5" />,
+      badge: 'PR',
+      badgeVariant: 'amber',
     },
     {
       id: 'rfqs',

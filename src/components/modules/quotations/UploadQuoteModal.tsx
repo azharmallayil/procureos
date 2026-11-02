@@ -48,7 +48,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const { currentUser: _cu } = useAuth(); const currentUser = _cu!;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const initialRfq = selectedRfqId || (quotations[0]?.rfqId || (rfqs[0]?.id || ''));
+  const initialRfq = selectedRfqId || (rfqs.find((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status))?.id || quotations[0]?.rfqId || '');
 
   const [targetRfqId, setTargetRfqId] = useState<string>(initialRfq);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(vendors[0]?.id || '');
@@ -60,6 +60,17 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [notes, setNotes] = useState<string>('');
 
   const currentRfq = rfqs.find((r) => r.id === targetRfqId);
+  const existingEvaluation = quotations.find((evaluation) => evaluation.rfqId === targetRfqId);
+  const eligibleVendors = vendors.filter((vendor) => {
+    const isInvited = currentRfq?.invitedVendorIds?.length
+      ? currentRfq.invitedVendorIds.includes(vendor.id)
+      : (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
+        (vendor.entityScope === 'Joint / Group' ||
+          (currentRfq?.entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
+          (currentRfq?.entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'));
+    const alreadySubmitted = existingEvaluation?.submissions.some((submission) => submission.vendorId === vendor.id);
+    return isInvited && !alreadySubmitted && (vendor.status === 'Approved' || vendor.status === 'Preferred');
+  });
   const [lineItemUnitPrices, setLineItemUnitPrices] = useState<Record<string, number>>({});
 
   // Sync line item prices when target RFQ changes
@@ -68,7 +79,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       const initial: Record<string, number> = {};
       let total = 0;
       currentRfq.lineItems.forEach((li) => {
-        const p = li.targetPriceSAR || 1000;
+        const p = li.targetPriceSAR || 0;
         initial[li.id] = p;
         total += p * li.quantity;
       });
@@ -76,6 +87,18 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       setQuotedTotalSAR(total.toString());
     }
   }, [targetRfqId, currentRfq]);
+
+  React.useEffect(() => {
+    if (selectedRfqId && rfqs.some((rfq) => rfq.id === selectedRfqId)) {
+      setTargetRfqId(selectedRfqId);
+    }
+  }, [selectedRfqId, rfqs]);
+
+  React.useEffect(() => {
+    if (!eligibleVendors.some((vendor) => vendor.id === selectedVendorId)) {
+      setSelectedVendorId(eligibleVendors[0]?.id || '');
+    }
+  }, [targetRfqId, eligibleVendors.map((vendor) => vendor.id).join('|')]);
 
   const handleItemPriceChange = (id: string, unitPrice: number) => {
     const updated = { ...lineItemUnitPrices, [id]: unitPrice };
@@ -137,6 +160,16 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!currentRfq || ['Awarded', 'Closed', 'Cancelled'].includes(currentRfq.status)) {
+      warning('RFQ Not Available', 'Select an open RFQ that is accepting quotations.');
+      return;
+    }
+
+    if (!selectedVendorId || !eligibleVendors.some((vendor) => vendor.id === selectedVendorId)) {
+      warning('Vendor Not Eligible', 'Select an invited, approved vendor that has not already submitted a quotation for this RFQ.');
+      return;
+    }
+
     if (!uploadedFile) {
       warning('Missing Quote PDF', 'Please attach the supplier quotation PDF document.');
       return;
@@ -151,32 +184,32 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     const matchedVendor = vendors.find((v) => v.id === selectedVendorId);
     const vendorName = matchedVendor ? matchedVendor.name : 'Supplier Bidder';
 
-    const lineItems: QuoteLineItemPrice[] =
-      currentRfq?.lineItems && currentRfq.lineItems.length > 0
-        ? currentRfq.lineItems.map((li) => {
-            const up =
-              lineItemUnitPrices[li.id] !== undefined
-                ? lineItemUnitPrices[li.id]
-                : (li.targetPriceSAR || 0);
-            return {
-              rfqLineItemId: li.id,
-              description: li.description,
-              quantity: li.quantity,
-              uom: li.uom,
-              unitPriceSAR: up,
-              totalPriceSAR: up * li.quantity,
-            };
-          })
-        : [
-            {
-              rfqLineItemId: 'LI-1',
-              description: 'Commercial Scope',
-              quantity: 1,
-              uom: 'LOT',
-              unitPriceSAR: parsedTotal,
-              totalPriceSAR: parsedTotal,
-            },
-          ];
+    const pricedRfqLines = currentRfq?.lineItems?.map((line) => {
+      const unitPrice = lineItemUnitPrices[line.id] ?? 0;
+      return {
+        rfqLineItemId: line.id,
+        description: line.description,
+        quantity: line.quantity,
+        uom: line.uom,
+        unitPriceSAR: unitPrice,
+        totalPriceSAR: unitPrice * line.quantity,
+      };
+    }) || [];
+    const linePriceTotal = pricedRfqLines.reduce((sum, line) => sum + line.totalPriceSAR, 0);
+    if (linePriceTotal > 0 && Math.abs(linePriceTotal - parsedTotal) > 0.01) {
+      warning('Quotation total does not match BOQ', `The line item total is SAR ${linePriceTotal.toLocaleString()}, while the entered quotation total is SAR ${parsedTotal.toLocaleString()}. Make the amounts match or clear the line prices and submit as a lump sum.`);
+      return;
+    }
+    const lineItems: QuoteLineItemPrice[] = linePriceTotal > 0
+      ? pricedRfqLines
+      : [{
+          rfqLineItemId: 'LI-LUMP',
+          description: `Lump-sum commercial scope — ${currentRfq?.title || 'RFQ'}`,
+          quantity: 1,
+          uom: 'LOT',
+          unitPriceSAR: parsedTotal,
+          totalPriceSAR: parsedTotal,
+        }];
 
     const newSubmission: QuotationComparisonItem = {
       vendorId: selectedVendorId || `VND-${Date.now()}`,
@@ -233,11 +266,12 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
             <select
               value={targetRfqId}
               onChange={(e) => setTargetRfqId(e.target.value)}
+              disabled={rfqs.filter((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status)).length === 0}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
             >
-              {quotations.map((q) => (
-                <option key={q.rfqId} value={q.rfqId}>
-                  {q.rfqNumber} — {q.rfqTitle.slice(0, 36)}...
+              {rfqs.filter((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status)).map((rfq) => (
+                <option key={rfq.id} value={rfq.id}>
+                  {rfq.rfqNumber} — {rfq.title.slice(0, 48)}
                 </option>
               ))}
             </select>
@@ -248,9 +282,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
             <select
               value={selectedVendorId}
               onChange={(e) => setSelectedVendorId(e.target.value)}
+              disabled={eligibleVendors.length === 0}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
             >
-              {vendors.map((v) => (
+              {eligibleVendors.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name} ({v.entityScope})
                 </option>

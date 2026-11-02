@@ -285,6 +285,7 @@ export function getAuditLogs(): AuditLogEntry[] {
 export const ALL_DATA_KEYS = [
   'procureos_items',
   'procureos_vendors',
+  'procureos_requisitions',
   'procureos_rfqs',
   'procureos_quotations',
   'procureos_purchase_orders',

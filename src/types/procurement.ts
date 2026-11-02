@@ -6,6 +6,7 @@ export type ModuleId =
   | 'dashboard'
   | 'items'
   | 'vendors'
+  | 'requisitions'
   | 'rfqs'
   | 'quotations'
   | 'purchaseOrders'
@@ -88,6 +89,43 @@ export interface Vendor {
 
 export type RFQStatus = 'Draft' | 'Open' | 'Under Evaluation' | 'Awarded' | 'Closed' | 'Cancelled';
 
+export type PurchaseRequisitionStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Converted to RFQ' | 'Cancelled';
+
+export interface PurchaseRequisitionLineItem {
+  id: string;
+  itemId?: string;
+  sku?: string;
+  description: string;
+  quantity: number;
+  uom: string;
+  estimatedUnitPriceSAR: number;
+  estimatedTotalSAR: number;
+}
+
+export interface PurchaseRequisition {
+  id: string;
+  prNumber: string;
+  title: string;
+  entity: EntityId;
+  department: string;
+  requestedBy: string;
+  requestDate: string;
+  requiredDate: string;
+  projectName: string;
+  deliveryLocation: string;
+  justification: string;
+  priority: 'Urgent' | 'High' | 'Normal';
+  status: PurchaseRequisitionStatus;
+  estimatedTotalSAR: number;
+  lineItems: PurchaseRequisitionLineItem[];
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  linkedRfqId?: string;
+  linkedRfqNumber?: string;
+}
+
+
 export interface RFQLineItem {
   id: string;
   itemId?: string;
@@ -108,6 +146,9 @@ export interface RFQ {
   closingDate: string;
   budgetEstimatedSAR: number;
   invitedVendorsCount: number;
+  invitedVendorIds?: string[];
+  purchaseRequisitionId?: string;
+  purchaseRequisitionNumber?: string;
   receivedBidsCount: number;
   requestedBy: string;
   lineItems: RFQLineItem[];

@@ -10,7 +10,7 @@ import {
   ArrowRight,
   Trash2,
 } from 'lucide-react';
-import { RFQ, RFQLineItem, EntityId } from '../../../types/procurement';
+import { RFQ, EntityId, Vendor } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
@@ -21,6 +21,7 @@ import { EmptyState } from '../../common/EmptyState';
 
 interface RfqsModuleProps {
   rfqs: RFQ[];
+  vendors: Vendor[];
   onAddRfq: (newRfq: RFQ) => void;
   onNavigateToQuotes: (rfqId: string) => void;
   openCreateModal?: boolean;
@@ -29,6 +30,7 @@ interface RfqsModuleProps {
 
 export const RfqsModule: React.FC<RfqsModuleProps> = ({
   rfqs,
+  vendors,
   onAddRfq,
   onNavigateToQuotes,
   openCreateModal = false,
@@ -40,21 +42,31 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>(() => vendors.filter((vendor) =>
+    (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
+    (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'FITCO Approved')
+  ).slice(0, 4).map((vendor) => vendor.id));
 
   // Form State
   const [form, setForm] = useState({
     title: '',
     projectName: '',
     entity: 'FITCO' as EntityId,
-    closingDate: '2026-11-15',
+    closingDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     budgetEstimatedSAR: '',
-    invitedVendorsCount: 4,
     priority: 'High' as 'Urgent' | 'High' | 'Normal',
   });
 
   const [lineItems, setLineItems] = useState<{ description: string; quantity: number; uom: string; targetPriceSAR: number }[]>([
-    { description: 'API 6D Class 600 Gate Valve 10"', quantity: 4, uom: 'EA', targetPriceSAR: 35000 },
+    { description: '', quantity: 1, uom: 'EA', targetPriceSAR: 0 },
   ]);
+
+  const eligibleVendors = vendors.filter((vendor) =>
+    (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
+    (vendor.entityScope === 'Joint / Group' ||
+      (form.entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
+      (form.entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'))
+  );
 
   const addLineItem = () => {
     setLineItems([...lineItems, { description: '', quantity: 1, uom: 'EA', targetPriceSAR: 0 }]);
@@ -78,11 +90,14 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.projectName || !form.budgetEstimatedSAR) return;
+    if (!form.title.trim() || !form.projectName.trim() || !form.budgetEstimatedSAR || selectedVendorIds.length === 0) return;
 
+    const now = new Date();
+    const year = now.getFullYear();
+    const suffix = `${now.getTime().toString().slice(-6)}${Math.floor(Math.random() * 10)}`;
     const newRfq: RFQ = {
-      id: `RFQ-${Date.now().toString().slice(-4)}`,
-      rfqNumber: `RFQ-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-26-${Math.floor(100 + Math.random() * 899)}`,
+      id: `RFQ-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
+      rfqNumber: `RFQ-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-${year}-${suffix}`,
       title: form.title,
       projectName: form.projectName,
       entity: form.entity,
@@ -90,13 +105,14 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
       publishDate: new Date().toISOString().split('T')[0],
       closingDate: form.closingDate,
       budgetEstimatedSAR: parseFloat(form.budgetEstimatedSAR) || 0,
-      invitedVendorsCount: form.invitedVendorsCount,
+      invitedVendorsCount: selectedVendorIds.length,
+      invitedVendorIds: [...selectedVendorIds],
       receivedBidsCount: 0,
       requestedBy: 'Current Specialist',
       priority: form.priority,
       lineItems: lineItems.map((item, idx) => ({
-        id: `LI-${idx + 1}`,
-        description: item.description,
+        id: `LI-${idx + 1}-${now.getTime()}`,
+        description: item.description.trim(),
         quantity: item.quantity,
         uom: item.uom,
         targetPriceSAR: item.targetPriceSAR,
@@ -106,6 +122,9 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
     onAddRfq(newRfq);
     success('RFQ Tender Published', `${newRfq.rfqNumber} opened for supplier bids.`);
     setIsModalOpen(false);
+    setSelectedVendorIds([]);
+    setForm({ ...form, title: '', projectName: '', budgetEstimatedSAR: '' });
+    setLineItems([{ description: '', quantity: 1, uom: 'EA', targetPriceSAR: 0 }]);
     if (onCloseCreateModal) onCloseCreateModal();
   };
 
@@ -227,6 +246,9 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                   </div>
                 </div>
 
+                {rfq.purchaseRequisitionNumber && (
+                  <div className="text-[11px] text-emerald-300">Source requisition: {rfq.purchaseRequisitionNumber}</div>
+                )}
                 <div className="text-[11px] text-slate-400">
                   <span className="font-semibold text-slate-300">BOQ Items: </span>
                   {rfq.lineItems.map((li) => `${li.quantity} ${li.uom} ${li.description}`).join('; ')}
@@ -268,7 +290,17 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
               <label className="block font-medium text-slate-300 mb-1">Target Entity *</label>
               <select
                 value={form.entity}
-                onChange={(e) => setForm({ ...form, entity: e.target.value as any })}
+                onChange={(e) => {
+                  const entity = e.target.value as EntityId;
+                  setForm({ ...form, entity });
+                  const nextEligible = vendors.filter((vendor) =>
+                    (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
+                    (vendor.entityScope === 'Joint / Group' ||
+                      (entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
+                      (entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'))
+                  );
+                  setSelectedVendorIds(nextEligible.slice(0, 4).map((vendor) => vendor.id));
+                }}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
                 <option value="FITCO">FITCO Energy & Industrial</option>
@@ -334,6 +366,33 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
               />
             </div>
+          </div>
+
+          {/* Vendor Invitation List */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-slate-300 uppercase text-[10px] tracking-wider">Invite Approved Vendors *</span>
+              <span className="text-[10px] text-cyan-300 font-semibold">{selectedVendorIds.length} selected</span>
+            </div>
+            {eligibleVendors.length === 0 ? (
+              <p className="text-amber-300 text-[11px]">No approved vendors are available for this entity. Register and approve vendors first.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                {eligibleVendors.map((vendor) => (
+                  <label key={vendor.id} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedVendorIds.includes(vendor.id)}
+                      onChange={(event) => setSelectedVendorIds((current) =>
+                        event.target.checked ? [...current, vendor.id] : current.filter((id) => id !== vendor.id)
+                      )}
+                      className="accent-cyan-500"
+                    />
+                    <span className="min-w-0"><span className="block truncate font-medium">{vendor.name}</span><span className="block text-[10px] text-slate-500">{vendor.code} · {vendor.status}</span></span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Line Items Builder */}
@@ -414,7 +473,7 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
+            <Button type="submit" variant="primary" size="sm" disabled={selectedVendorIds.length === 0 || eligibleVendors.length === 0}>
               Publish Tender Package
             </Button>
           </div>

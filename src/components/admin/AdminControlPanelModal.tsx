@@ -313,6 +313,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
     try {
       localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
+      localStorage.setItem('procureos_requisitions', JSON.stringify([]));
       localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
       localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
       localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
