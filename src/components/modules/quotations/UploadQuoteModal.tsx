@@ -24,6 +24,11 @@ import {
   Vendor,
   RFQ,
 } from '../../../types/procurement';
+import {
+  storePdfLocally,
+  uploadPdfToCloudStorage,
+  generateSyntheticQuotationPdf,
+} from '../../../lib/pdfStorage';
 
 interface UploadQuoteModalProps {
   isOpen: boolean;
@@ -211,6 +216,31 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           totalPriceSAR: parsedTotal,
         }];
 
+    const proposalRef = proposalRefNumber || `PROP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Generate resilient synthetic presentation document so ALL users on other
+    // computers/sessions can immediately render and view the proposal dossier
+    const presentationUrl = fileDataUrl && fileDataUrl.length < 500000
+      ? fileDataUrl
+      : generateSyntheticQuotationPdf({
+          vendorName,
+          proposalRef,
+          rfqNumber: currentRfq?.rfqNumber || targetRfqId,
+          totalAmountSAR: parsedTotal,
+          leadTimeDays: parseInt(leadTimeDays) || 30,
+          validityDate,
+          lineItems,
+          notes,
+          uploadedBy: currentUser.name,
+        });
+
+    // Cache the original high-resolution raw file into local IndexedDB
+    const docId = `DOC-${targetRfqId}-${selectedVendorId}`;
+    if (fileDataUrl) {
+      storePdfLocally(docId, uploadedFile.name, fileDataUrl, uploadedFile.size, proposalRef);
+      uploadPdfToCloudStorage(docId, uploadedFile, uploadedFile.name).catch(() => {});
+    }
+
     const newSubmission: QuotationComparisonItem = {
       vendorId: selectedVendorId || `VND-${Date.now()}`,
       vendorName: vendorName,
@@ -228,8 +258,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
         fileSizeBytes: uploadedFile.size,
         uploadedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
         uploadedBy: currentUser.name,
-        proposalRefNumber: proposalRefNumber || `PROP-${Math.floor(1000 + Math.random() * 9000)}`,
-        pdfDataUrl: fileDataUrl || undefined,
+        proposalRefNumber: proposalRef,
+        pdfDataUrl: presentationUrl,
       },
       lineItems: lineItems,
     };

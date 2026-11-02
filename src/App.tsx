@@ -47,7 +47,8 @@ import { useToast } from './context/ToastContext';
 const MainApplication: React.FC = () => {
   const { currentUser, activeRole } = useAuth();
   const { success, warning } = useToast();
-  const [activeModule, setActiveModule] = useLocalStorage<ModuleId>('procureos_active_module', 'dashboard');
+  // Navigation module and workspace filter are user-scoped session states
+  const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -62,7 +63,7 @@ const MainApplication: React.FC = () => {
   const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', MOCK_RFQS);
   const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', []);
   const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', MOCK_QUOTATIONS);
-  const [selectedQuoteRfqId, setSelectedQuoteRfqId] = useLocalStorage<string | null>('procureos_selected_quote_rfq', null);
+  const [selectedQuoteRfqId, setSelectedQuoteRfqId] = useState<string | null>(null);
   const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', MOCK_PURCHASE_ORDERS);
   const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', MOCK_DELIVERIES);
   const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);

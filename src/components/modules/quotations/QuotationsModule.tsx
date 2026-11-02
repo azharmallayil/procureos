@@ -39,6 +39,7 @@ import { Badge } from '../../common/Badge';
 import { Modal } from '../../common/Modal';
 import { UploadQuoteModal } from './UploadQuoteModal';
 import { EditQuotePriceModal } from './EditQuotePriceModal';
+import { generateSyntheticQuotationPdf } from '../../../lib/pdfStorage';
 
 interface QuotationsModuleProps {
   quotations: QuotationEvaluation[];
@@ -212,15 +213,23 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   };
 
   const handleOpenPdfWindow = (bid: QuotationComparisonItem) => {
-    if (bid.attachment?.pdfDataUrl) {
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<iframe src="${bid.attachment.pdfDataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
-        );
-      }
-    } else {
-      success('PDF Document Download', `Downloading ${bid.attachment?.fileName || 'supplier_quote.pdf'}`);
+    const url = bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
+      vendorName: bid.vendorName,
+      proposalRef: bid.attachment?.proposalRefNumber || `PROP-${bid.vendorId}`,
+      rfqNumber: selectedEvaluation?.rfqNumber || 'RFQ',
+      totalAmountSAR: bid.quotedTotalSAR,
+      leadTimeDays: bid.leadTimeDays,
+      validityDate: bid.validityDate,
+      lineItems: bid.lineItems,
+      notes: bid.notes,
+      uploadedBy: bid.attachment?.uploadedBy,
+    });
+
+    const win = window.open();
+    if (win) {
+      win.document.write(
+        `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+      );
     }
   };
 
@@ -914,70 +923,29 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                 </div>
               </div>
 
-              {selectedPdfBid.bid.attachment?.pdfDataUrl ? (
-                <div className="h-96 w-full">
-                  <iframe
-                    src={selectedPdfBid.bid.attachment.pdfDataUrl}
-                    className="w-full h-full border-0"
-                    title="Supplier Quotation Document"
-                  />
-                </div>
-              ) : (
-                <div className="p-6 space-y-4 bg-slate-900/40 font-sans">
-                  {/* Formal Proposal Header Simulation */}
-                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-start">
-                    <div>
-                      <div className="text-xs uppercase font-extrabold text-cyan-400 tracking-wider">
-                        Official Commercial Proposal
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-100 mt-1">
-                        {selectedPdfBid.bid.vendorName}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Proposal Reference: {selectedPdfBid.bid.attachment?.proposalRefNumber}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold">
-                        ORIGINAL PDF ARCHIVED
-                      </span>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        Validity Until: {selectedPdfBid.bid.validityDate}
-                      </p>
-                    </div>
-                  </div>
+              {(() => {
+                const renderUrl = selectedPdfBid.bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
+                  vendorName: selectedPdfBid.bid.vendorName,
+                  proposalRef: selectedPdfBid.bid.attachment?.proposalRefNumber || `PROP-${selectedPdfBid.bid.vendorId}`,
+                  rfqNumber: selectedPdfBid.evaluation.rfqNumber,
+                  totalAmountSAR: selectedPdfBid.bid.quotedTotalSAR,
+                  leadTimeDays: selectedPdfBid.bid.leadTimeDays,
+                  validityDate: selectedPdfBid.bid.validityDate,
+                  lineItems: selectedPdfBid.bid.lineItems,
+                  notes: selectedPdfBid.bid.notes,
+                  uploadedBy: selectedPdfBid.bid.attachment?.uploadedBy,
+                });
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-                      <span className="text-slate-400 text-[10px] block">Guaranteed Lead Time</span>
-                      <span className="text-sm font-bold text-slate-100 font-mono">
-                        {selectedPdfBid.bid.leadTimeDays} Days Ex-Works
-                      </span>
-                    </div>
-                    <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-                      <span className="text-slate-400 text-[10px] block">Technical Compliance</span>
-                      <span className="text-sm font-bold text-emerald-400 font-mono">
-                        {selectedPdfBid.bid.technicalScore}% (Evaluated)
-                      </span>
-                    </div>
-                    <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-                      <span className="text-slate-400 text-[10px] block">Total Proposal Amount</span>
-                      <span className="text-sm font-bold text-emerald-400 font-mono">
-                        SAR {selectedPdfBid.bid.quotedTotalSAR.toLocaleString()}
-                      </span>
-                    </div>
+                return (
+                  <div className="h-96 w-full">
+                    <iframe
+                      src={renderUrl}
+                      className="w-full h-full border-0 bg-white"
+                      title="Supplier Quotation Document"
+                    />
                   </div>
-
-                  <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
-                    <h5 className="font-semibold text-slate-300 text-xs mb-1">
-                      Commercial Scope & Technical Clarifications:
-                    </h5>
-                    <p className="text-slate-400 text-xs leading-relaxed">
-                      {selectedPdfBid.bid.notes}
-                    </p>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </Modal>

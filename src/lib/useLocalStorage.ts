@@ -1,18 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { liveBus, LiveBusMessage } from './liveSync';
+import { liveBus, LiveBusMessage, ALL_DATA_KEYS } from './liveSync';
 
 /**
- * useLocalStorage – persists state to localStorage with multi-tab / multi-user
- * real-time synchronization.
+ * useLocalStorage – persists state with multi-tab / multi-user real-time synchronization.
  *
  * - Survives page refresh and user logout lifelong.
- * - Broadcasts updates via BroadcastChannel and storage events to all open tabs/users.
- * - Updates local React state instantly when any peer tab updates data.
+ * - Broadcasts shared enterprise table updates (RFQs, POs, items, etc.) via Supabase
+ *   Realtime across all connected company users and local tabs.
+ * - Keeps UI navigation and temporary active selections user-scoped and private,
+ *   preventing one user's navigation clicks from forcibly redirecting other users.
  */
 export function useLocalStorage<T>(
   key: string,
   initialValue: T | (() => T)
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
+  // Check if this key represents a shared database table
+  const isSharedTable = (ALL_DATA_KEYS as readonly string[]).includes(key);
+
   // Resolve initial value once
   const getInitial = (): T => {
     try {
@@ -40,6 +44,12 @@ export function useLocalStorage<T>(
 
   // Listen for real-time live updates from other tabs or background operations
   useEffect(() => {
+    // Only shared data tables should synchronize from peer broadcast events.
+    // UI state (e.g. activeModule, filters) must remain local to each user session.
+    if (!isSharedTable) {
+      return;
+    }
+
     const unsubscribe = liveBus.subscribe((msg: LiveBusMessage) => {
       if (msg.type === 'SYNC_KEY' && msg.key === key && msg.data !== undefined) {
         // Prevent feedback loop if deep equal
@@ -54,7 +64,7 @@ export function useLocalStorage<T>(
     });
 
     return unsubscribe;
-  }, [key]);
+  }, [key, isSharedTable]);
 
   const setValue: React.Dispatch<React.SetStateAction<T>> = useCallback(
     (action) => {
@@ -71,18 +81,20 @@ export function useLocalStorage<T>(
           console.warn(`[ProcureOS] Failed to write localStorage key: ${key}`, err);
         }
 
-        // Broadcast to all tabs/windows live
-        liveBus.publish({
-          type: 'SYNC_KEY',
-          key,
-          data: next,
-          timestamp: Date.now(),
-        });
+        // Only broadcast shared database tables to other users/sessions
+        if (isSharedTable) {
+          liveBus.publish({
+            type: 'SYNC_KEY',
+            key,
+            data: next,
+            timestamp: Date.now(),
+          });
+        }
 
         return next;
       });
     },
-    [key]
+    [key, isSharedTable]
   );
 
   return [state, setValue];
