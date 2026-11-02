@@ -161,3 +161,4 @@ ON CONFLICT (code) DO UPDATE SET
   name = EXCLUDED.name,
   legal_name = EXCLUDED.legal_name,
   updated_at = now();
+

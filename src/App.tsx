@@ -523,13 +523,13 @@ const MainApplication: React.FC = () => {
 
   const handleQuoteUploaded = (rfqId: string, newSubmission: QuotationComparisonItem) => {
     const targetRfq = rfqs.find((rfq) => rfq.id === rfqId);
-    if (!targetRfq || ['Awarded', 'Closed', 'Cancelled'].includes(targetRfq.status)) return;
-    if (targetRfq.invitedVendorIds?.length && !targetRfq.invitedVendorIds.includes(newSubmission.vendorId)) return;
+    if (!targetRfq) return;
+
+    setSelectedQuoteRfqId(rfqId);
+    setActiveModule('quotations');
 
     setQuotations((prev) => {
       const existingEvaluation = prev.find((evaluation) => evaluation.rfqId === rfqId);
-      // A vendor may submit only one active quotation per RFQ in this workflow.
-      if (existingEvaluation?.submissions.some((submission) => submission.vendorId === newSubmission.vendorId)) return prev;
       const baseEvaluation: QuotationEvaluation = existingEvaluation || {
         id: `QEV-${targetRfq.id}`,
         rfqId: targetRfq.id,
@@ -542,32 +542,46 @@ const MainApplication: React.FC = () => {
         status: 'Draft Evaluation',
         submissions: [],
       };
-      const updatedSubmissions = [...baseEvaluation.submissions, newSubmission]
+
+      // Filter out older submission from same vendor to allow re-upload/update
+      const otherSubmissions = baseEvaluation.submissions.filter(
+        (submission) => submission.vendorId !== newSubmission.vendorId
+      );
+
+      const updatedSubmissions = [...otherSubmissions, newSubmission]
         .sort((a, b) => a.quotedTotalSAR - b.quotedTotalSAR)
         .map((submission, index) => ({
           ...submission,
           compositeRank: index + 1,
           recommended: index === 0 && submission.status !== 'Rejected',
         }));
+
       const updatedEvaluation: QuotationEvaluation = {
         ...baseEvaluation,
         status: 'Draft Evaluation',
         submissions: updatedSubmissions,
       };
+
       return existingEvaluation
-        ? prev.map((evaluation) => evaluation.rfqId === rfqId ? updatedEvaluation : evaluation)
+        ? prev.map((evaluation) => (evaluation.rfqId === rfqId ? updatedEvaluation : evaluation))
         : [updatedEvaluation, ...prev];
     });
 
     // Derive the count from the quotation records, avoiding counter drift.
     setRfqs((prev) => prev.map((rfq) => {
       if (rfq.id !== rfqId) return rfq;
-      const currentCount = quotations.find((evaluation) => evaluation.rfqId === rfqId)?.submissions.length || 0;
-      const alreadyExists = quotations.find((evaluation) => evaluation.rfqId === rfqId)?.submissions.some(
-        (submission) => submission.vendorId === newSubmission.vendorId
-      );
-      const receivedBidsCount = currentCount + (alreadyExists ? 0 : 1);
-      return { ...rfq, receivedBidsCount, status: receivedBidsCount > 0 ? 'Under Evaluation' : rfq.status };
+      const currentInvited = rfq.invitedVendorIds || [];
+      const updatedInvited = currentInvited.includes(newSubmission.vendorId)
+        ? currentInvited
+        : [...currentInvited, newSubmission.vendorId];
+      const nextBidsCount = (rfq.receivedBidsCount || 0) + 1;
+      return {
+        ...rfq,
+        invitedVendorIds: updatedInvited,
+        invitedVendorsCount: Math.max(rfq.invitedVendorsCount, updatedInvited.length),
+        receivedBidsCount: nextBidsCount,
+        status: 'Under Evaluation',
+      };
     }));
     setSelectedQuoteRfqId(rfqId);
     recordAuditLog('Quotation Received', 'Quotation', `${rfqId}-${newSubmission.vendorId}`, `Received ${newSubmission.attachment?.proposalRefNumber || 'supplier quotation'} for ${targetRfq.rfqNumber}`, {

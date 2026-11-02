@@ -105,17 +105,12 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
       setActiveRawPdfUrl(null);
       return;
     }
-    const docId = `DOC-${selectedPdfBid.evaluation.rfqId}-${selectedPdfBid.bid.vendorId}`;
+    const docId = selectedPdfBid.bid.attachment?.docId || `DOC-${selectedPdfBid.evaluation.rfqId}-${selectedPdfBid.bid.vendorId}`;
     let isCancelled = false;
     getPdfLocally(docId).then((localUrl) => {
       if (!isCancelled) {
-        if (localUrl) {
-          setActiveRawPdfUrl(localUrl);
-        } else if (selectedPdfBid.bid.attachment?.pdfDataUrl) {
-          setActiveRawPdfUrl(selectedPdfBid.bid.attachment.pdfDataUrl);
-        } else {
-          setActiveRawPdfUrl(null);
-        }
+        const bestUrl = localUrl || selectedPdfBid.bid.attachment?.pdfDataUrl || null;
+        setActiveRawPdfUrl(bestUrl);
       }
     });
     return () => {
@@ -314,6 +309,39 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
             Upload Received Quote (PDF)
           </Button>
         </div>
+      </div>
+
+      {/* Visual RFQ Workspace Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {quotations.map((evaluation) => {
+          const isSelected = evaluation.rfqId === selectedEvaluation.rfqId;
+          const count = evaluation.submissions.length;
+          return (
+            <button
+              key={evaluation.rfqId}
+              type="button"
+              onClick={() => {
+                setActiveRfqId(evaluation.rfqId);
+                onSelectRfqId?.(evaluation.rfqId);
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all border flex items-center gap-2 cursor-pointer ${
+                isSelected
+                  ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-200 shadow-md shadow-cyan-950/60'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <FileSpreadsheet className={`w-3.5 h-3.5 ${isSelected ? 'text-cyan-400' : 'text-slate-500'}`} />
+              <span>{evaluation.rfqNumber}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  count > 0 ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {count} {count === 1 ? 'quote' : 'quotes'}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* RFQ work queue: every RFQ has its own quotation workspace */}
@@ -934,41 +962,72 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
 
             {/* Document Interactive Preview / Simulated PDF Render View */}
             <div className="border border-slate-700 rounded-xl overflow-hidden bg-slate-950">
-              <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-rose-400" />
-                  <span className="font-mono font-semibold text-slate-200 text-xs">
-                    {selectedPdfBid.bid.attachment?.fileName}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span>Page 1 of 4</span>
-                  <span>•</span>
-                  <span>A4 Format</span>
-                </div>
-              </div>
-
               {(() => {
                 const renderUrl = activeRawPdfUrl || selectedPdfBid.bid.attachment?.pdfDataUrl;
 
-                if (!renderUrl) {
-                  return (
-                    <div className="h-64 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-900/60 rounded-xl">
-                      <FileText className="w-12 h-12 text-slate-500 mb-2" />
-                      <p className="font-semibold text-slate-300 text-sm">Quotation Dossier In Processing</p>
-                      <p className="text-xs text-slate-500 mt-1">Proposal Ref: {selectedPdfBid.bid.attachment?.proposalRefNumber || 'PROP-2026'}</p>
-                    </div>
-                  );
-                }
-
                 return (
-                  <div className="h-96 w-full">
-                    <iframe
-                      src={renderUrl}
-                      className="w-full h-full border-0 bg-white"
-                      title="Supplier Quotation Document"
-                    />
-                  </div>
+                  <>
+                    <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-rose-400" />
+                        <span className="font-mono font-semibold text-slate-200 text-xs truncate max-w-xs">
+                          {selectedPdfBid.bid.attachment?.fileName || 'Official_Quotation.pdf'}
+                        </span>
+                        {selectedPdfBid.bid.attachment?.fileSizeBytes ? (
+                          <span className="text-[10px] text-slate-400">
+                            ({(selectedPdfBid.bid.attachment.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {renderUrl && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => window.open(renderUrl, '_blank', 'noopener,noreferrer')}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-semibold border border-slate-700 transition-colors cursor-pointer"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Open in New Tab</span>
+                            </button>
+                            <a
+                              href={renderUrl}
+                              download={selectedPdfBid.bid.attachment?.fileName || 'quotation.pdf'}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold transition-colors cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download PDF</span>
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {renderUrl ? (
+                      <div className="h-[600px] w-full bg-slate-900 relative">
+                        <object
+                          data={renderUrl}
+                          type="application/pdf"
+                          className="w-full h-full"
+                        >
+                          <iframe
+                            src={renderUrl}
+                            className="w-full h-full border-0 bg-white"
+                            title="Supplier Quotation Document"
+                          />
+                        </object>
+                      </div>
+                    ) : (
+                      <div className="h-64 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-900/60">
+                        <FileText className="w-12 h-12 text-slate-500 mb-2" />
+                        <p className="font-semibold text-slate-300 text-sm">Quotation Dossier In Processing</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Proposal Ref: {selectedPdfBid.bid.attachment?.proposalRefNumber || 'PROP-2026'}
+                        </p>
+                      </div>
+                    )}
+                  </>
                 );
               })()}
             </div>
