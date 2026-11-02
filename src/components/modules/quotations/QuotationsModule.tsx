@@ -39,7 +39,11 @@ import { Badge } from '../../common/Badge';
 import { Modal } from '../../common/Modal';
 import { UploadQuoteModal } from './UploadQuoteModal';
 import { EditQuotePriceModal } from './EditQuotePriceModal';
-import { getPdfLocally, generateSyntheticQuotationPdf } from '../../../lib/pdfStorage';
+import {
+  getPdfLocally,
+  generateSyntheticQuotationPdf,
+  resolveSecurePdfBlobUrl,
+} from '../../../lib/pdfStorage';
 
 interface QuotationsModuleProps {
   quotations: QuotationEvaluation[];
@@ -47,7 +51,7 @@ interface QuotationsModuleProps {
   onSelectRfqId?: (rfqId: string) => void;
   rfqs?: RFQ[];
   vendors?: Vendor[];
-  onAwardBid: (quoteEvaluationId: string, vendorId: string) => void;
+  onAwardBid: (quoteEvaluationId: string, vendorId: string, autoSubmitForApproval?: boolean) => void;
   onQuoteUploaded?: (rfqId: string, newSubmission: QuotationComparisonItem) => void;
   onAddVendor?: (vendor: Vendor) => void;
   onUpdateQuotePrice?: (
@@ -99,7 +103,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   } | null>(null);
   const [activeRawPdfUrl, setActiveRawPdfUrl] = useState<string | null>(null);
 
-  // When a dossier is opened, check if raw original uploaded PDF is in IndexedDB or attachment
+  // When a dossier is opened, resolve genuine raw original uploaded PDF into secure browser memory blob
   useEffect(() => {
     if (!selectedPdfBid) {
       setActiveRawPdfUrl(null);
@@ -107,10 +111,9 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     }
     const docId = selectedPdfBid.bid.attachment?.docId || `DOC-${selectedPdfBid.evaluation.rfqId}-${selectedPdfBid.bid.vendorId}`;
     let isCancelled = false;
-    getPdfLocally(docId).then((localUrl) => {
-      if (!isCancelled) {
-        const bestUrl = localUrl || selectedPdfBid.bid.attachment?.pdfDataUrl || null;
-        setActiveRawPdfUrl(bestUrl);
+    resolveSecurePdfBlobUrl(selectedPdfBid.bid.attachment?.pdfDataUrl, docId).then((secureBlobUrl) => {
+      if (!isCancelled && secureBlobUrl) {
+        setActiveRawPdfUrl(secureBlobUrl);
       }
     });
     return () => {
@@ -224,22 +227,29 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     setAwardModalQuote({ evaluation, bid });
   };
 
-  const confirmAward = () => {
+  const confirmAward = (autoSubmitForApproval: boolean = true) => {
     if (!awardModalQuote) return;
-    onAwardBid(awardModalQuote.evaluation.id, awardModalQuote.bid.vendorId);
-    success(
-      'Tender Awarded & PO Drafted',
-      `Bid from ${awardModalQuote.bid.vendorName} awarded. Draft Purchase Order queued in ERP.`
-    );
+    onAwardBid(awardModalQuote.evaluation.id, awardModalQuote.bid.vendorId, autoSubmitForApproval);
+    if (autoSubmitForApproval) {
+      success(
+        'Tender Awarded & PO Submitted for Approval',
+        `Bid from ${awardModalQuote.bid.vendorName} awarded. Purchase Order has been submitted for Executive Sign-off.`
+      );
+    } else {
+      success(
+        'Tender Awarded & PO Draft Queued',
+        `Bid from ${awardModalQuote.bid.vendorName} awarded. Draft Purchase Order queued in ERP.`
+      );
+    }
     setAwardModalQuote(null);
   };
 
   const handleOpenPdfWindow = (bid: QuotationComparisonItem) => {
     const docId = bid.attachment?.docId || `DOC-${selectedEvaluation?.rfqId}-${bid.vendorId}`;
-    getPdfLocally(docId).then((localUrl) => {
-      const url = localUrl || bid.attachment?.pdfDataUrl;
+    resolveSecurePdfBlobUrl(bid.attachment?.pdfDataUrl, docId).then((secureUrl) => {
+      const url = secureUrl || bid.attachment?.pdfDataUrl;
       if (url) {
-        if (url.startsWith('http')) {
+        if (url.startsWith('http') || url.startsWith('blob:')) {
           window.open(url, '_blank', 'noopener,noreferrer');
           return;
         }
@@ -1070,19 +1080,34 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
           onClose={() => setAwardModalQuote(null)}
           title="Confirm Tender Package Award"
           subtitle={`Package: ${awardModalQuote.evaluation.rfqNumber} | Vendor: ${awardModalQuote.bid.vendorName}`}
-          maxWidth="md"
+          maxWidth="lg"
           footer={
-            <>
+            <div className="flex items-center justify-between w-full flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => setAwardModalQuote(null)}>
                 Cancel
               </Button>
-              <Button variant="primary" size="sm" onClick={confirmAward}>
-                Authorize & Generate Purchase Order
-              </Button>
-            </>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => confirmAward(false)}
+                  className="text-slate-300 border-slate-700 hover:bg-slate-800 text-xs"
+                >
+                  Save as Draft PO
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => confirmAward(true)}
+                  className="bg-cyan-600 hover:bg-cyan-500 font-semibold text-xs"
+                >
+                  Award & Submit for Approval
+                </Button>
+              </div>
+            </div>
           }
         >
-          <div className="space-y-3 text-xs">
+          <div className="space-y-4 text-xs">
             <p className="text-slate-300">
               You are authorizing the commercial award for{' '}
               <strong className="text-white">{awardModalQuote.evaluation.rfqTitle}</strong> to{' '}
@@ -1116,9 +1141,17 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               )}
             </div>
 
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Upon confirmation, ProcureOS will update tender status to 'Awarded', link the verified quotation PDF, and instantiate a new Purchase Order in the ERP pipeline with these exact awarded line items.
-            </p>
+            <div className="p-3 bg-cyan-950/30 border border-cyan-800/40 rounded-xl space-y-1 text-[11px]">
+              <span className="font-semibold text-cyan-300 block">Workflow Transition:</span>
+              <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                <li>
+                  <strong className="text-white">Award & Submit for Approval:</strong> Immediately moves the Purchase Order into <em>Pending Approval</em> stage, making it ready for the Procurement Director to approve.
+                </li>
+                <li>
+                  <strong className="text-white">Save as Draft PO:</strong> Saves the Purchase Order in <em>Draft</em> status so you can review or adjust specifications in the Purchase Orders module before submitting.
+                </li>
+              </ul>
+            </div>
           </div>
         </Modal>
       )}

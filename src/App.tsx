@@ -32,6 +32,7 @@ import {
   Vendor,
   RFQ,
   PurchaseOrder,
+  POStatus,
   Delivery,
   Asset,
   QuotationComparisonItem,
@@ -324,6 +325,76 @@ const MainApplication: React.FC = () => {
     });
   };
 
+  const handleSubmitForApprovalPO = (poId: string) => {
+    const targetPO = purchaseOrders.find((po) => po.id === poId);
+    if (!targetPO || targetPO.status !== 'Draft') return;
+    setPurchaseOrders((prev) =>
+      prev.map((po) =>
+        po.id === poId
+          ? { ...po, status: 'Pending Approval' as const, currentApproverRole: 'Procurement Director' }
+          : po
+      )
+    );
+    recordAuditLog('PO Submitted for Approval', 'PurchaseOrder', poId, `Submitted ${targetPO.poNumber} for executive authorization`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleIssuePO = (poId: string) => {
+    const targetPO = purchaseOrders.find((po) => po.id === poId);
+    if (!targetPO) return;
+    setPurchaseOrders((prev) =>
+      prev.map((po) => (po.id === poId ? { ...po, status: 'Issued' as const } : po))
+    );
+    // Ensure delivery tracking exists
+    setDeliveries((prev) => {
+      if (prev.some((delivery) => delivery.poNumber === targetPO.poNumber)) return prev;
+      const now = new Date();
+      const delivery: Delivery = {
+        id: `DEL-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
+        trackingNumber: `PENDING-${targetPO.poNumber}`,
+        poNumber: targetPO.poNumber,
+        vendorName: targetPO.vendorName,
+        entity: targetPO.entity,
+        destinationSite: targetPO.projectSite,
+        carrier: 'Awaiting vendor dispatch details',
+        dispatchDate: now.toISOString().split('T')[0],
+        expectedDate: targetPO.expectedDeliveryDate,
+        status: 'Scheduled',
+        isOverdue: false,
+        qcInspectionStatus: 'Pending Inspection',
+        remarks: 'Purchase Order officially issued to supplier. Awaiting carrier assignment.',
+      };
+      return [delivery, ...prev];
+    });
+    recordAuditLog('PO Issued to Vendor', 'PurchaseOrder', poId, `Dispatched official purchase order ${targetPO.poNumber} to ${targetPO.vendorName}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleUpdatePOStatus = (poId: string, nextStatus: POStatus) => {
+    const targetPO = purchaseOrders.find((po) => po.id === poId);
+    if (!targetPO) return;
+    setPurchaseOrders((prev) =>
+      prev.map((po) => (po.id === poId ? { ...po, status: nextStatus } : po))
+    );
+    if (nextStatus === 'In Transit') {
+      setDeliveries((prev) =>
+        prev.map((d) => d.poNumber === targetPO.poNumber ? { ...d, status: 'In Transit' } : d)
+      );
+    } else if (nextStatus === 'Received') {
+      setDeliveries((prev) =>
+        prev.map((d) => d.poNumber === targetPO.poNumber ? { ...d, status: 'Delivered', qcInspectionStatus: 'Pending Inspection' } : d)
+      );
+    }
+    recordAuditLog(`PO Status Changed to ${nextStatus}`, 'PurchaseOrder', poId, `Updated ${targetPO.poNumber} status to ${nextStatus}`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
   const handleMarkInspected = (deliveryId: string) => {
     const targetDelivery = deliveries.find((delivery) => delivery.id === deliveryId);
     if (!targetDelivery || targetDelivery.status === 'Inspected & Accepted') return;
@@ -400,7 +471,11 @@ const MainApplication: React.FC = () => {
     });
   };
 
-  const handleAwardBid = (quoteEvaluationId: string, vendorId: string) => {
+  const handleAwardBid = (
+    quoteEvaluationId: string,
+    vendorId: string,
+    autoSubmitForApproval: boolean = true
+  ) => {
     const targetEvaluation = quotations.find((evaluation) => evaluation.id === quoteEvaluationId);
     const targetBid = targetEvaluation?.submissions.find((submission) => submission.vendorId === vendorId);
     if (!targetEvaluation || !targetBid) return;
@@ -432,6 +507,7 @@ const MainApplication: React.FC = () => {
       const vat = net * 0.15;
       const targetRfq = rfqs.find((rfq) => rfq.id === targetEvaluation.rfqId);
       const expectedDelivery = new Date(now.getTime() + Math.max(1, targetBid.leadTimeDays) * 86400000);
+      const initialStatus: POStatus = autoSubmitForApproval ? 'Pending Approval' : 'Draft';
       const newPO: PurchaseOrder = {
         id: `PO-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
         poNumber: `PO-${targetEvaluation.entity === 'FITCO' ? 'FTC' : 'ARB'}-${now.getFullYear()}-${now.getTime().toString().slice(-7)}`,
@@ -445,7 +521,7 @@ const MainApplication: React.FC = () => {
         totalAmountSAR: net,
         taxAmountSAR: vat,
         grandTotalSAR: net + vat,
-        status: 'Draft',
+        status: initialStatus,
         paymentTerms: 'As stated in the approved supplier quotation',
         approvalStage: 'Purchasing',
         currentApproverRole: 'Procurement Director',
@@ -711,6 +787,9 @@ const MainApplication: React.FC = () => {
                 onAddPO={handleAddPO}
                 onApprovePO={handleApprovePO}
                 onRejectPO={handleRejectPO}
+                onSubmitForApprovalPO={handleSubmitForApprovalPO}
+                onIssuePO={handleIssuePO}
+                onUpdatePOStatus={handleUpdatePOStatus}
                 openCreateModal={quickCreateModal === 'po'}
                 onCloseCreateModal={() => setQuickCreateModal(null)}
               />

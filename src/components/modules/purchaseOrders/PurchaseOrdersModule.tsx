@@ -10,6 +10,11 @@ import {
   CreditCard,
   Building,
   Calendar,
+  Send,
+  CheckSquare,
+  ShieldCheck,
+  ArrowRight,
+  FileText,
 } from 'lucide-react';
 import { PurchaseOrder, POStatus, EntityId } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
@@ -27,6 +32,9 @@ interface PurchaseOrdersModuleProps {
   onAddPO: (newPO: PurchaseOrder) => void;
   onApprovePO: (poId: string) => void;
   onRejectPO?: (poId: string) => void;
+  onSubmitForApprovalPO?: (poId: string) => void;
+  onIssuePO?: (poId: string) => void;
+  onUpdatePOStatus?: (poId: string, status: POStatus) => void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
@@ -36,6 +44,9 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   onAddPO,
   onApprovePO,
   onRejectPO,
+  onSubmitForApprovalPO,
+  onIssuePO,
+  onUpdatePOStatus,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
@@ -111,6 +122,50 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
       setSelectedPO({ ...po, status: 'Draft' });
     }
     setConfirmRejectPO(null);
+  };
+
+  const handleSubmitForApproval = (po: PurchaseOrder) => {
+    if (onSubmitForApprovalPO) {
+      onSubmitForApprovalPO(po.id);
+    } else if (onUpdatePOStatus) {
+      onUpdatePOStatus(po.id, 'Pending Approval');
+    }
+    success('PO Submitted for Authorization', `${po.poNumber} routed to Procurement Director for approval.`);
+    if (selectedPO?.id === po.id) {
+      setSelectedPO({ ...po, status: 'Pending Approval', currentApproverRole: 'Procurement Director' });
+    }
+  };
+
+  const handleIssuePO = (po: PurchaseOrder) => {
+    if (onIssuePO) {
+      onIssuePO(po.id);
+    } else if (onUpdatePOStatus) {
+      onUpdatePOStatus(po.id, 'Issued');
+    }
+    success('Purchase Order Dispatched', `${po.poNumber} issued to ${po.vendorName}. Logistics delivery tracking active.`);
+    if (selectedPO?.id === po.id) {
+      setSelectedPO({ ...po, status: 'Issued' });
+    }
+  };
+
+  const handleMarkInTransit = (po: PurchaseOrder) => {
+    if (onUpdatePOStatus) {
+      onUpdatePOStatus(po.id, 'In Transit');
+    }
+    success('Shipment In Transit', `Freight for ${po.poNumber} is now en route to ${po.projectSite}.`);
+    if (selectedPO?.id === po.id) {
+      setSelectedPO({ ...po, status: 'In Transit' });
+    }
+  };
+
+  const handleReceive = (po: PurchaseOrder) => {
+    if (onUpdatePOStatus) {
+      onUpdatePOStatus(po.id, 'Received');
+    }
+    success('Consignment Received & Staged', `Materials for ${po.poNumber} delivered. Site acceptance queued.`);
+    if (selectedPO?.id === po.id) {
+      setSelectedPO({ ...po, status: 'Received' });
+    }
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -288,23 +343,75 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {po.status === 'Pending Approval' && (
+
+                        {/* PO Lifecycle Action Buttons */}
+                        {po.status === 'Draft' && (
                           <Button
                             variant="primary"
                             size="sm"
-                            onClick={() => handleApprove(po)}
-                            className="text-[11px] py-1 px-2.5"
+                            onClick={() => handleSubmitForApproval(po)}
+                            className="text-[11px] py-1 px-2.5 bg-cyan-600 hover:bg-cyan-500 font-medium"
+                            icon={<Send className="w-3 h-3" />}
                           >
-                            Approve
+                            Submit
                           </Button>
                         )}
-                        {po.status === 'Pending Approval' && onRejectPO && (
-                          <button
-                            onClick={() => handleReject(po)}
-                            className="text-[11px] py-1 px-2.5 rounded-lg bg-rose-950/60 border border-rose-700/40 text-rose-300 hover:bg-rose-900/60 transition-colors font-semibold"
+
+                        {po.status === 'Pending Approval' && (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleApprove(po)}
+                              className="text-[11px] py-1 px-2.5 bg-emerald-600 hover:bg-emerald-500 font-medium"
+                            >
+                              Approve
+                            </Button>
+                            {onRejectPO && (
+                              <button
+                                onClick={() => handleReject(po)}
+                                className="text-[11px] py-1 px-2.5 rounded-lg bg-rose-950/60 border border-rose-700/40 text-rose-300 hover:bg-rose-900/60 transition-colors font-semibold"
+                              >
+                                Reject
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {po.status === 'Approved' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleIssuePO(po)}
+                            className="text-[11px] py-1 px-2.5 bg-indigo-600 hover:bg-indigo-500 font-medium"
+                            icon={<Send className="w-3 h-3" />}
                           >
-                            Reject
-                          </button>
+                            Issue PO
+                          </Button>
+                        )}
+
+                        {po.status === 'Issued' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkInTransit(po)}
+                            className="text-[11px] py-1 px-2.5 text-amber-300 border-amber-600/50 hover:bg-amber-950/40 font-medium"
+                            icon={<Truck className="w-3 h-3" />}
+                          >
+                            Dispatch
+                          </Button>
+                        )}
+
+                        {po.status === 'In Transit' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleReceive(po)}
+                            className="text-[11px] py-1 px-2.5 bg-emerald-600 hover:bg-emerald-500 font-medium"
+                            icon={<CheckSquare className="w-3 h-3" />}
+                          >
+                            Receive
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -325,7 +432,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
           subtitle={`Entity: ${selectedPO.entity} | Issued to: ${selectedPO.vendorName}`}
           maxWidth="2xl"
           footer={
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -338,9 +445,87 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                 <Button variant="outline" size="sm" onClick={() => setSelectedPO(null)}>
                   Close
                 </Button>
+
+                {selectedPO.status === 'Draft' && (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleSubmitForApproval(selectedPO)}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-xs"
+                      icon={<Send className="w-3.5 h-3.5" />}
+                    >
+                      Submit for Approval
+                    </Button>
+                    {permissions.canApprovePO && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleApprove(selectedPO)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-xs"
+                      >
+                        Direct Authorize
+                      </Button>
+                    )}
+                  </>
+                )}
+
                 {selectedPO.status === 'Pending Approval' && (
-                  <Button variant="primary" size="sm" onClick={() => handleApprove(selectedPO)}>
-                    Approve PO
+                  <>
+                    {onRejectPO && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReject(selectedPO)}
+                        className="text-rose-300 border-rose-800/50 hover:bg-rose-950/40 text-xs"
+                      >
+                        Reject to Draft
+                      </Button>
+                    )}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleApprove(selectedPO)}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-xs"
+                    >
+                      Authorize & Approve
+                    </Button>
+                  </>
+                )}
+
+                {selectedPO.status === 'Approved' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleIssuePO(selectedPO)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-xs"
+                    icon={<Send className="w-3.5 h-3.5" />}
+                  >
+                    Issue PO to Vendor
+                  </Button>
+                )}
+
+                {selectedPO.status === 'Issued' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleMarkInTransit(selectedPO)}
+                    className="bg-amber-600 hover:bg-amber-500 text-xs"
+                    icon={<Truck className="w-3.5 h-3.5" />}
+                  >
+                    Mark In Transit
+                  </Button>
+                )}
+
+                {selectedPO.status === 'In Transit' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleReceive(selectedPO)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-xs"
+                    icon={<CheckSquare className="w-3.5 h-3.5" />}
+                  >
+                    Confirm Receipt & Acceptance
                   </Button>
                 )}
               </div>
@@ -348,37 +533,162 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
           }
         >
           <div className="space-y-5 text-xs">
+            {/* Contextual Lifecycle Status Guidance */}
+            {selectedPO.status === 'Draft' && (
+              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/40 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-amber-300">Stage: Draft Tender Order</span>
+                    <Badge variant="amber" className="text-[10px]">Awaiting Submission</Badge>
+                  </div>
+                  <p className="text-slate-300 text-[11px]">
+                    This PO was created from tender award. Click <strong>Submit for Approval</strong> to route to the Procurement Director for executive authorization.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleSubmitForApproval(selectedPO)}
+                  className="bg-cyan-600 hover:bg-cyan-500 shrink-0 text-xs"
+                  icon={<Send className="w-3 h-3" />}
+                >
+                  Submit
+                </Button>
+              </div>
+            )}
+
+            {selectedPO.status === 'Pending Approval' && (
+              <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/40 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-cyan-300">Stage: Executive Approval Pending</span>
+                    <Badge variant="cyan" className="text-[10px]">Sign-Off Required</Badge>
+                  </div>
+                  <p className="text-slate-300 text-[11px]">
+                    Awaiting sign-off by <strong>{selectedPO.currentApproverRole || 'Procurement Director'}</strong>.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleApprove(selectedPO)}
+                  className="bg-emerald-600 hover:bg-emerald-500 shrink-0 text-xs"
+                >
+                  Authorize & Approve
+                </Button>
+              </div>
+            )}
+
+            {selectedPO.status === 'Approved' && (
+              <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/40 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-emerald-300">Stage: Authorized & Ready for Issuance</span>
+                    <Badge variant="emerald" className="text-[10px]">Legally Approved</Badge>
+                  </div>
+                  <p className="text-slate-300 text-[11px]">
+                    Commercial and technical contracts approved. Click <strong>Issue PO to Vendor</strong> to dispatch the purchase order.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleIssuePO(selectedPO)}
+                  className="bg-indigo-600 hover:bg-indigo-500 shrink-0 text-xs"
+                  icon={<Send className="w-3 h-3" />}
+                >
+                  Issue PO
+                </Button>
+              </div>
+            )}
+
+            {selectedPO.status === 'Issued' && (
+              <div className="p-3.5 rounded-xl bg-blue-950/20 border border-blue-500/40 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-blue-300">Stage: Dispatched to Supplier</span>
+                    <Badge variant="cyan" className="text-[10px]">Active Order</Badge>
+                  </div>
+                  <p className="text-slate-300 text-[11px]">
+                    Purchase order delivered to <strong>{selectedPO.vendorName}</strong>. Awaiting carrier freight dispatch.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMarkInTransit(selectedPO)}
+                  className="text-amber-300 border-amber-600/50 hover:bg-amber-950/40 shrink-0 text-xs"
+                  icon={<Truck className="w-3 h-3" />}
+                >
+                  Mark In Transit
+                </Button>
+              </div>
+            )}
+
+            {selectedPO.status === 'In Transit' && (
+              <div className="p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/40 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-indigo-300">Stage: Freight In Transit</span>
+                    <Badge variant="amber" className="text-[10px]">En Route</Badge>
+                  </div>
+                  <p className="text-slate-300 text-[11px]">
+                    Materials are en route to <strong>{selectedPO.projectSite}</strong>. Confirm delivery upon gate receipt.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleReceive(selectedPO)}
+                  className="bg-emerald-600 hover:bg-emerald-500 shrink-0 text-xs"
+                  icon={<CheckSquare className="w-3 h-3" />}
+                >
+                  Confirm Receipt
+                </Button>
+              </div>
+            )}
+
             {/* Status Stepper */}
             <div>
               <p className="font-semibold text-slate-300 uppercase text-[10px] tracking-wider mb-2">
                 Order Lifecycle Stepper
               </p>
               <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
-                {['Draft', 'Approved', 'Issued', 'In Transit', 'Received'].map((step, idx) => {
+                {['Draft', 'Pending Approval', 'Approved', 'Issued', 'In Transit', 'Received'].map((step, idx) => {
+                  const stageOrder: Record<string, number> = {
+                    'Draft': 0,
+                    'Pending Approval': 1,
+                    'Approved': 2,
+                    'Issued': 3,
+                    'In Transit': 4,
+                    'Received': 5,
+                    'Closed': 6,
+                    'Invoiced': 5,
+                  };
+                  const currentStageNum = stageOrder[selectedPO.status] ?? 0;
+                  const thisStageNum = stageOrder[step] ?? 0;
                   const isCurrent = selectedPO.status === step;
-                  const isPassed =
-                    (selectedPO.status === 'Approved' && idx <= 1) ||
-                    (selectedPO.status === 'Issued' && idx <= 2) ||
-                    (selectedPO.status === 'In Transit' && idx <= 3) ||
-                    (selectedPO.status === 'Received' && idx <= 4);
+                  const isPassed = currentStageNum > thisStageNum;
 
                   return (
-                    <div key={step} className="flex flex-col items-center flex-1 relative">
+                    <div key={step} className="flex flex-col items-center flex-1 relative text-center">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] mb-1 ${
-                          isPassed || isCurrent
-                            ? 'bg-cyan-500 text-slate-950'
+                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] mb-1 transition-colors ${
+                          isCurrent
+                            ? 'bg-cyan-500 text-slate-950 ring-2 ring-cyan-400/50'
+                            : isPassed
+                            ? 'bg-emerald-500 text-slate-950'
                             : 'bg-slate-800 text-slate-400'
                         }`}
                       >
-                        {idx + 1}
+                        {isPassed ? '✓' : idx + 1}
                       </div>
                       <span
                         className={`text-[10px] ${
                           isCurrent
                             ? 'text-cyan-400 font-bold'
                             : isPassed
-                            ? 'text-slate-200'
+                            ? 'text-emerald-400'
                             : 'text-slate-500'
                         }`}
                       >

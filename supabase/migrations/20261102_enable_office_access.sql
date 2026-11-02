@@ -13,12 +13,12 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES (
   'quote-documents',
   'quote-documents',
-  true,
+  false, -- STRICTLY PRIVATE: Blocks unauthenticated public web access
   52428800, -- 50MB limit
   ARRAY['application/pdf']
 )
 ON CONFLICT (id) DO UPDATE SET
-  public = true,
+  public = false,
   file_size_limit = 52428800,
   allowed_mime_types = ARRAY['application/pdf'];
 

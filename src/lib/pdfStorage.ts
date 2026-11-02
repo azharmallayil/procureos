@@ -95,7 +95,7 @@ export async function getPdfLocally(docId: string): Promise<string | null> {
   }
 }
 
-// ── 4. Upload to Supabase Storage or Cloud Storage ──────────────────────────
+// ── 4. Upload to Private Supabase Storage ───────────────────────────────────
 export async function uploadPdfToCloudStorage(
   docId: string,
   file: File | Blob,
@@ -122,10 +122,16 @@ export async function uploadPdfToCloudStorage(
     }
 
     if (data?.path) {
-      const { data: pubUrl } = supabase.storage
+      // Secure Signed URL valid for 7 days (604,800 seconds)
+      // Never generates or exposes an unauthenticated public URL
+      const { data: signData, error: signError } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .getPublicUrl(data.path);
-      return pubUrl?.publicUrl || null;
+        .createSignedUrl(data.path, 604800);
+
+      if (!signError && signData?.signedUrl) {
+        return signData.signedUrl;
+      }
+      return `storage://${STORAGE_BUCKET}/${data.path}`;
     }
     return null;
   } catch (err) {
@@ -134,7 +140,88 @@ export async function uploadPdfToCloudStorage(
   }
 }
 
-// ── 5. Generate Standalone High-Fidelity Printable PDF Data URL ──────────────
+// ── 5. Secure Document Resolver (Zero Public Link Exposure) ────────────────
+// Resolves document references into ephemeral browser memory Blob URLs (`blob:...`)
+// Completely hides cloud endpoints and protects against unauthenticated data scraping.
+export async function resolveSecurePdfBlobUrl(
+  pathOrUrl?: string | null,
+  docId?: string | null
+): Promise<string | null> {
+  if (!pathOrUrl && !docId) return null;
+
+  // 1. If it's already an ephemeral browser memory blob or base64 data URL, return it directly
+  if (pathOrUrl?.startsWith('blob:') || pathOrUrl?.startsWith('data:')) {
+    return pathOrUrl;
+  }
+
+  // 2. Check local IndexedDB cache for instant zero-latency loading
+  if (docId) {
+    const localDataUrl = await getPdfLocally(docId);
+    if (localDataUrl) {
+      return localDataUrl;
+    }
+  }
+
+  // 3. Resolve from Supabase private storage via authenticated client download
+  if (isSupabaseConfigured && supabase && pathOrUrl) {
+    try {
+      let filePath = pathOrUrl;
+      if (filePath.startsWith(`storage://${STORAGE_BUCKET}/`)) {
+        filePath = filePath.replace(`storage://${STORAGE_BUCKET}/`, '');
+      } else if (filePath.includes('/object/public/quote-documents/')) {
+        filePath = filePath.split('/object/public/quote-documents/')[1];
+      } else if (filePath.includes('/object/sign/quote-documents/')) {
+        filePath = filePath.split('/object/sign/quote-documents/')[1].split('?')[0];
+      } else if (filePath.includes('/quote-documents/')) {
+        filePath = filePath.split('/quote-documents/')[1].split('?')[0];
+      }
+
+      // Download binary stream directly via Supabase API (never touches public unauthenticated route)
+      const { data: blobData, error: downloadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .download(filePath);
+
+      if (!downloadError && blobData) {
+        // Create an ephemeral in-memory URL (blob:https://yourdomain/...)
+        // This hides the actual storage URL completely from browser history and URL bar
+        const blobUrl = URL.createObjectURL(blobData);
+
+        // Cache into local IndexedDB in background so subsequent clicks are instantaneous
+        if (docId) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              storePdfLocally(
+                docId,
+                filePath.split('/').pop() || 'document.pdf',
+                reader.result,
+                blobData.size
+              );
+            }
+          };
+          reader.readAsDataURL(blobData);
+        }
+
+        return blobUrl;
+      }
+
+      // Fallback: create fresh short-lived signed URL (valid for 1 hour only)
+      const { data: signedData } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(filePath, 3600);
+
+      if (signedData?.signedUrl) {
+        return signedData.signedUrl;
+      }
+    } catch (err) {
+      console.warn('[ProcureOS Document Gateway] Failed to resolve secure cloud PDF:', err);
+    }
+  }
+
+  return pathOrUrl || null;
+}
+
+// ── 6. Generate Standalone High-Fidelity Printable PDF Data URL ──────────────
 // Generates a self-contained PDF document directly from commercial quote metadata
 // so users on any computer or network can view the authentic supplier quote.
 export function generateSyntheticQuotationPdf(params: {
