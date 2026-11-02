@@ -69,6 +69,21 @@ const MainApplication: React.FC = () => {
   const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);
   const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
+  // Auto-migrate cached items/vendors to latest Excel Master Data if outdated
+  useEffect(() => {
+    const hasOldSkus = items.some((item) => item.sku.startsWith('FIT-MECH'));
+    const hasNewSkus = items.some((item) => item.sku.startsWith('IOT-TEL'));
+    if (hasOldSkus || !hasNewSkus || items.length === 0) {
+      setItems(MOCK_ITEMS);
+      localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
+    }
+    const hasNewVendors = vendors.some((v) => v.id === 'VND-008' || v.id === 'VND-009');
+    if (!hasNewVendors) {
+      setVendors(MOCK_VENDORS);
+      localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
+    }
+  }, []);
+
   // Keep the quotation work queue in sync with the RFQ master list. This also
   // repairs older locally-saved RFQs that were created before this linkage existed.
   useEffect(() => {
