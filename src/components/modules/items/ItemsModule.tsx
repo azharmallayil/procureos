@@ -283,8 +283,8 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                 onChange={(e) => setFormData({ ...formData, entity: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
-                <option value="FITCO">FITCO Energy & Industrial</option>
-                <option value="ARABITRA">Arabitra Infrastructure</option>
+                <option value="FITCO">FITCO Telematics & AI Safety</option>
+                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
                 <option value="SHARED">Shared Group Item</option>
               </select>
             </div>

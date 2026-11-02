@@ -83,15 +83,6 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right controls: Quick Create, Notifications, Role Switcher */}
       <div className="flex items-center gap-3">
-        {/* Live Multi-User Sync Status */}
-        <div
-          title="All database transactions replicate in real-time across users and browser sessions."
-          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[11px] font-medium shadow-sm select-none"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Live Synced</span>
-        </div>
-
         {/* Super Admin Status Badge / Control Panel Trigger */}
         {activeRole === 'Super Admin' && (
           <button
@@ -99,7 +90,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 border border-amber-400/60 text-white text-xs font-bold shadow-md shadow-amber-950/50 transition-all cursor-pointer transform hover:scale-[1.02] active:scale-95"
             title="Open Super Admin Control Panel"
           >
-            <span>👑</span>
+            <ShieldCheck className="w-4 h-4 text-amber-300" />
             <span>Admin Control Panel</span>
           </button>
         )}
@@ -281,7 +272,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 font-bold transition-colors cursor-pointer"
                   >
-                    <span>👑</span>
+                    <ShieldCheck className="w-4 h-4 text-amber-300" />
                     <span>Admin Control Panel</span>
                   </button>
                 </div>

@@ -429,7 +429,8 @@ export const TeamModule: React.FC = () => {
         <div className="flex items-center gap-2">
           {isSuperAdmin && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-bold shadow-sm">
-              👑 Super Admin Clearance Active
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+              <span>Super Admin Clearance Active</span>
             </span>
           )}
           <Badge variant="emerald" dot className="text-xs py-1">
@@ -604,7 +605,7 @@ export const TeamModule: React.FC = () => {
                                 ? 'bg-amber-950 border border-amber-500/50 text-amber-300'
                                 : 'bg-cyan-950 border border-cyan-500/40 text-cyan-400'
                             }`}>
-                              {isSuper ? '👑' : user.name.charAt(0)}
+                              {isSuper ? <ShieldCheck className="w-4 h-4 text-amber-300" /> : user.name.charAt(0)}
                             </div>
                             <div>
                               <div className="font-semibold text-slate-100 flex items-center gap-1.5">

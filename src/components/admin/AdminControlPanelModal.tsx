@@ -350,7 +350,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-0.5 shadow-lg shadow-amber-950/50">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400 font-bold text-lg">
-                👑
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
               </div>
             </div>
             <div>
@@ -590,7 +590,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                                             : 'bg-slate-800/80 border border-slate-700/80 text-cyan-400'
                                         }`}
                                       >
-                                        {isSuper ? '👑' : user.name.charAt(0)}
+                                        {isSuper ? <ShieldCheck className="w-4 h-4 text-amber-300" /> : user.name.charAt(0)}
                                       </div>
                                       <div>
                                         <div className="font-semibold text-slate-100 flex items-center gap-1.5">

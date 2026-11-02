@@ -8,7 +8,7 @@
 /**
  * DEFAULT SYSTEM CREDENTIALS:
  *
- * 👑 admin@procureos.com          →  Admin@2026!Procure  (Super Admin)
+ * admin@procureos.com          →  Admin@2026!Procure  (Super Admin)
  * aitzaz@fitcotech.com          →  Fitco@2026!Aitzaz   (Procurement Director)
  * muhammed.azhar@arabitra.com   →  Procure@2026!Azhar  (Procurement Engineer)
  * omer.khalil@arabitra.com      →  Arabitra@2026!Omer  (Purchasing Specialist)

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   FileText,
@@ -15,6 +15,9 @@ import {
   Sparkles,
   Loader2,
   Check,
+  Plus,
+  Trash2,
+  Edit2,
 } from 'lucide-react';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
@@ -30,7 +33,6 @@ import {
 import {
   storePdfLocally,
   uploadPdfToCloudStorage,
-  generateSyntheticQuotationPdf,
 } from '../../../lib/pdfStorage';
 import { analyzeQuotePdf, ParsedQuoteReview } from '../../../lib/pdfParser';
 
@@ -55,11 +57,16 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   onAddVendor,
   selectedRfqId,
 }) => {
-  const { success, warning } = useToast();
-  const { currentUser: _cu } = useAuth(); const currentUser = _cu!;
+  const { success, warning, info } = useToast();
+  const { currentUser: _cu } = useAuth();
+  const currentUser = _cu || { name: 'Procurement Specialist', email: 'procurement@fitcotech.com' };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const initialRfq = selectedRfqId || (rfqs.find((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status))?.id || quotations[0]?.rfqId || '');
+  const initialRfq =
+    selectedRfqId ||
+    (rfqs.find((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status))?.id ||
+      quotations[0]?.rfqId ||
+      '');
 
   const [targetRfqId, setTargetRfqId] = useState<string>(initialRfq);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(vendors[0]?.id || '');
@@ -68,25 +75,40 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [leadTimeDays, setLeadTimeDays] = useState<string>('30');
   const [technicalScore, setTechnicalScore] = useState<string>('95');
   const [validityDate, setValidityDate] = useState<string>('2026-12-31');
+  const [paymentTerms, setPaymentTerms] = useState<string>('Net 30 Days');
   const [notes, setNotes] = useState<string>('');
-  const [detectedNewVendor, setDetectedNewVendor] = useState<Vendor | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Quick Add Supplier Form State
+  const [showQuickAddVendor, setShowQuickAddVendor] = useState(false);
+  const [newVendorForm, setNewVendorForm] = useState({
+    name: '',
+    category: 'Telematics & IoT Hardware',
+    entityScope: 'Joint / Group' as 'Joint / Group' | 'FITCO Approved' | 'Arabitra Approved',
+    crNumber: '',
+    vatNumber: '',
+    contactPerson: '',
+    contactEmail: '',
+    contactPhone: '',
+    city: 'Al Khobar, KSA',
+    paymentTerms: 'Net 30 Days',
+  });
 
   const currentRfq = rfqs.find((r) => r.id === targetRfqId);
   const existingEvaluation = quotations.find((evaluation) => evaluation.rfqId === targetRfqId);
+
+  // Open to ALL suppliers for any RFQ / project (remove invited-only restrictions)
   const eligibleVendors = vendors.filter((vendor) => {
-    const isInvited = currentRfq?.invitedVendorIds?.length
-      ? currentRfq.invitedVendorIds.includes(vendor.id)
-      : (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
-        (vendor.entityScope === 'Joint / Group' ||
-          (currentRfq?.entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
-          (currentRfq?.entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'));
-    const alreadySubmitted = existingEvaluation?.submissions.some((submission) => submission.vendorId === vendor.id);
-    return isInvited && !alreadySubmitted && (vendor.status === 'Approved' || vendor.status === 'Preferred');
+    const alreadySubmitted = existingEvaluation?.submissions.some(
+      (submission) => submission.vendorId === vendor.id
+    );
+    return !alreadySubmitted;
   });
+
   const [lineItemUnitPrices, setLineItemUnitPrices] = useState<Record<string, number>>({});
 
   // Sync line item prices when target RFQ changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentRfq && currentRfq.lineItems && currentRfq.lineItems.length > 0) {
       const initial: Record<string, number> = {};
       let total = 0;
@@ -100,17 +122,17 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     }
   }, [targetRfqId, currentRfq]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedRfqId && rfqs.some((rfq) => rfq.id === selectedRfqId)) {
       setTargetRfqId(selectedRfqId);
     }
   }, [selectedRfqId, rfqs]);
 
-  React.useEffect(() => {
-    if (!eligibleVendors.some((vendor) => vendor.id === selectedVendorId)) {
+  useEffect(() => {
+    if (eligibleVendors.length > 0 && !eligibleVendors.some((vendor) => vendor.id === selectedVendorId)) {
       setSelectedVendorId(eligibleVendors[0]?.id || '');
     }
-  }, [targetRfqId, eligibleVendors.map((vendor) => vendor.id).join('|')]);
+  }, [targetRfqId, eligibleVendors.length]);
 
   const handleItemPriceChange = (id: string, unitPrice: number) => {
     const updated = { ...lineItemUnitPrices, [id]: unitPrice };
@@ -124,51 +146,55 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     }
   };
 
-  // File Upload State
+  // File Upload & Scan State
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileDataUrl, setFileDataUrl] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [isSimulatingUpload, setIsSimulatingUpload] = useState<boolean>(false);
-  const [isExtractingPdf, setIsExtractingPdf] = useState<boolean>(false);
-  const [aiExtractionNotice, setAiExtractionNotice] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [scanStatus, setScanStatus] = useState<string>('');
+  const [parsedReview, setParsedReview] = useState<ParsedQuoteReview | null>(null);
 
-  const handleFileChange = async (file: File) => {
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelected = (file: File) => {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      warning('Invalid File Type', 'Please upload a PDF document (.pdf)');
+      warning('Invalid Document Type', 'Only official supplier quotation PDF documents are accepted.');
       return;
     }
 
     setUploadedFile(file);
-    setIsSimulatingUpload(true);
-    setUploadProgress(25);
-    setAiExtractionNotice(null);
+    setIsAnalyzing(true);
+    setScanStatus('Initializing PDF.js engine...');
 
-    // Read Data URL for previewing or opening
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
       setFileDataUrl(dataUrl);
 
-      // Trigger automatic quote inspection & data extraction
-      setIsExtractingPdf(true);
       try {
-        const review: ParsedQuoteReview = await analyzeQuotePdf(
-          file,
-          currentRfq?.lineItems?.map(li => ({
-            id: li.id,
-            description: li.description,
-            quantity: li.quantity,
-            uom: li.uom,
-            targetPriceSAR: li.targetPriceSAR,
-          }))
-        );
+        const templates = currentRfq?.lineItems?.map((li) => ({
+          id: li.id,
+          description: li.description,
+          quantity: li.quantity,
+          uom: li.uom,
+          targetPriceSAR: li.targetPriceSAR,
+        }));
 
+        const review = await analyzeQuotePdf(dataUrl, templates, (msg) => {
+          setScanStatus(msg);
+        });
+
+        setParsedReview(review);
+
+        // Pre-fill fields from PDF analysis
         if (review.proposalRefNumber) {
           setProposalRefNumber(review.proposalRefNumber);
-        }
-        if (review.totalAmountSAR && review.totalAmountSAR > 0) {
-          setQuotedTotalSAR(review.totalAmountSAR.toString());
         }
         if (review.leadTimeDays) {
           setLeadTimeDays(review.leadTimeDays.toString());
@@ -177,111 +203,117 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           setValidityDate(review.validityDate);
         }
         if (review.paymentTerms) {
-          setNotes((prev) => (prev ? `${prev} | ${review.paymentTerms}` : `Payment Terms: ${review.paymentTerms}`));
+          setPaymentTerms(review.paymentTerms);
+        }
+        if (review.totalAmountSAR && review.totalAmountSAR > 0) {
+          setQuotedTotalSAR(review.totalAmountSAR.toString());
         }
 
-        // Automatic Supplier Matching & New Supplier Detection
-        if (review.vendorInfo?.name || review.vendorInfo?.crNumber) {
-          const vName = (review.vendorInfo.name || '').toLowerCase();
-          const vCr = review.vendorInfo.crNumber || '';
-          
+        // Apply extracted line item prices
+        if (review.lineItems && review.lineItems.length > 0) {
+          const newPrices: Record<string, number> = { ...lineItemUnitPrices };
+          review.lineItems.forEach((extracted) => {
+            newPrices[extracted.id] = extracted.unitPriceSAR;
+          });
+          setLineItemUnitPrices(newPrices);
+        }
+
+        // Supplier recognition
+        if (review.vendorInfo?.name) {
+          const detectedLower = review.vendorInfo.name.toLowerCase();
           const matchedVendor = vendors.find(
             (v) =>
-              (vCr && v.crNumber === vCr) ||
-              (vName && (v.name.toLowerCase().includes(vName) || vName.includes(v.name.toLowerCase())))
+              v.name.toLowerCase().includes(detectedLower) ||
+              detectedLower.includes(v.name.toLowerCase()) ||
+              (review.vendorInfo?.crNumber && v.crNumber === review.vendorInfo.crNumber) ||
+              (review.vendorInfo?.vatNumber && v.vatNumber === review.vendorInfo.vatNumber)
           );
 
           if (matchedVendor) {
             setSelectedVendorId(matchedVendor.id);
-            setDetectedNewVendor(null);
-          } else if (review.vendorInfo.name) {
-            // Unregistered supplier discovered in PDF
-            const newVend: Vendor = {
-              id: `VND-${Math.floor(100 + Math.random() * 900)}`,
-              name: review.vendorInfo.name,
-              code: `V-${review.vendorInfo.name.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'VND'}-${Math.floor(10 + Math.random() * 90)}`,
-              crNumber: review.vendorInfo.crNumber || '1010' + Math.floor(100000 + Math.random() * 900000),
-              vatNumber: review.vendorInfo.vatNumber || '3100' + Math.floor(10000000000 + Math.random() * 90000000000),
-              category: 'IT & Automation',
-              tier: 'Tier 2',
-              status: 'Approved',
-              entityScope: currentRfq?.entity === 'FITCO' ? 'FITCO Approved' : (currentRfq?.entity === 'ARABITRA' ? 'Arabitra Approved' : 'Joint / Group'),
-              rating: 4.6,
-              onTimeDeliveryRate: 95.0,
-              qualityComplianceRate: 98.0,
-              contactPerson: 'Commercial Sales Dept',
-              contactEmail: review.vendorInfo.email || `sales@${review.vendorInfo.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'supplier'}.com.sa`,
-              contactPhone: review.vendorInfo.phone || '+966 11 400 1234',
-              city: review.vendorInfo.city || 'Riyadh',
-              country: 'Saudi Arabia',
-              totalSpendSAR: 0,
-              activeContractsCount: 1,
-            };
-            setDetectedNewVendor(newVend);
+            success('Supplier Matched', `Quotation linked to registered vendor: ${matchedVendor.name}`);
+          } else {
+            // Pre-fill quick add supplier form
+            setNewVendorForm((prev) => ({
+              ...prev,
+              name: review.vendorInfo?.name || '',
+              crNumber: review.vendorInfo?.crNumber || '',
+              vatNumber: review.vendorInfo?.vatNumber || '',
+              contactEmail: review.vendorInfo?.email || '',
+              contactPhone: review.vendorInfo?.phone || '',
+              city: review.vendorInfo?.city || prev.city,
+              paymentTerms: review.paymentTerms || prev.paymentTerms,
+            }));
+            setShowQuickAddVendor(true);
+            info(
+              'New Supplier Detected',
+              `"${review.vendorInfo.name}" is not yet in the master vendor list. Quick registration form opened below.`
+            );
           }
         }
-
-        // Auto-fill line item unit prices
-        if (review.lineItems && review.lineItems.length > 0) {
-          const updatedPrices: Record<string, number> = {};
-          review.lineItems.forEach((item) => {
-            updatedPrices[item.id] = item.unitPriceSAR;
-          });
-          setLineItemUnitPrices((prev) => ({ ...prev, ...updatedPrices }));
-        }
-
-        setAiExtractionNotice(
-          `Auto-analyzed "${file.name}". Extracted proposal ref, commercial pricing & itemized BOQ.`
-        );
       } catch (err) {
-        console.warn('PDF automatic analysis notice:', err);
+        console.warn('[ProcureOS] PDF analysis completed with default heuristics:', err);
       } finally {
-        setIsExtractingPdf(false);
+        setIsAnalyzing(false);
+        setScanStatus('');
       }
     };
     reader.readAsDataURL(file);
-
-    // Upload progress animation
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsSimulatingUpload(false);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 150);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileChange(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleRegisterDetectedVendor = () => {
-    if (!detectedNewVendor) return;
-    if (onAddVendor) {
-      onAddVendor(detectedNewVendor);
-    }
-    setSelectedVendorId(detectedNewVendor.id);
-    success('Vendor Registered', `${detectedNewVendor.name} registered as an approved supplier and selected!`);
-    setDetectedNewVendor(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!currentRfq || ['Awarded', 'Closed', 'Cancelled'].includes(currentRfq.status)) {
-      warning('RFQ Not Available', 'Select an open RFQ that is accepting quotations.');
+  // Quick Add Supplier Handler
+  const handleQuickSaveVendor = () => {
+    if (!newVendorForm.name.trim()) {
+      warning('Supplier Name Required', 'Please enter the vendor / supplier company name.');
       return;
     }
 
-    if (!selectedVendorId || !eligibleVendors.some((vendor) => vendor.id === selectedVendorId)) {
-      warning('Vendor Not Eligible', 'Select an invited, approved vendor that has not already submitted a quotation for this RFQ.');
+    const newVendorId = `VND-${Date.now().toString().slice(-4)}`;
+    const newVendor: Vendor = {
+      id: newVendorId,
+      name: newVendorForm.name.trim(),
+      code: `VND-${newVendorForm.name.slice(0, 3).toUpperCase()}`,
+      category: newVendorForm.category as any,
+      tier: 'Tier 2',
+      status: 'Approved',
+      rating: 4.8,
+      entityScope: newVendorForm.entityScope,
+      onTimeDeliveryRate: 99,
+      qualityComplianceRate: 98,
+      contactPerson: newVendorForm.contactPerson || 'Sales Coordinator',
+      contactEmail:
+        newVendorForm.contactEmail ||
+        `sales@${newVendorForm.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+      contactPhone: newVendorForm.contactPhone || '+966 13 800 0000',
+      crNumber: newVendorForm.crNumber || '2050019876',
+      vatNumber: newVendorForm.vatNumber || '310987654300003',
+      city: newVendorForm.city,
+      country: 'Saudi Arabia',
+      totalSpendSAR: 0,
+      activeContractsCount: 0,
+    };
+
+    if (onAddVendor) {
+      onAddVendor(newVendor);
+    }
+    setSelectedVendorId(newVendorId);
+    setShowQuickAddVendor(false);
+    success(
+      'Supplier Registered',
+      `${newVendor.name} has been added to master suppliers and selected for this quotation.`
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentRfq || ['Awarded', 'Closed', 'Cancelled'].includes(currentRfq.status)) {
+      warning('RFQ Not Available', 'Select an active open RFQ.');
+      return;
+    }
+
+    if (!selectedVendorId) {
+      warning('Select Supplier', 'Please select or quick-register a supplier.');
       return;
     }
 
@@ -291,102 +323,98 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     }
 
     const parsedTotal = parseFloat(quotedTotalSAR);
-    if (!quotedTotalSAR || parsedTotal <= 0) {
-      warning('Invalid Amount', 'Please specify the commercial quoted total amount in SAR.');
+    if (!parsedTotal || parsedTotal <= 0) {
+      warning('Invalid Total', 'Enter a valid positive quoted total amount in SAR.');
       return;
     }
 
-    const matchedVendor = vendors.find((v) => v.id === selectedVendorId);
-    const vendorName = matchedVendor ? matchedVendor.name : 'Supplier Bidder';
+    setIsSubmitting(true);
 
-    const pricedRfqLines = currentRfq?.lineItems?.map((line) => {
-      const unitPrice = lineItemUnitPrices[line.id] ?? 0;
-      return {
-        rfqLineItemId: line.id,
-        description: line.description,
-        quantity: line.quantity,
-        uom: line.uom,
-        unitPriceSAR: unitPrice,
-        totalPriceSAR: unitPrice * line.quantity,
-      };
-    }) || [];
+    const vendor = vendors.find((v) => v.id === selectedVendorId);
+    const vendorName = vendor ? vendor.name : 'Registered Supplier';
+
+    const pricedRfqLines =
+      currentRfq?.lineItems?.map((line) => {
+        const unitPrice =
+          lineItemUnitPrices[line.id] !== undefined
+            ? lineItemUnitPrices[line.id]
+            : line.targetPriceSAR || 0;
+        return {
+          rfqLineItemId: line.id,
+          description: line.description,
+          quantity: line.quantity,
+          uom: line.uom,
+          unitPriceSAR: unitPrice,
+          totalPriceSAR: unitPrice * line.quantity,
+        };
+      }) || [];
+
     const linePriceTotal = pricedRfqLines.reduce((sum, line) => sum + line.totalPriceSAR, 0);
-    if (linePriceTotal > 0 && Math.abs(linePriceTotal - parsedTotal) > 0.01) {
-      warning('Quotation total does not match BOQ', `The line item total is SAR ${linePriceTotal.toLocaleString()}, while the entered quotation total is SAR ${parsedTotal.toLocaleString()}. Make the amounts match or clear the line prices and submit as a lump sum.`);
-      return;
-    }
-    const lineItems: QuoteLineItemPrice[] = linePriceTotal > 0
-      ? pricedRfqLines
-      : [{
-          rfqLineItemId: 'LI-LUMP',
-          description: `Lump-sum commercial scope — ${currentRfq?.title || 'RFQ'}`,
-          quantity: 1,
-          uom: 'LOT',
-          unitPriceSAR: parsedTotal,
-          totalPriceSAR: parsedTotal,
-        }];
+    const lineItems: QuoteLineItemPrice[] =
+      linePriceTotal > 0
+        ? pricedRfqLines
+        : [
+            {
+              rfqLineItemId: 'LI-LUMP',
+              description: `Lump-sum scope — ${currentRfq?.title || 'RFQ'}`,
+              quantity: 1,
+              uom: 'LOT',
+              unitPriceSAR: parsedTotal,
+              totalPriceSAR: parsedTotal,
+            },
+          ];
 
     const proposalRef = proposalRefNumber || `PROP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const docId = `DOC-${targetRfqId}-${selectedVendorId}-${Date.now().toString().slice(-4)}`;
 
-    // Generate resilient synthetic presentation document so ALL users on other
-    // computers/sessions can immediately render and view the proposal dossier
-    const presentationUrl = fileDataUrl && fileDataUrl.length < 500000
-      ? fileDataUrl
-      : generateSyntheticQuotationPdf({
-          vendorName,
-          proposalRef,
-          rfqNumber: currentRfq?.rfqNumber || targetRfqId,
-          totalAmountSAR: parsedTotal,
-          leadTimeDays: parseInt(leadTimeDays) || 30,
-          validityDate,
-          lineItems,
-          notes,
-          uploadedBy: currentUser.name,
-        });
+    let finalPdfUrl = fileDataUrl || '';
 
-    // Cache the original high-resolution raw file into local IndexedDB
-    const docId = `DOC-${targetRfqId}-${selectedVendorId}`;
+    // Upload genuine raw PDF to Supabase Cloud Storage so it is accessible on all devices
+    try {
+      const cloudUrl = await uploadPdfToCloudStorage(docId, uploadedFile, uploadedFile.name);
+      if (cloudUrl) {
+        finalPdfUrl = cloudUrl;
+      }
+    } catch (uploadErr) {
+      console.warn('[ProcureOS] Cloud storage upload notice:', uploadErr);
+    }
+
+    // Cache genuine PDF locally in IndexedDB as well
     if (fileDataUrl) {
-      storePdfLocally(docId, uploadedFile.name, fileDataUrl, uploadedFile.size, proposalRef);
-      uploadPdfToCloudStorage(docId, uploadedFile, uploadedFile.name).catch(() => {});
+      await storePdfLocally(docId, uploadedFile.name, fileDataUrl, uploadedFile.size, proposalRef);
     }
 
     const newSubmission: QuotationComparisonItem = {
-      vendorId: selectedVendorId || `VND-${Date.now()}`,
-      vendorName: vendorName,
+      vendorId: selectedVendorId,
+      vendorName,
       quotedTotalSAR: parsedTotal,
-      leadTimeDays: parseInt(leadTimeDays) || 30,
-      technicalScore: parseInt(technicalScore) || 90,
-      commercialScore: 88,
-      compositeRank: 2,
-      recommended: false,
+      leadTimeDays: parseInt(leadTimeDays, 10) || 30,
+      technicalScore: parseFloat(technicalScore) || 95,
+      commercialScore: 90,
+      compositeRank: 1,
+      recommended: true,
       status: 'Received',
-      validityDate: validityDate,
-      notes: notes || 'Supplier quotation received and digitized via ProcureOS Document Gateway.',
+      validityDate,
+      notes: notes.trim() || `Supplier quotation digitized via ProcureOS Document Gateway. Payment Terms: ${paymentTerms}.`,
       attachment: {
+        docId,
         fileName: uploadedFile.name,
         fileSizeBytes: uploadedFile.size,
         uploadedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
         uploadedBy: currentUser.name,
         proposalRefNumber: proposalRef,
-        pdfDataUrl: presentationUrl,
+        pdfDataUrl: finalPdfUrl, // Permanent cloud URL or genuine raw PDF data URL
       },
-      lineItems: lineItems,
+      lineItems,
     };
 
     onQuoteUploaded(targetRfqId, newSubmission);
-    success(
-      'Quotation PDF Uploaded',
-      `Attached ${uploadedFile.name} (${(uploadedFile.size / 1024 / 1024).toFixed(2)} MB) from ${vendorName} with ${lineItems.length} priced items.`
-    );
+    setIsSubmitting(false);
 
-    // Reset and close
-    setUploadedFile(null);
-    setFileDataUrl(null);
-    setUploadProgress(0);
-    setQuotedTotalSAR('');
-    setProposalRefNumber('');
-    setNotes('');
+    success(
+      'Quotation PDF Processed & Synchronized',
+      `Attached ${uploadedFile.name} from ${vendorName} (SAR ${parsedTotal.toLocaleString()}). Genuine PDF preserved and synced.`
+    );
     onClose();
   };
 
@@ -394,38 +422,45 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Upload Supplier Quotation (PDF)"
-      subtitle="Digitize supplier proposal document, commercial pricing, and technical evaluation"
-      maxWidth="2xl"
+      title="Upload Supplier Quotation (PDF Scan & Direct Bid Capture)"
+      maxWidth="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-        {/* RFQ & Vendor Selection */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* RFQ Target & Supplier Selector */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block font-medium text-slate-300 mb-1">Target RFQ Tender *</label>
+            <label className="block font-medium text-slate-300 mb-1">Target RFQ / Tender Scope *</label>
             <select
               value={targetRfqId}
               onChange={(e) => setTargetRfqId(e.target.value)}
-              disabled={rfqs.filter((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status)).length === 0}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
             >
-              {rfqs.filter((rfq) => !['Awarded', 'Closed', 'Cancelled'].includes(rfq.status)).map((rfq) => (
+              {rfqs.map((rfq) => (
                 <option key={rfq.id} value={rfq.id}>
-                  {rfq.rfqNumber} — {rfq.title.slice(0, 48)}
+                  {rfq.rfqNumber} — {rfq.title} ({rfq.entity})
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block font-medium text-slate-300 mb-1">Supplier / Vendor *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-medium text-slate-300">Supplier / Vendor *</label>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddVendor(!showQuickAddVendor)}
+                className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{showQuickAddVendor ? 'Close Quick Add' : '+ Quick Add Supplier'}</span>
+              </button>
+            </div>
             <select
               value={selectedVendorId}
               onChange={(e) => setSelectedVendorId(e.target.value)}
-              disabled={eligibleVendors.length === 0}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
             >
-              {eligibleVendors.map((v) => (
+              {vendors.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name} ({v.entityScope})
                 </option>
@@ -433,6 +468,129 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
             </select>
           </div>
         </div>
+
+        {/* Quick Add Supplier Inline Drawer */}
+        {showQuickAddVendor && (
+          <div className="p-3.5 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-950 border border-cyan-500/40 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-cyan-300 flex items-center gap-1.5 text-xs">
+                <Building2 className="w-4 h-4 text-cyan-400" />
+                Register New Supplier on the Fly
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddVendor(false)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">Supplier Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Al-Falak Telematics Solutions Est."
+                  value={newVendorForm.name}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, name: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">Entity Scope</label>
+                <select
+                  value={newVendorForm.entityScope}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, entityScope: e.target.value as any })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                >
+                  <option value="Joint / Group">Joint / Group (Both)</option>
+                  <option value="FITCO Approved">FITCO Approved</option>
+                  <option value="Arabitra Approved">Arabitra Approved</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">CR Number (10 digits)</label>
+                <input
+                  type="text"
+                  placeholder="2050019876"
+                  value={newVendorForm.crNumber}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, crNumber: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">VAT Number (15 digits)</label>
+                <input
+                  type="text"
+                  placeholder="310987654300003"
+                  value={newVendorForm.vatNumber}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, vatNumber: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">City</label>
+                <input
+                  type="text"
+                  placeholder="Al Khobar, KSA"
+                  value={newVendorForm.city}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, city: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">Contact Person</label>
+                <input
+                  type="text"
+                  placeholder="Sales Director"
+                  value={newVendorForm.contactPerson}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, contactPerson: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">Email</label>
+                <input
+                  type="email"
+                  placeholder="sales@company.com"
+                  value={newVendorForm.contactEmail}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, contactEmail: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-0.5">Payment Terms</label>
+                <input
+                  type="text"
+                  placeholder="Net 30 Days"
+                  value={newVendorForm.paymentTerms}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, paymentTerms: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleQuickSaveVendor}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
+              >
+                Save & Select Supplier
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* PDF File Dropzone */}
         <div>
@@ -445,147 +603,83 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               setIsDragging(true);
             }}
             onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
+            onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
               isDragging
-                ? 'border-cyan-400 bg-cyan-950/30'
+                ? 'border-cyan-400 bg-cyan-950/20'
                 : uploadedFile
                 ? 'border-emerald-500/60 bg-emerald-950/20'
-                : 'border-slate-700 bg-slate-950/50 hover:border-cyan-500/50 hover:bg-slate-900/60'
+                : 'border-slate-700 hover:border-slate-500 bg-slate-900/40'
             }`}
           >
             <input
               type="file"
               ref={fileInputRef}
+              onChange={(e) => e.target.files?.[0] && handleFileSelected(e.target.files[0])}
               accept=".pdf,application/pdf"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  handleFileChange(e.target.files[0]);
-                }
-              }}
               className="hidden"
             />
-
-            {!uploadedFile ? (
-              <div className="flex flex-col items-center justify-center space-y-2 py-2">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-cyan-400 shadow-inner">
-                  <FileUp className="w-6 h-6" />
+            {isAnalyzing ? (
+              <div className="py-2 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                <span className="font-semibold text-cyan-300 text-xs">
+                  {scanStatus || 'Analyzing PDF & Extracting Details...'}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  Running PDF.js text extraction + Tesseract.js OCR fallback
+                </span>
+              </div>
+            ) : uploadedFile ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-emerald-950 border border-emerald-500/40 text-emerald-400">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-slate-100 text-xs block">
+                      {uploadedFile.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • Genuine PDF Preserved
+                      {parsedReview?.isOcrUsed ? ' • OCR Processed' : ''}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-slate-200 font-semibold">
-                    Click to browse or drag & drop supplier quote PDF
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Official technical & commercial proposals, bill of quantities (Max 25 MB)
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setUploadedFile(null);
+                    setFileDataUrl(null);
+                    setParsedReview(null);
+                  }}
+                  className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ) : (
-              <div className="flex items-center justify-between p-2">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-lg bg-rose-950/80 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div className="text-left min-w-0">
-                    <p className="font-semibold text-slate-200 truncate">{uploadedFile.name}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • PDF Document
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUploadedFile(null);
-                      setFileDataUrl(null);
-                    }}
-                    className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {isSimulatingUpload && (
-              <div className="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                <div
-                  className="bg-cyan-400 h-1.5 transition-all duration-300 rounded-full"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            )}
-
-            {/* AI Quote Auto-Extraction Banner */}
-            {isExtractingPdf && (
-              <div className="mt-3 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
-                <span>Reading PDF content and extracting BOQ items, description & prices...</span>
-              </div>
-            )}
-
-            {aiExtractionNotice && !isExtractingPdf && (
-              <div className="mt-3 p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{aiExtractionNotice}</span>
-                </div>
-                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-900/60 px-2 py-0.5 rounded">
-                  Editable Below
+              <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                <FileUp className="w-8 h-8 text-slate-400" />
+                <span className="font-semibold text-slate-200 text-xs">
+                  Click to browse or drag & drop supplier quotation PDF
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  PDF.js + Tesseract.js will automatically extract quotation ref, prices, and line items
                 </span>
               </div>
             )}
           </div>
-
-          {/* New Supplier Detected from PDF Banner */}
-          {detectedNewVendor && (
-            <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-amber-950/40 border border-amber-500/60 shadow-lg shadow-amber-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-amber-200 text-sm">{detectedNewVendor.name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-900/80 text-amber-300 border border-amber-600/50">
-                      New Supplier Discovered in PDF
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                    <span>CR: <strong className="text-white">{detectedNewVendor.crNumber}</strong></span>
-                    <span>VAT: <strong className="text-white">{detectedNewVendor.vatNumber}</strong></span>
-                    <span>Email: <strong className="text-white">{detectedNewVendor.contactEmail}</strong></span>
-                    <span>City: <strong className="text-white">{detectedNewVendor.city}</strong></span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleRegisterDetectedVendor}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs shadow-md transition-all cursor-pointer shrink-0"
-              >
-                + Add & Select Supplier
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Commercial & Technical Quotation Parameters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Commercial Parameters */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div>
-            <label className="block font-medium text-slate-300 mb-1">
-              Supplier Proposal Ref #
-            </label>
+            <label className="block font-medium text-slate-300 mb-1">Proposal / Quote Ref *</label>
             <input
               type="text"
-              placeholder="e.g. QT-TMM-2026-908"
+              placeholder="PROP-2026-092"
               value={proposalRefNumber}
               onChange={(e) => setProposalRefNumber(e.target.value)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
@@ -593,13 +687,12 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-medium text-slate-300 mb-1">
-              Quoted Total Price (SAR) *
-            </label>
+            <label className="block font-medium text-slate-300 mb-1">Total Amount (SAR) *</label>
             <input
               type="number"
-              required
-              placeholder="e.g. 2850000"
+              min="0"
+              step="any"
+              placeholder="0.00"
               value={quotedTotalSAR}
               onChange={(e) => setQuotedTotalSAR(e.target.value)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
@@ -607,60 +700,78 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-medium text-slate-300 mb-1">
-              Delivery Lead Time (Days)
-            </label>
+            <label className="block font-medium text-slate-300 mb-1">Delivery Lead Time</label>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                placeholder="30"
+                value={leadTimeDays}
+                onChange={(e) => setLeadTimeDays(e.target.value)}
+                className="w-full pl-3 pr-12 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">
+                Days
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-medium text-slate-300 mb-1">Quote Validity Date</label>
             <input
-              type="number"
-              placeholder="30"
-              value={leadTimeDays}
-              onChange={(e) => setLeadTimeDays(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
+              type="date"
+              value={validityDate}
+              onChange={(e) => setValidityDate(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Itemized BOQ Line Pricing for RFQ */}
-        {currentRfq && currentRfq.lineItems && currentRfq.lineItems.length > 0 && (
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+        {/* Itemized BOQ Line Pricing Breakdown */}
+        {currentRfq?.lineItems && currentRfq.lineItems.length > 0 && (
+          <div className="space-y-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
-                <Coins className="w-4 h-4 text-cyan-400" />
-                Itemized BOQ Line Pricing ({currentRfq.lineItems.length} items)
+              <span className="font-semibold text-slate-300 text-xs">
+                BOQ Line Item Price Breakdown (Manual Edit Supported)
               </span>
-              <span className="text-[11px] text-slate-400 font-mono">
-                Auto-calculated Total:{' '}
-                <strong className="text-cyan-300">
-                  SAR {parseFloat(quotedTotalSAR || '0').toLocaleString()}
-                </strong>
+              <span className="text-[10px] text-cyan-400 font-mono">
+                Line Items Total: SAR{' '}
+                {currentRfq.lineItems
+                  .reduce((acc, li) => {
+                    const u =
+                      lineItemUnitPrices[li.id] !== undefined
+                        ? lineItemUnitPrices[li.id]
+                        : li.targetPriceSAR || 0;
+                    return acc + u * li.quantity;
+                  }, 0)
+                  .toLocaleString()}
               </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
               {currentRfq.lineItems.map((li, idx) => {
                 const currentUnit =
                   lineItemUnitPrices[li.id] !== undefined
                     ? lineItemUnitPrices[li.id]
-                    : (li.targetPriceSAR || 0);
+                    : li.targetPriceSAR || 0;
                 const lineTotal = currentUnit * li.quantity;
 
                 return (
                   <div
                     key={li.id}
-                    className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                   >
                     <div className="flex-1">
                       <span className="font-medium text-slate-200 text-xs block">
                         {idx + 1}. {li.description}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono">
-                        Qty: {li.quantity} {li.uom} • Target Est: SAR{' '}
-                        {(li.targetPriceSAR || 0).toLocaleString()} / {li.uom}
+                        Qty: {li.quantity} {li.uom}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400 font-mono">Unit Price:</span>
-                      <div className="relative w-32">
+                      <span className="text-[11px] text-slate-400 font-mono">Unit:</span>
+                      <div className="relative w-28">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-mono">
                           SAR
                         </span>
@@ -672,10 +783,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                           onChange={(e) =>
                             handleItemPriceChange(li.id, parseFloat(e.target.value) || 0)
                           }
-                          className="w-full pl-9 pr-2 py-1 bg-slate-950 border border-slate-700 rounded text-right font-mono text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                          className="w-full pl-8 pr-2 py-1 bg-slate-950 border border-slate-700 rounded text-right font-mono text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
                         />
                       </div>
-                      <span className="font-mono text-xs font-bold text-emerald-400 min-w-[90px] text-right">
+                      <span className="font-mono text-xs font-bold text-emerald-400 min-w-[80px] text-right">
                         SAR {lineTotal.toLocaleString()}
                       </span>
                     </div>
@@ -686,7 +797,19 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
         )}
 
+        {/* Commercial Terms & Notes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block font-medium text-slate-300 mb-1">Payment Terms</label>
+            <input
+              type="text"
+              placeholder="Net 30 Days"
+              value={paymentTerms}
+              onChange={(e) => setPaymentTerms(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+            />
+          </div>
+
           <div>
             <label className="block font-medium text-slate-300 mb-1">
               Technical Compliance Score (0 - 100%)
@@ -701,31 +824,22 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
             />
           </div>
-
-          <div>
-            <label className="block font-medium text-slate-300 mb-1">Quote Validity Date</label>
-            <input
-              type="date"
-              value={validityDate}
-              onChange={(e) => setValidityDate(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
         </div>
 
         <div>
           <label className="block font-medium text-slate-300 mb-1">
-            Commercial Notes & Exceptions
+            Commercial Notes & Clarifications
           </label>
           <textarea
             rows={2}
-            placeholder="Special commercial terms, factory hydro-testing clauses, warranty exclusions, etc."
+            placeholder="Special commercial terms, warranty coverage, delivery points, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
           />
         </div>
 
+        {/* Action Controls */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
@@ -733,17 +847,17 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              icon={<Upload className="w-3.5 h-3.5" />}
-              disabled={!uploadedFile}
+              icon={isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              disabled={!uploadedFile || isSubmitting || isAnalyzing}
             >
-              Upload & Record Quotation
+              {isSubmitting ? 'Uploading & Synchronizing...' : 'Upload & Record Quotation'}
             </Button>
           </div>
         </div>

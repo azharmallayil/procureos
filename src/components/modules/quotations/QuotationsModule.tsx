@@ -240,25 +240,20 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   };
 
   const handleOpenPdfWindow = (bid: QuotationComparisonItem) => {
-    const docId = `DOC-${selectedEvaluation?.rfqId}-${bid.vendorId}`;
+    const docId = bid.attachment?.docId || `DOC-${selectedEvaluation?.rfqId}-${bid.vendorId}`;
     getPdfLocally(docId).then((localUrl) => {
-      const url = localUrl || bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
-        vendorName: bid.vendorName,
-        proposalRef: bid.attachment?.proposalRefNumber || `PROP-${bid.vendorId}`,
-        rfqNumber: selectedEvaluation?.rfqNumber || 'RFQ',
-        totalAmountSAR: bid.quotedTotalSAR,
-        leadTimeDays: bid.leadTimeDays,
-        validityDate: bid.validityDate,
-        lineItems: bid.lineItems,
-        notes: bid.notes,
-        uploadedBy: bid.attachment?.uploadedBy,
-      });
-
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
-        );
+      const url = localUrl || bid.attachment?.pdfDataUrl;
+      if (url) {
+        if (url.startsWith('http')) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        const win = window.open();
+        if (win) {
+          win.document.write(
+            `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+          );
+        }
       }
     });
   };
@@ -954,17 +949,17 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               </div>
 
               {(() => {
-                const renderUrl = activeRawPdfUrl || selectedPdfBid.bid.attachment?.pdfDataUrl || generateSyntheticQuotationPdf({
-                  vendorName: selectedPdfBid.bid.vendorName,
-                  proposalRef: selectedPdfBid.bid.attachment?.proposalRefNumber || `PROP-${selectedPdfBid.bid.vendorId}`,
-                  rfqNumber: selectedPdfBid.evaluation.rfqNumber,
-                  totalAmountSAR: selectedPdfBid.bid.quotedTotalSAR,
-                  leadTimeDays: selectedPdfBid.bid.leadTimeDays,
-                  validityDate: selectedPdfBid.bid.validityDate,
-                  lineItems: selectedPdfBid.bid.lineItems,
-                  notes: selectedPdfBid.bid.notes,
-                  uploadedBy: selectedPdfBid.bid.attachment?.uploadedBy,
-                });
+                const renderUrl = activeRawPdfUrl || selectedPdfBid.bid.attachment?.pdfDataUrl;
+
+                if (!renderUrl) {
+                  return (
+                    <div className="h-64 flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-900/60 rounded-xl">
+                      <FileText className="w-12 h-12 text-slate-500 mb-2" />
+                      <p className="font-semibold text-slate-300 text-sm">Quotation Dossier In Processing</p>
+                      <p className="text-xs text-slate-500 mt-1">Proposal Ref: {selectedPdfBid.bid.attachment?.proposalRefNumber || 'PROP-2026'}</p>
+                    </div>
+                  );
+                }
 
                 return (
                   <div className="h-96 w-full">

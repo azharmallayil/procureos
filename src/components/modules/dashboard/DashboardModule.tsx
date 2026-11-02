@@ -76,11 +76,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             Real-time supply chain telemetry for <span className="text-cyan-400 font-semibold">{companyLabel}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="cyan" dot className="text-xs py-1">
-            Live Gateway Sync: Oct 2026
-          </Badge>
-        </div>
       </div>
 
       {/* KPI Stats Grid */}

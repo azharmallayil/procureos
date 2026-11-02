@@ -16,13 +16,13 @@ export const CompanySwitcher: React.FC = () => {
     {
       id: 'FITCO',
       label: 'FITCO',
-      badge: 'Energy & Industrial',
+      badge: 'AI Worker Safety & Telematics',
       color: 'from-cyan-900/80 to-blue-900/80 text-cyan-200 border-cyan-500/50',
     },
     {
       id: 'ARABITRA',
       label: 'ARABITRA',
-      badge: 'Heavy Infrastructure',
+      badge: 'Fleet Tracking & LMI Solutions',
       color: 'from-emerald-900/80 to-teal-900/80 text-emerald-200 border-emerald-500/50',
     },
   ];

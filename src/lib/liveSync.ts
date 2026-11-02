@@ -101,7 +101,7 @@ class ProcureOSLiveBus {
           .subscribe((status: string) => {
             if (status === 'SUBSCRIBED') {
               this.isCloudConnected = true;
-              console.info('[ProcureOS Cloud Sync] 🟢 Connected to Supabase Global Realtime');
+              console.info('[ProcureOS Cloud Sync] Connected to Supabase Global Realtime');
               // Ask active peers for any updates made while disconnected
               this.publish({
                 type: 'REQUEST_LATEST_STATE',

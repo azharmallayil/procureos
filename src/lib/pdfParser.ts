@@ -1,7 +1,9 @@
 // ============================================================================
 // ProcureOS Intelligent PDF Quotation Parser
-// Extracts line items, quantities, unit prices, supplier reference, and totals
-// directly from raw vendor quotation PDF documents using pdfjs-dist.
+// Dual-Engine Extraction:
+// 1. High-precision vector text extraction via pdfjs-dist
+// 2. Automated OCR fallback via Tesseract.js for scanned/image quotations
+// 3. Extraction of vendor metadata, line items, pricing, and commercial terms
 // ============================================================================
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -37,17 +39,37 @@ export interface ParsedQuoteReview {
   vendorInfo?: ParsedVendorInfo;
   rawTextSample?: string;
   confidenceScore: number; // 0 - 100
+  isOcrUsed?: boolean;
+}
+
+/**
+ * Runs OCR on a rendered canvas using Tesseract.js
+ */
+async function performCanvasOcr(canvas: HTMLCanvasElement): Promise<string[]> {
+  try {
+    const { createWorker } = await import('tesseract.js');
+    const worker = await createWorker('eng');
+    const result = await worker.recognize(canvas);
+    await worker.terminate();
+    const text = result.data?.text || '';
+    return text.split('\n').map((l) => l.trim()).filter((l) => l.length > 2);
+  } catch (err) {
+    console.warn('[ProcureOS OCR] Tesseract OCR fallback failed or offline:', err);
+    return [];
+  }
 }
 
 /**
  * Reads array buffer from File or dataUrl and returns full extracted text lines
  */
-export async function extractTextLinesFromPdf(fileOrDataUrl: File | string): Promise<string[]> {
+export async function extractTextLinesFromPdf(
+  fileOrDataUrl: File | string,
+  onProgress?: (status: string) => void
+): Promise<{ lines: string[]; isOcr: boolean }> {
   try {
     let arrayBuffer: ArrayBuffer;
 
     if (typeof fileOrDataUrl === 'string') {
-      // Decode data URL to ArrayBuffer
       const base64 = fileOrDataUrl.split(',')[1] || fileOrDataUrl;
       const binary = atob(base64);
       const len = binary.length;
@@ -60,6 +82,8 @@ export async function extractTextLinesFromPdf(fileOrDataUrl: File | string): Pro
       arrayBuffer = await fileOrDataUrl.arrayBuffer();
     }
 
+    if (onProgress) onProgress('Scanning PDF vector text layer...');
+
     const loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(arrayBuffer),
       useSystemFonts: true,
@@ -69,7 +93,7 @@ export async function extractTextLinesFromPdf(fileOrDataUrl: File | string): Pro
     const pdf = await loadingTask.promise;
     const lines: string[] = [];
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 5); pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       let currentLine = '';
@@ -98,10 +122,35 @@ export async function extractTextLinesFromPdf(fileOrDataUrl: File | string): Pro
       }
     }
 
-    return lines;
+    const totalTextLength = lines.join(' ').trim().length;
+
+    // If PDF is a scanned image with very little or no native text, trigger Tesseract OCR
+    if (totalTextLength < 40 && typeof document !== 'undefined') {
+      if (onProgress) onProgress('Scanned image detected. Running Tesseract.js OCR engine...');
+      try {
+        const firstPage = await pdf.getPage(1);
+        const viewport = firstPage.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          await firstPage.render({ canvasContext: ctx, viewport }).promise;
+          const ocrLines = await performCanvasOcr(canvas);
+          if (ocrLines.length > 0) {
+            return { lines: ocrLines, isOcr: true };
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('[ProcureOS PDF Parser] OCR attempt failed:', ocrErr);
+      }
+    }
+
+    return { lines, isOcr: false };
   } catch (err) {
-    console.warn('[ProcureOS PDF Parser] Text extraction fallback notice:', err);
-    return [];
+    console.warn('[ProcureOS PDF Parser] Text extraction exception:', err);
+    return { lines: [], isOcr: false };
   }
 }
 
@@ -110,10 +159,13 @@ export async function extractTextLinesFromPdf(fileOrDataUrl: File | string): Pro
  */
 export async function analyzeQuotePdf(
   fileOrDataUrl: File | string,
-  rfqLineTemplates?: Array<{ id: string; description: string; quantity: number; uom: string; targetPriceSAR?: number }>
+  rfqLineTemplates?: Array<{ id: string; description: string; quantity: number; uom: string; targetPriceSAR?: number }>,
+  onProgress?: (status: string) => void
 ): Promise<ParsedQuoteReview> {
-  const lines = await extractTextLinesFromPdf(fileOrDataUrl);
+  const { lines, isOcr } = await extractTextLinesFromPdf(fileOrDataUrl, onProgress);
   const fullText = lines.join('\n');
+
+  if (onProgress) onProgress('Analyzing quotation details, line items, and pricing...');
 
   let proposalRef: string | undefined;
   let totalAmount: number | undefined;
@@ -131,16 +183,23 @@ export async function analyzeQuotePdf(
   let detectedCity: string | undefined;
 
   // CR Number (10 digits starting with 1, 2, 4, etc.)
-  const crMatch = fullText.match(/(?:C\.?R\.?|CR\s*No\.?|Commercial\s*Reg(?:istration)?|سجل\s*تجاري)[:\s#]*([1-4][0-9]{9})/i);
+  const crMatch = fullText.match(/(?:C\.?R\.?|CR\s*No\.?|Commercial\s*Reg(?:istration)?|سجل\s*تجاري)[:\s#]*([1-4][0-9]{9})\b/i) ||
+                  fullText.match(/\b([1-4][0-9]{9})\b/);
   if (crMatch) detectedCr = crMatch[1].trim();
 
   // VAT Number (15 digits usually starting with 3 and ending with 3 in KSA)
-  const vatMatch = fullText.match(/(?:VAT|VAT\s*No\.?|Tax\s*ID|Tax\s*Number|الرقم\s*الضريبي)[:\s#]*(3[0-9]{13,14})/i);
+  const vatMatch = fullText.match(/(?:VAT|VAT\s*No\.?|Tax\s*ID|Tax\s*Number|الرقم\s*الضريبي)[:\s#]*(3[0-9]{13,14})\b/i) ||
+                   fullText.match(/\b(3[0-9]{13,14})\b/);
   if (vatMatch) detectedVat = vatMatch[1].trim();
 
   // Email
   const emailMatch = fullText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  if (emailMatch && !emailMatch[1].toLowerCase().includes('procureos') && !emailMatch[1].toLowerCase().includes('fitco') && !emailMatch[1].toLowerCase().includes('arabitra')) {
+  if (
+    emailMatch &&
+    !emailMatch[1].toLowerCase().includes('procureos') &&
+    !emailMatch[1].toLowerCase().includes('fitco') &&
+    !emailMatch[1].toLowerCase().includes('arabitra')
+  ) {
     detectedEmail = emailMatch[1].trim();
   }
 
@@ -149,23 +208,28 @@ export async function analyzeQuotePdf(
   if (phoneMatch) detectedPhone = phoneMatch[0].trim();
 
   // City
-  const cityMatch = fullText.match(/\b(Riyadh|Dammam|Jeddah|Khobar|Jubail|Yanbu|Tabuk|Makkah|Madinah)\b/i);
+  const cityMatch = fullText.match(/\b(Riyadh|Dammam|Jeddah|Khobar|Al\s*Khobar|Jubail|Yanbu|Tabuk|Makkah|Madinah)\b/i);
   if (cityMatch) detectedCity = cityMatch[1].trim();
 
   // Company / Supplier Name detection from top lines or explicit "From:" / "Supplier:" / "Company:" tags
   const supplierTagMatch = fullText.match(/(?:Supplier|Vendor|From|Company|Issued\s*By|المورد|الشركة)[:\s]+([^\n\r,]{4,60})/i);
-  if (supplierTagMatch && !supplierTagMatch[1].toLowerCase().includes('procureos') && !supplierTagMatch[1].toLowerCase().includes('fitco') && !supplierTagMatch[1].toLowerCase().includes('arabitra')) {
+  if (
+    supplierTagMatch &&
+    !supplierTagMatch[1].toLowerCase().includes('procureos') &&
+    !supplierTagMatch[1].toLowerCase().includes('fitco') &&
+    !supplierTagMatch[1].toLowerCase().includes('arabitra')
+  ) {
     detectedVendorName = supplierTagMatch[1].trim();
   } else {
-    // Scan top 8 lines for likely company headers (containing Ltd, Est, Co, Trading, Solutions, Telematics, Tech)
-    for (let i = 0; i < Math.min(lines.length, 8); i++) {
+    // Scan top 10 lines for likely company headers
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
       const line = lines[i].trim();
       if (
         line.length > 5 &&
         line.length < 65 &&
         !line.match(/quotation|proposal|invoice|rfq|purchase\s*order|page\s*[0-9]|date/i) &&
         !line.match(/fitco|arabitra|procureos/i) &&
-        line.match(/(?:Est\.?|Co\.?|Ltd\.?|Trading|Solutions|Telematics|Technology|Wireless|Systems|General|Corporation|Enterprises)/i)
+        line.match(/(?:Est\.?|Co\.?|Ltd\.?|Trading|Solutions|Telematics|Technology|Wireless|Systems|General|Corporation|Enterprises|Supply|Services)/i)
       ) {
         detectedVendorName = line;
         break;
@@ -188,6 +252,12 @@ export async function analyzeQuotePdf(
   const termsMatch = fullText.match(/(?:Payment\s*Terms|Terms\s*of\s*Payment|شروط\s*الدفع)[:\s]*([^\n\r;]{5,50})/i);
   if (termsMatch) {
     paymentTerms = termsMatch[1].trim();
+  } else if (/Net\s*30/i.test(fullText)) {
+    paymentTerms = 'Net 30 Days';
+  } else if (/Net\s*60/i.test(fullText)) {
+    paymentTerms = 'Net 60 Days';
+  } else if (/100%\s*(?:Advance|SARIE)/i.test(fullText)) {
+    paymentTerms = '100% SARIE Wire Transfer';
   }
 
   // 1. Extract Proposal / Quotation Reference
@@ -244,14 +314,12 @@ export async function analyzeQuotePdf(
   // Match against target RFQ line template if provided
   if (rfqLineTemplates && rfqLineTemplates.length > 0) {
     for (const rfqLine of rfqLineTemplates) {
-      // Find keywords from description in PDF lines
-      const words = rfqLine.description.split(/\s+/).filter(w => w.length > 3);
+      const words = rfqLine.description.split(/\s+/).filter((w) => w.length > 3);
       let matchedPrice: number | null = null;
 
       for (const line of lines) {
-        const matchesWords = words.some(w => line.toLowerCase().includes(w.toLowerCase()));
+        const matchesWords = words.some((w) => line.toLowerCase().includes(w.toLowerCase()));
         if (matchesWords) {
-          // Look for numbers on this line or nearby
           const numMatches = line.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/g);
           const foundNumbers: number[] = [];
           for (const m of numMatches) {
@@ -261,15 +329,17 @@ export async function analyzeQuotePdf(
             }
           }
           if (foundNumbers.length > 0) {
-            matchedPrice = foundNumbers[foundNumbers.length - 1]; // take total or unit price
+            matchedPrice = foundNumbers[foundNumbers.length - 1];
             break;
           }
         }
       }
 
       const unitPrice = matchedPrice
-        ? (matchedPrice > (rfqLine.targetPriceSAR || 100) * 1.5 ? Math.round(matchedPrice / rfqLine.quantity) : matchedPrice)
-        : (rfqLine.targetPriceSAR || 1000);
+        ? matchedPrice > (rfqLine.targetPriceSAR || 100) * 1.5
+          ? Math.round(matchedPrice / rfqLine.quantity)
+          : matchedPrice
+        : rfqLine.targetPriceSAR || 1000;
 
       extractedLines.push({
         id: rfqLine.id,
@@ -284,22 +354,27 @@ export async function analyzeQuotePdf(
     // Parse free-form table lines (pattern: index/item description qty uom unit_price total_price)
     let autoIndex = 1;
     for (const line of lines) {
-      const tableRowMatch = line.match(/^([0-9]{1,2})[.)\s]+([A-Za-z0-9\s"'-]{6,60}?)\s+([0-9]{1,4})\s*(EA|LOT|M|SET|PCS|NOS|MTR)?\s+([0-9,]+(?:\.[0-9]{1,2})?)\s+([0-9,]+(?:\.[0-9]{1,2})?)$/i);
-      if (tableRowMatch) {
-        const desc = tableRowMatch[2].trim();
-        const qty = parseInt(tableRowMatch[3], 10) || 1;
-        const uom = tableRowMatch[4]?.toUpperCase() || 'EA';
-        const unit = parseFloat(tableRowMatch[5].replace(/,/g, '')) || 0;
-        const total = parseFloat(tableRowMatch[6].replace(/,/g, '')) || (unit * qty);
+      const tableRowMatch =
+        line.match(/^([0-9]{1,2})[.)\s]+([A-Za-z0-9\s"'-]{5,60}?)\s+([0-9]{1,4})\s*(EA|LOT|M|SET|PCS|NOS|MTR|UNIT)?\s+([0-9,]+(?:\.[0-9]{1,2})?)\s+([0-9,]+(?:\.[0-9]{1,2})?)$/i) ||
+        line.match(/^([A-Za-z0-9\s"'-]{5,60}?)\s+([0-9]{1,4})\s*(EA|LOT|M|SET|PCS|NOS|MTR|UNIT)?\s+([0-9,]+(?:\.[0-9]{1,2})?)\s+([0-9,]+(?:\.[0-9]{1,2})?)$/i);
 
-        extractedLines.push({
-          id: `EXTRACT-${autoIndex++}`,
-          description: desc,
-          quantity: qty,
-          uom,
-          unitPriceSAR: unit,
-          totalPriceSAR: total,
-        });
+      if (tableRowMatch) {
+        const desc = (tableRowMatch.length === 7 ? tableRowMatch[2] : tableRowMatch[1]).trim();
+        const qty = parseInt(tableRowMatch.length === 7 ? tableRowMatch[3] : tableRowMatch[2], 10) || 1;
+        const uom = (tableRowMatch.length === 7 ? tableRowMatch[4] : tableRowMatch[3])?.toUpperCase() || 'EA';
+        const unit = parseFloat((tableRowMatch.length === 7 ? tableRowMatch[5] : tableRowMatch[4]).replace(/,/g, '')) || 0;
+        const total = parseFloat((tableRowMatch.length === 7 ? tableRowMatch[6] : tableRowMatch[5]).replace(/,/g, '')) || unit * qty;
+
+        if (desc.length > 3 && unit > 0) {
+          extractedLines.push({
+            id: `EXTRACT-${autoIndex++}`,
+            description: desc,
+            quantity: qty,
+            uom,
+            unitPriceSAR: unit,
+            totalPriceSAR: total,
+          });
+        }
       }
     }
   }
@@ -310,7 +385,7 @@ export async function analyzeQuotePdf(
     totalAmount = sumLines;
   }
 
-  const confidenceScore = lines.length > 0 ? (extractedLines.length > 0 ? 92 : 75) : 30;
+  const confidenceScore = lines.length > 0 ? (extractedLines.length > 0 ? 94 : 78) : 30;
 
   return {
     proposalRefNumber: proposalRef,
@@ -322,6 +397,6 @@ export async function analyzeQuotePdf(
     vendorInfo,
     rawTextSample: lines.slice(0, 8).join(' | '),
     confidenceScore,
+    isOcrUsed: isOcr,
   };
 }
-

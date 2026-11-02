@@ -156,6 +156,7 @@ export interface RFQ {
 }
 
 export interface QuotationPdfAttachment {
+  docId?: string;
   fileName: string;
   fileSizeBytes: number;
   uploadedAt: string;

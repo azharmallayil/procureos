@@ -59,7 +59,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-slate-400 tracking-wide truncate">{title}</p>
-          <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mt-1.5 tracking-tight font-sans whitespace-nowrap overflow-visible">
+          <h4 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white mt-1.5 tracking-tight font-sans whitespace-nowrap break-keep">
             {value}
           </h4>
         </div>

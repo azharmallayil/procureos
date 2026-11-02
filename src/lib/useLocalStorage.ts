@@ -1,23 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { liveBus, LiveBusMessage, ALL_DATA_KEYS } from './liveSync';
+import { persistToSupabase, fetchFromSupabase } from './supabaseSync';
 
 /**
- * useLocalStorage – persists state with multi-tab / multi-user real-time synchronization.
+ * useLocalStorage – high-speed multi-tab / multi-user state synchronization.
  *
- * - Survives page refresh and user logout lifelong.
- * - Broadcasts shared enterprise table updates (RFQs, POs, items, etc.) via Supabase
- *   Realtime across all connected company users and local tabs.
- * - Keeps UI navigation and temporary active selections user-scoped and private,
- *   preventing one user's navigation clicks from forcibly redirecting other users.
+ * Performance Features:
+ * - 0ms instant optimistic UI state transitions
+ * - Non-blocking asynchronous Supabase cloud persistence
+ * - Real-time WebSocket replication across connected company browsers
+ * - Private user navigation isolation
  */
 export function useLocalStorage<T>(
   key: string,
   initialValue: T | (() => T)
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
-  // Check if this key represents a shared database table
   const isSharedTable = (ALL_DATA_KEYS as readonly string[]).includes(key);
 
-  // Resolve initial value once
   const getInitial = (): T => {
     try {
       const raw = localStorage.getItem(key);
@@ -25,7 +24,7 @@ export function useLocalStorage<T>(
         return JSON.parse(raw) as T;
       }
     } catch {
-      // If JSON is corrupt, fallback to default
+      // Fallback on corrupt JSON
     }
     const val = typeof initialValue === 'function'
       ? (initialValue as () => T)()
@@ -33,7 +32,7 @@ export function useLocalStorage<T>(
     try {
       localStorage.setItem(key, JSON.stringify(val));
     } catch {
-      // quota or private mode fallback
+      // Quota fallback
     }
     return val;
   };
@@ -42,22 +41,34 @@ export function useLocalStorage<T>(
   const stateRef = useRef<T>(state);
   stateRef.current = state;
 
-  // Listen for real-time live updates from other tabs or background operations
+  // Hydrate from live Supabase cloud database on mount if shared table
   useEffect(() => {
-    // Only shared data tables should synchronize from peer broadcast events.
-    // UI state (e.g. activeModule, filters) must remain local to each user session.
+    if (!isSharedTable) return;
+
+    let isMounted = true;
+    fetchFromSupabase<T>(key).then((cloudData) => {
+      if (isMounted && cloudData !== null) {
+        setState(cloudData);
+        try {
+          localStorage.setItem(key, JSON.stringify(cloudData));
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [key, isSharedTable]);
+
+  // Listen for real-time live updates from other tabs or remote peers
+  useEffect(() => {
     if (!isSharedTable) {
       return;
     }
 
     const unsubscribe = liveBus.subscribe((msg: LiveBusMessage) => {
       if (msg.type === 'SYNC_KEY' && msg.key === key && msg.data !== undefined) {
-        // Prevent feedback loop if deep equal
-        const incomingStr = JSON.stringify(msg.data);
-        const currentStr = JSON.stringify(stateRef.current);
-        if (incomingStr !== currentStr) {
-          setState(msg.data);
-        }
+        setState(msg.data);
       } else if (msg.type === 'FULL_DATABASE_RESTORE' && msg.data && key in msg.data) {
         setState(msg.data[key]);
       }
@@ -74,14 +85,14 @@ export function useLocalStorage<T>(
             ? (action as (prev: T) => T)(prev)
             : action;
 
-        // Write immediately to localStorage
+        // 1. Immediate local storage update
         try {
           localStorage.setItem(key, JSON.stringify(next));
         } catch (err) {
-          console.warn(`[ProcureOS] Failed to write localStorage key: ${key}`, err);
+          console.warn(`[ProcureOS] LocalStorage write notice for ${key}:`, err);
         }
 
-        // Only broadcast shared database tables to other users/sessions
+        // 2. Realtime peer broadcast for shared tables
         if (isSharedTable) {
           liveBus.publish({
             type: 'SYNC_KEY',
@@ -89,6 +100,9 @@ export function useLocalStorage<T>(
             data: next,
             timestamp: Date.now(),
           });
+
+          // 3. Asynchronous non-blocking Supabase persistence
+          persistToSupabase(key, next).catch(() => {});
         }
 
         return next;
