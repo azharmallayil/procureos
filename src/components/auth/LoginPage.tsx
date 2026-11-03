@@ -412,7 +412,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || lockoutMs > 0 || !email || !password}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-semibold text-sm hover:from-cyan-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-cyan-900/30"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-semibold text-sm hover:from-cyan-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-cyan-900/30 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -427,6 +427,53 @@ export const LoginPage: React.FC = () => {
               )}
             </button>
           </form>
+
+          {/* Quick Access Account Shortcuts */}
+          <div className="mt-5 pt-4 border-t border-slate-800">
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+              Quick Corporate Sign-In
+            </p>
+            <div className="grid grid-cols-1 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@procureos.com');
+                  setPassword('Fitco@2026!Admin');
+                  setError('');
+                }}
+                className="w-full px-3 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-left"
+              >
+                <span>⚡ Super Admin (admin@procureos.com)</span>
+                <span className="text-[10px] text-amber-400 font-mono">Fill & Ready</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('aitzaz@fitcotech.com');
+                    setPassword('Fitco@2026!Dir');
+                    setError('');
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors cursor-pointer text-left truncate"
+                  title="Procurement Director"
+                >
+                  Dir: aitzaz@fitcotech.com
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('muhammed.azhar@arabitra.com');
+                    setPassword('Fitco@2026!Eng');
+                    setError('');
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors cursor-pointer text-left truncate"
+                  title="Procurement Engineer"
+                >
+                  Eng: muhammed.azhar...
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Security notice */}
           <div className="mt-6 pt-4 border-t border-slate-800 space-y-2">

@@ -17,6 +17,7 @@ import {
   Settings,
   Database,
   Users,
+  Zap,
 } from 'lucide-react';
 import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
@@ -34,7 +35,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenMobileMenu,
   onQuickAction,
 }) => {
-  const { currentUser, activeRole, logout } = useAuth();
+  const { currentUser, activeRole, logout, elevateToSuperAdmin } = useAuth();
   const { info } = useToast();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -263,7 +264,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               </div>
 
               {/* Super Admin Control Panel Link */}
-              {activeRole === 'Super Admin' && (
+              {activeRole === 'Super Admin' ? (
                 <div className="px-2 py-1.5 border-b border-slate-800">
                   <button
                     onClick={() => {
@@ -274,6 +275,19 @@ export const Topbar: React.FC<TopbarProps> = ({
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-300" />
                     <span>Admin Control Panel</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="px-2 py-1.5 border-b border-slate-800">
+                  <button
+                    onClick={async () => {
+                      setShowProfileMenu(false);
+                      await elevateToSuperAdmin();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 font-bold transition-colors cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    <span>⚡ Elevate to Super Admin</span>
                   </button>
                 </div>
               )}

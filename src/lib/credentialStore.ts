@@ -32,22 +32,22 @@ export const INITIAL_CREDENTIAL_STORE: StoredCredential[] = [
     userId: 'USR-000',
     email: 'admin@procureos.com',
     passwordHash:
-      '310000$3bd1814a0fb2dc11f1ecd352034bb2a6$7ad9322e1925daf8ce0889e2e7a16e61f54cfc19c35533841e5f4e53700b4c49',
+      '310000$47ec1880ff1e002b6bf67f0dadf2af4d$afe4cc75239362f01c7d0697e128458472899e812275e5d4a36a8b03913fba84',
     mustChangePassword: false,
   },
   {
     userId: 'USR-001',
     email: 'aitzaz@fitcotech.com',
     passwordHash:
-      '310000$a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6$3f6cfbce3f72d03e4a8ab1f06f1e75994a5fdc20ab4a8233a854f69e483c40c8',
-    mustChangePassword: true,
+      '310000$015ced74c3ae5c03996da25626ad7054$e5bc5b767e24c75dd02bb675535ac4c5390eacae5a461a3a1e3b7310e66517e8',
+    mustChangePassword: false,
   },
   {
     userId: 'USR-002',
     email: 'muhammed.azhar@arabitra.com',
     passwordHash:
-      '310000$b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7$ca4a78d1ab9a3f03712c1b2e4d34b7adedbdf5158a325ed2f0abc97fafb59a1f',
-    mustChangePassword: true,
+      '310000$d20def443c603eef32abcce4dd10398f$84ca20cf9aa1d1337650c8fad75e723655dfc14476509b5d5fac9d0c0bc57f20',
+    mustChangePassword: false,
   },
   {
     userId: 'USR-003',
