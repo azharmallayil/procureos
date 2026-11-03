@@ -96,3 +96,4 @@ CREATE POLICY "Allow delete quotation line items"
 ON public.quotation_line_items FOR DELETE
 TO anon, authenticated
 USING (true);
+

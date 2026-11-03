@@ -22,6 +22,7 @@ import {
   FileCheck2,
   History,
   Sparkles,
+  FileCode,
 } from 'lucide-react';
 import { UserRole, UserProfile, EntityId } from '../../../types/procurement';
 import { useAuth } from '../../../context/AuthContext';
@@ -815,6 +816,68 @@ export const TeamModule: React.FC = () => {
                       Select Backup File (.json)
                     </label>
                   </div>
+                </div>
+              </div>
+
+              {/* Pre-Configured Telematics Sample Database Downloads */}
+              <div className="p-5 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-cyan-900/40">
+                  <div>
+                    <h4 className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-cyan-400" />
+                      Saudi Telematics & AI Fleet Safety Sample Database
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Complete pre-configured EPC telematics dataset (Teltonika, Howen, Jimi, Iridium Edge, BLE Fuel Sensors, Routers, Tenders & Bids).
+                    </p>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono font-semibold self-start sm:self-auto">
+                    Aramco & SEC Compliant
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  <a
+                    href="/procureos-telematics-sample-database.json"
+                    download="procureos-telematics-sample-database.json"
+                    className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/80 transition-all flex flex-col justify-between group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      <span>ProcureOS JSON Backup</span>
+                      <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      Full 11-collection snapshot for 1-click restore (79 KB)
+                    </span>
+                  </a>
+
+                  <a
+                    href="/procureos-telematics-sample-items.csv"
+                    download="procureos-telematics-sample-items.csv"
+                    className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all flex flex-col justify-between group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-200 group-hover:text-emerald-300">
+                      <span>Items Catalog (CSV)</span>
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      Excel / CSV of 70+ telematics hardware SKUs (14 KB)
+                    </span>
+                  </a>
+
+                  <a
+                    href="/procureos-telematics-seed.sql"
+                    download="procureos-telematics-seed.sql"
+                    className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-800/80 transition-all flex flex-col justify-between group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-200 group-hover:text-purple-300">
+                      <span>PostgreSQL / Supabase SQL</span>
+                      <FileCode className="w-3.5 h-3.5 text-purple-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      Standard SQL INSERT seed script for database (34 KB)
+                    </span>
+                  </a>
                 </div>
               </div>
 
