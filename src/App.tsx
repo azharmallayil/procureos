@@ -71,21 +71,22 @@ const MainApplication: React.FC = () => {
   const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);
   const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
-  // Auto-migrate cached tables to latest Telematics, AI Safety, LMI & Cold Chain datasets if outdated
+  // Auto-migrate cached tables to latest Telematics, AI Safety, LMI & Cold Chain datasets
   useEffect(() => {
-    const hasOldSkus = items.some((item) => item.sku.startsWith('FIT-MECH'));
-    const hasNewSkus = items.some((item) => item.sku.startsWith('IOT-TEL'));
-    if (hasOldSkus || !hasNewSkus || items.length === 0) {
+    const currentDbVer = localStorage.getItem('procureos_db_version');
+    const TARGET_DB_VER = '2026.11.03.v3';
+    const needsMigration =
+      currentDbVer !== TARGET_DB_VER ||
+      quotations.length < 4 ||
+      !quotations.some((q) => q.rfqId === 'RFQ-2026-0042') ||
+      items.some((item) => item.sku.startsWith('FIT-MECH')) ||
+      !items.some((item) => item.sku.startsWith('IOT-TEL'));
+
+    if (needsMigration) {
       setItems(MOCK_ITEMS);
       localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
-    }
-    const hasOldVendors = vendors.some((v) => v.name.includes('Al-Tamimi Industrial Flow'));
-    if (hasOldVendors || !vendors.some((v) => v.id === 'VND-008')) {
       setVendors(MOCK_VENDORS);
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
-    }
-    const hasOldRfqs = rfqs.some((r) => r.title.includes('Valves') || r.projectName.includes('Shedgum'));
-    if (hasOldRfqs) {
       setRfqs(MOCK_RFQS);
       localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
       setQuotations(MOCK_QUOTATIONS);
@@ -98,6 +99,7 @@ const MainApplication: React.FC = () => {
       localStorage.setItem('procureos_payments', JSON.stringify(MOCK_PAYMENTS));
       setAssets(MOCK_ASSETS);
       localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
+      localStorage.setItem('procureos_db_version', TARGET_DB_VER);
     }
   }, []);
 

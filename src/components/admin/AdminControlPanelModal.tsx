@@ -269,8 +269,8 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
     }
   };
 
-  const handleExportBackup = () => {
-    downloadBackupFile(currentUser?.name || 'Super Admin');
+  const handleExportBackup = async () => {
+    await downloadBackupFile(currentUser?.name || 'Super Admin');
     success('System Backup Created', 'Enterprise JSON snapshot downloaded to your device.');
   };
 
@@ -296,9 +296,9 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleConfirmRestore = () => {
+  const handleConfirmRestore = async () => {
     if (!restoreFile) return;
-    const result = restoreFullBackup(restoreFile, currentUser?.name || 'Super Admin');
+    const result = await restoreFullBackup(restoreFile, currentUser?.name || 'Super Admin');
     setShowRestoreModal(false);
     setRestoreFile(null);
 
@@ -306,6 +306,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
       success('Database Restored', result.message);
       info('Re-syncing State', 'ProcureOS has reloaded the latest snapshot across all modules.');
       refreshAuditLogs();
+      setTimeout(() => window.location.reload(), 500);
     } else {
       toastError('Restore Failed', result.message);
     }
@@ -324,6 +325,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
       localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
       localStorage.setItem('procureos_users', JSON.stringify(MOCK_USERS));
       localStorage.setItem('procureos_credentials', JSON.stringify(INITIAL_CREDENTIAL_STORE));
+      localStorage.setItem('procureos_db_version', '2026.11.03.v3');
 
       setShowResetConfirmModal(false);
       success('Factory Reset Complete', 'All enterprise tables reset to baseline demonstration dataset.');

@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { StoredPdfDoc, getAllStoredPdfDocuments, restoreStoredPdfDocuments } from './pdfStorage';
 
 export interface AuditLogEntry {
   id: string;
@@ -189,19 +190,20 @@ class ProcureOSLiveBus {
     } else if (msg.type === 'REQUEST_LATEST_STATE') {
       // Peer asked for latest state snapshot; respond with our current database
       try {
-        const backup = generateFullBackup('Active Peer Sync');
-        if (this.supabaseChannel) {
-          this.supabaseChannel.send({
-            type: 'broadcast',
-            event: 'PROCUREOS_LIVE_SYNC',
-            payload: {
-              type: 'FULL_DATABASE_RESTORE',
-              data: backup.data,
-              timestamp: Date.now(),
-              senderId: CLIENT_INSTANCE_ID,
-            },
-          });
-        }
+        generateFullBackup('Active Peer Sync').then((backup) => {
+          if (this.supabaseChannel) {
+            this.supabaseChannel.send({
+              type: 'broadcast',
+              event: 'PROCUREOS_LIVE_SYNC',
+              payload: {
+                type: 'FULL_DATABASE_RESTORE',
+                data: backup.data,
+                timestamp: Date.now(),
+                senderId: CLIENT_INSTANCE_ID,
+              },
+            });
+          }
+        });
       } catch {
         // silent
       }
@@ -305,9 +307,10 @@ export interface EnterpriseBackupPayload {
   checksum: string;
   data: Record<string, any>;
   counts: Record<string, number>;
+  pdfDocuments?: StoredPdfDoc[];
 }
 
-export function generateFullBackup(exportedBy: string = 'Super Admin'): EnterpriseBackupPayload {
+export async function generateFullBackup(exportedBy: string = 'Super Admin'): Promise<EnterpriseBackupPayload> {
   const data: Record<string, any> = {};
   const counts: Record<string, number> = {};
 
@@ -328,19 +331,53 @@ export function generateFullBackup(exportedBy: string = 'Super Admin'): Enterpri
     }
   });
 
+  // Collect all quote PDFs from local IndexedDB
+  let pdfDocuments: StoredPdfDoc[] = [];
+  try {
+    pdfDocuments = await getAllStoredPdfDocuments();
+  } catch (err) {
+    console.warn('[ProcureOS Backup] Could not retrieve PDFs from IndexedDB:', err);
+  }
+
+  // Also collect any dataUrls embedded in procureos_quotations submissions
+  if (Array.isArray(data['procureos_quotations'])) {
+    const existingIds = new Set(pdfDocuments.map((d) => d.id));
+    for (const qe of data['procureos_quotations']) {
+      if (Array.isArray(qe.submissions)) {
+        for (const sub of qe.submissions) {
+          if (sub.attachment?.pdfDataUrl && sub.attachment?.docId && !existingIds.has(sub.attachment.docId)) {
+            pdfDocuments.push({
+              id: sub.attachment.docId,
+              proposalRef: sub.attachment.proposalRefNumber || '',
+              fileName: sub.attachment.fileName || 'Quotation.pdf',
+              mimeType: 'application/pdf',
+              dataUrl: sub.attachment.pdfDataUrl,
+              uploadedAt: sub.attachment.uploadedAt || new Date().toISOString(),
+              fileSizeBytes: sub.attachment.fileSizeBytes || 0,
+            });
+            existingIds.add(sub.attachment.docId);
+          }
+        }
+      }
+    }
+  }
+
+  counts['procureos_pdf_documents'] = pdfDocuments.length;
+
   return {
-    version: '2.4.0',
+    version: '2.6.0',
     exportedAt: new Date().toISOString(),
     system: 'ProcureOS Enterprise Saudi Arabia Multi-Entity Procurement OS',
     exportedBy,
     checksum: `SHA256-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     data,
     counts,
+    pdfDocuments,
   };
 }
 
-export function downloadBackupFile(exportedBy: string): void {
-  const backup = generateFullBackup(exportedBy);
+export async function downloadBackupFile(exportedBy: string): Promise<void> {
+  const backup = await generateFullBackup(exportedBy);
   const jsonStr = JSON.stringify(backup, null, 2);
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -357,31 +394,65 @@ export function downloadBackupFile(exportedBy: string): void {
     'System Backup Exported',
     'System',
     'BACKUP-FULL',
-    `Enterprise snapshot exported containing ${Object.keys(backup.data).length} tables.`,
+    `Enterprise snapshot exported containing ${Object.keys(backup.data).length} tables and ${backup.pdfDocuments?.length || 0} quote PDF documents.`,
     { name: exportedBy, role: 'Super Admin' }
   );
 }
 
-export function restoreFullBackup(
+export async function restoreFullBackup(
   backup: EnterpriseBackupPayload,
   restoredBy: string = 'Super Admin'
-): { ok: boolean; message: string; counts?: Record<string, number> } {
+): Promise<{ ok: boolean; message: string; counts?: Record<string, number> }> {
   if (!backup || !backup.data || typeof backup.data !== 'object') {
     return { ok: false, message: 'Invalid backup file structure: missing data payload.' };
   }
 
   try {
+    // 1. Restore all collections to localStorage
     ALL_DATA_KEYS.forEach((key) => {
       if (key in backup.data) {
         localStorage.setItem(key, JSON.stringify(backup.data[key]));
       }
     });
 
+    // 2. Restore all PDF documents into IndexedDB
+    let pdfCount = 0;
+    if (Array.isArray(backup.pdfDocuments) && backup.pdfDocuments.length > 0) {
+      await restoreStoredPdfDocuments(backup.pdfDocuments);
+      pdfCount += backup.pdfDocuments.length;
+    }
+
+    // 3. Ensure any inline quotation attachments with dataUrls are also written to IndexedDB
+    if (Array.isArray(backup.data.procureos_quotations)) {
+      const inlineDocs: StoredPdfDoc[] = [];
+      for (const qe of backup.data.procureos_quotations) {
+        if (Array.isArray(qe.submissions)) {
+          for (const sub of qe.submissions) {
+            if (sub.attachment?.pdfDataUrl && sub.attachment?.docId) {
+              inlineDocs.push({
+                id: sub.attachment.docId,
+                proposalRef: sub.attachment.proposalRefNumber || '',
+                fileName: sub.attachment.fileName || 'Quotation.pdf',
+                mimeType: 'application/pdf',
+                dataUrl: sub.attachment.pdfDataUrl,
+                uploadedAt: sub.attachment.uploadedAt || new Date().toISOString(),
+                fileSizeBytes: sub.attachment.fileSizeBytes || 0,
+              });
+            }
+          }
+        }
+      }
+      if (inlineDocs.length > 0) {
+        await restoreStoredPdfDocuments(inlineDocs);
+        pdfCount += inlineDocs.length;
+      }
+    }
+
     recordAuditLog(
       'System Backup Restored',
       'System',
       'RESTORE-FULL',
-      `Full database restoration executed from snapshot created at ${backup.exportedAt || 'Unknown'}.`,
+      `Full database restoration executed from snapshot created at ${backup.exportedAt || 'Unknown'}. Restored ${Object.keys(backup.data).length} collections and ${pdfCount} quote PDF documents.`,
       { name: restoredBy, role: 'Super Admin' }
     );
 
@@ -395,7 +466,7 @@ export function restoreFullBackup(
 
     return {
       ok: true,
-      message: 'Enterprise database successfully restored and synchronized globally.',
+      message: `Enterprise database successfully restored: ${Object.keys(backup.data).length} collections and ${pdfCount} quote PDF documents synchronized.`,
       counts: backup.counts,
     };
   } catch (err: any) {

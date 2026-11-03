@@ -222,8 +222,8 @@ export const TeamModule: React.FC = () => {
   };
 
   // Handle Export Backup
-  const handleExportBackup = () => {
-    downloadBackupFile(currentUser?.name || 'Super Admin');
+  const handleExportBackup = async () => {
+    await downloadBackupFile(currentUser?.name || 'Super Admin');
     success('System Backup Created', 'Enterprise JSON snapshot downloaded to your local device.');
   };
 
@@ -252,9 +252,9 @@ export const TeamModule: React.FC = () => {
   };
 
   // Confirm Restore
-  const handleConfirmRestore = () => {
+  const handleConfirmRestore = async () => {
     if (!restoreFile) return;
-    const result = restoreFullBackup(restoreFile, currentUser?.name || 'Super Admin');
+    const result = await restoreFullBackup(restoreFile, currentUser?.name || 'Super Admin');
     setShowRestoreModal(false);
     setRestoreFile(null);
 
@@ -262,6 +262,7 @@ export const TeamModule: React.FC = () => {
       success('Database Restored', result.message);
       info('Re-syncing State', 'ProcureOS has reloaded the latest snapshot across all modules.');
       refreshAuditLogs();
+      setTimeout(() => window.location.reload(), 500);
     } else {
       toastError('Restore Failed', result.message);
     }
@@ -272,6 +273,7 @@ export const TeamModule: React.FC = () => {
     try {
       localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
+      localStorage.setItem('procureos_requisitions', JSON.stringify([]));
       localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
       localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
       localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
@@ -280,6 +282,7 @@ export const TeamModule: React.FC = () => {
       localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
       localStorage.setItem('procureos_users', JSON.stringify(MOCK_USERS));
       localStorage.setItem('procureos_credentials', JSON.stringify(INITIAL_CREDENTIAL_STORE));
+      localStorage.setItem('procureos_db_version', '2026.11.03.v3');
 
       setShowResetConfirmModal(false);
       success('Factory Reset Complete', 'All enterprise tables reset to baseline demonstration dataset.');

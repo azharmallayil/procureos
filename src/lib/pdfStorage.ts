@@ -12,7 +12,7 @@ const PDF_STORE_DB = 'procureos_documents_db';
 const PDF_STORE_NAME = 'quote_pdfs';
 const STORAGE_BUCKET = 'quote-documents';
 
-interface StoredPdfDoc {
+export interface StoredPdfDoc {
   id: string; // docId / attachment key
   proposalRef: string;
   fileName: string;
@@ -109,6 +109,44 @@ export async function deletePdfLocally(docId: string): Promise<boolean> {
     });
   } catch (err) {
     console.warn('[ProcureOS Document Gateway] Failed to delete from IndexedDB:', err);
+    return false;
+  }
+}
+
+// ── 3c. Retrieve All Stored PDF Documents (For Enterprise Backups) ───────────
+export async function getAllStoredPdfDocuments(): Promise<StoredPdfDoc[]> {
+  try {
+    const db = await openPdfDatabase();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PDF_STORE_NAME, 'readonly');
+      const store = tx.objectStore(PDF_STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch {
+    return [];
+  }
+}
+
+// ── 3d. Batch Restore PDF Documents (From Enterprise Backups) ────────────────
+export async function restoreStoredPdfDocuments(docs: StoredPdfDoc[]): Promise<boolean> {
+  if (!Array.isArray(docs) || docs.length === 0) return true;
+  try {
+    const db = await openPdfDatabase();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PDF_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(PDF_STORE_NAME);
+      for (const doc of docs) {
+        if (doc && doc.id) {
+          store.put(doc);
+        }
+      }
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch (err) {
+    console.warn('[ProcureOS Document Gateway] Failed to restore PDFs into IndexedDB:', err);
     return false;
   }
 }
