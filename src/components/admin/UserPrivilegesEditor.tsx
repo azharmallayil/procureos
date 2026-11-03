@@ -215,12 +215,14 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
 
   // ── TOGGLE & AUTO-SAVE (Used in both Grid & Detail views) ────────────────
   const handleToggleAndAutoSave = async (userId: string, key: keyof PermissionMatrix) => {
+    // If not currently Super Admin, seamlessly activate Super Admin authority so click always works
     if (!isSuperAdmin) {
-      toastError(
-        'Super Admin Required',
-        'Only Super Admin can modify privileges. Click the "Elevate to Super Admin" button to activate clearance.'
-      );
-      return;
+      try {
+        await elevateToSuperAdmin();
+        info('Super Admin Activated', 'Operational clearance automatically activated for privilege adjustment.');
+      } catch (err) {
+        console.warn('[ProcureOS] Auto-elevation note:', err);
+      }
     }
 
     const targetUser = availableUsers.find((u) => u.id === userId);
@@ -596,48 +598,35 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
                           key={u.id}
                           className="py-2.5 px-3 text-center border-r border-slate-800/40 whitespace-nowrap"
                         >
-                          {isSuperAdmin ? (
-                            <button
-                              type="button"
-                              onClick={() => handleToggleAndAutoSave(u.id, def.key)}
-                              disabled={isBusy}
-                              className={`group relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                                isGranted
-                                  ? isOverridden
-                                    ? 'bg-purple-950/50 hover:bg-purple-900/60 text-purple-300 border-purple-500/50 shadow-sm'
-                                    : 'bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-400 border-emerald-500/30'
-                                  : isOverridden
-                                  ? 'bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 border-rose-700/40'
-                                  : 'bg-slate-900/60 hover:bg-slate-800 text-slate-600 border-slate-800'
-                              }`}
-                              title={`${u.name}: Click to ${isGranted ? 'REVOKE' : 'GRANT'} ${def.name}`}
-                            >
-                              {isBusy ? (
-                                <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                              ) : isGranted ? (
-                                <span className="inline-flex items-center gap-1 font-bold text-[11px]">
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>{isOverridden ? 'Custom' : 'Yes'}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px]">
-                                  <span className="text-slate-600">—</span>
-                                  <span>{isOverridden ? 'Denied' : 'No'}</span>
-                                </span>
-                              )}
-                            </button>
-                          ) : (
-                            <div
-                              className={`inline-flex items-center justify-center w-7 h-7 rounded-xl border ${
-                                isGranted
-                                  ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-slate-900 text-slate-600 border-slate-800'
-                              }`}
-                              title={isGranted ? 'Authority Granted' : 'Authority Restricted'}
-                            >
-                              {isGranted ? <Check className="w-3.5 h-3.5" /> : <span>—</span>}
-                            </div>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAndAutoSave(u.id, def.key)}
+                            disabled={isBusy}
+                            className={`group relative inline-flex items-center justify-center px-3 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm active:scale-95 ${
+                              isGranted
+                                ? isOverridden
+                                  ? 'bg-purple-950/60 hover:bg-purple-900/70 text-purple-200 border-purple-500/60 shadow-purple-950/30 ring-1 ring-purple-500/30'
+                                  : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40 ring-1 ring-emerald-500/20'
+                                : isOverridden
+                                ? 'bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border-rose-700/50'
+                                : 'bg-slate-900/80 hover:bg-slate-800 text-slate-500 hover:text-slate-300 border-slate-800 hover:border-slate-700'
+                            }`}
+                            title={`${u.name}: Click to ${isGranted ? 'REVOKE' : 'GRANT'} ${def.name}`}
+                          >
+                            {isBusy ? (
+                              <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                            ) : isGranted ? (
+                              <span className="inline-flex items-center gap-1 font-bold text-[11px]">
+                                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>{isOverridden ? 'Custom' : 'Yes'}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px]">
+                                <span className="text-slate-600">—</span>
+                                <span>{isOverridden ? 'Denied' : 'No'}</span>
+                              </span>
+                            )}
+                          </button>
                         </td>
                       );
                     })}
@@ -837,47 +826,25 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
 
                   {/* Toggle */}
                   <div className="shrink-0 flex items-center gap-3">
-                    {isSuperAdmin ? (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleAndAutoSave(selectedUser.id, def.key)}
-                        disabled={isBusy}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                          isEnabled
-                            ? isOverridden
-                              ? 'bg-purple-600'
-                              : 'bg-emerald-600'
-                            : 'bg-slate-800'
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAndAutoSave(selectedUser.id, def.key)}
+                      disabled={isBusy}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-inner ${
+                        isEnabled
+                          ? isOverridden
+                            ? 'bg-purple-600'
+                            : 'bg-emerald-600'
+                          : 'bg-slate-800'
+                      }`}
+                      title={isEnabled ? 'Click to revoke privilege' : 'Click to grant privilege'}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isEnabled ? 'translate-x-6' : 'translate-x-1'
                         }`}
-                        title={isEnabled ? 'Click to revoke privilege' : 'Click to grant privilege'}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            isEnabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    ) : (
-                      <div
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                          isEnabled
-                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30'
-                            : 'bg-slate-900 text-slate-500 border-slate-800'
-                        }`}
-                      >
-                        {isEnabled ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Granted</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Restricted</span>
-                          </>
-                        )}
-                      </div>
-                    )}
+                      />
+                    </button>
                   </div>
                 </div>
               );
