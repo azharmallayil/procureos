@@ -4,9 +4,10 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
-import { UserRole, UserProfile } from '../types/procurement';
+import { UserRole, UserProfile, PermissionMatrix } from '../types/procurement';
 import { MOCK_USERS } from '../data/mockData';
 import { verifyPassword, generateSessionToken, hashPassword } from '../lib/crypto';
 import {
@@ -35,19 +36,7 @@ export const USERS_STORAGE_KEY = 'procureos_users';
 // ============================================================================
 // Types
 // ============================================================================
-export interface PermissionMatrix {
-  canApprovePO: boolean;
-  canApproveHighValuePO: boolean;
-  canCreateRFQ: boolean;
-  canAwardBid: boolean;
-  canReleasePayment: boolean;
-  canAuditLogs: boolean;
-  canManageVendors: boolean;
-  canReceiveShipment: boolean;
-  canEditQuotePrice: boolean;
-  canDeleteQuotation: boolean;
-  canDeleteRFQ: boolean;
-}
+export type { PermissionMatrix };
 
 export type LoginResult =
   | { ok: true }
@@ -78,6 +67,10 @@ interface AuthContextType {
     newPassword?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   deleteUser: (userId: string) => Promise<{ ok: boolean; error?: string }>;
+  updateUserPermissions: (
+    userId: string,
+    customPermissions: Partial<PermissionMatrix> | null
+  ) => Promise<{ ok: boolean; error?: string }>;
 
   // Helpers
   setActiveRole: (role: UserRole) => void;
@@ -88,7 +81,7 @@ interface AuthContextType {
 // ============================================================================
 // Role → Permissions
 // ============================================================================
-const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
+export const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
   'Super Admin': {
     canApprovePO: true,
     canApproveHighValuePO: true,
@@ -661,9 +654,89 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [currentUser]
   );
 
+  // ── Super Admin: Update User Permissions ─────────────────────────────────
+  const updateUserPermissions = useCallback(
+    async (
+      userId: string,
+      customPermissions: Partial<PermissionMatrix> | null
+    ): Promise<{ ok: boolean; error?: string }> => {
+      if (currentUser?.role !== 'Super Admin') {
+        return { ok: false, error: 'Access denied: Only Super Admin can modify user privileges.' };
+      }
+
+      const users = getStoredUsers();
+      const targetUser = users.find((u) => u.id === userId);
+      if (!targetUser) return { ok: false, error: 'Target user not found.' };
+
+      const updatedUsers = users.map((u) => {
+        if (u.id === userId) {
+          const clone = { ...u };
+          if (customPermissions && Object.keys(customPermissions).length > 0) {
+            clone.customPermissions = customPermissions;
+          } else {
+            delete clone.customPermissions;
+          }
+          return clone;
+        }
+        return u;
+      });
+
+      saveStoredUsers(updatedUsers);
+      setAvailableUsers(updatedUsers);
+
+      if (currentUser.id === userId) {
+        setCurrentUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                customPermissions:
+                  customPermissions && Object.keys(customPermissions).length > 0
+                    ? customPermissions
+                    : undefined,
+              }
+            : null
+        );
+      }
+
+      recordAuditLog(
+        'User Privileges Updated',
+        'Security',
+        userId,
+        customPermissions && Object.keys(customPermissions).length > 0
+          ? `Super Admin customized granular privileges for ${targetUser.name} (${targetUser.email}).`
+          : `Super Admin reset privileges to role defaults for ${targetUser.name} (${targetUser.email}).`,
+        {
+          name: currentUser.name,
+          role: currentUser.role,
+        }
+      );
+
+      liveBus.publish({
+        type: 'USER_SYNC',
+        data: updatedUsers,
+        timestamp: Date.now(),
+        actor: currentUser.name,
+      });
+
+      return { ok: true };
+    },
+    [currentUser]
+  );
+
   // ── Derived values ──────────────────────────────────────────────────────
   const activeRole = currentUser?.role ?? null;
-  const permissions = activeRole ? ROLE_PERMISSIONS[activeRole] ?? null : null;
+  const basePermissions = activeRole ? ROLE_PERMISSIONS[activeRole] ?? null : null;
+  const permissions: PermissionMatrix | null = useMemo(() => {
+    if (!basePermissions) return null;
+    if (currentUser?.customPermissions) {
+      return {
+        ...basePermissions,
+        ...currentUser.customPermissions,
+      };
+    }
+    return basePermissions;
+  }, [basePermissions, currentUser?.customPermissions]);
+
   const isAuthenticated = Boolean(session && currentUser);
 
   // setActiveRole: disabled in production office mode (switching requires actual login with credentials)
@@ -692,6 +765,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addUser,
         updateUser,
         deleteUser,
+        updateUserPermissions,
         setActiveRole,
         availableUsers,
         securityDisclaimer,

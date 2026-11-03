@@ -24,6 +24,20 @@ export type UserRole =
   | 'Financial Controller'
   | 'Internal Auditor';
 
+export interface PermissionMatrix {
+  canApprovePO: boolean;
+  canApproveHighValuePO: boolean;
+  canCreateRFQ: boolean;
+  canAwardBid: boolean;
+  canReleasePayment: boolean;
+  canAuditLogs: boolean;
+  canManageVendors: boolean;
+  canReceiveShipment: boolean;
+  canEditQuotePrice: boolean;
+  canDeleteQuotation: boolean;
+  canDeleteRFQ: boolean;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -35,6 +49,7 @@ export interface UserProfile {
   status: 'Active' | 'Suspended' | 'Pending Verification';
   twoFactorEnabled: boolean;
   lastLogin: string;
+  customPermissions?: Partial<PermissionMatrix>;
 }
 
 export type ItemCategory =

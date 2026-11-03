@@ -23,6 +23,7 @@ import {
   History,
   Sparkles,
   FileCode,
+  Sliders,
 } from 'lucide-react';
 import { UserRole, UserProfile, EntityId } from '../../../types/procurement';
 import { useAuth } from '../../../context/AuthContext';
@@ -30,6 +31,7 @@ import { useToast } from '../../../context/ToastContext';
 import { Badge } from '../../common/Badge';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
+import { UserPrivilegesEditor } from '../../admin/UserPrivilegesEditor';
 import {
   downloadBackupFile,
   restoreFullBackup,
@@ -55,6 +57,7 @@ export const TeamModule: React.FC = () => {
 
   // Sub-navigation tabs
   const [activeTab, setActiveTab] = useState<'users' | 'backup' | 'audit' | 'matrix'>('users');
+  const [privilegeTargetUserId, setPrivilegeTargetUserId] = useState<string | undefined>(undefined);
 
   // Search & filter for users
   const [userSearch, setUserSearch] = useState('');
@@ -292,130 +295,6 @@ export const TeamModule: React.FC = () => {
     }
   };
 
-  const permissionMatrix: {
-    permission: string;
-    description: string;
-    roles: Record<UserRole, boolean>;
-  }[] = [
-    {
-      permission: 'Full User & Security Provisioning',
-      description: 'Create, modify, and delete user profiles and reset credentials',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': false,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': false,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Disaster Recovery (Backup & Restore)',
-      description: 'Export and restore immutable enterprise JSON database snapshots',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': false,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': false,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Create RFQ / Tender',
-      description: 'Draft and publish competitive tender packages to suppliers',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': true,
-        'Procurement Engineer': true,
-        'Purchasing Specialist': true,
-        'Site Receiving Officer': false,
-        'Financial Controller': false,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Award Tender Bid',
-      description: 'Authorize commercial selection and generate draft PO',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': true,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': false,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Approve PO (< 1M SAR)',
-      description: 'Sign off operational purchase orders up to SAR 1,000,000',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': true,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': true,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Approve PO (> 1M SAR)',
-      description: 'Executive authorization threshold for high-value contracts',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': true,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': true,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Site Goods Receipt & QC',
-      description: 'Perform material acceptance and file official GRN report',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': false,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': true,
-        'Financial Controller': false,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Release Payment (Treasury)',
-      description: 'Authorize SARIE bank wire transfers & letters of credit',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': false,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': true,
-        'Internal Auditor': false,
-      },
-    },
-    {
-      permission: 'Audit Ledger & Export Logs',
-      description: 'Read-only immutable access to enterprise transaction trails',
-      roles: {
-        'Super Admin': true,
-        'Procurement Director': true,
-        'Procurement Engineer': false,
-        'Purchasing Specialist': false,
-        'Site Receiving Officer': false,
-        'Financial Controller': true,
-        'Internal Auditor': true,
-      },
-    },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Module Header */}
@@ -627,11 +506,18 @@ export const TeamModule: React.FC = () => {
 
                         {/* Role */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 font-medium ${
-                            isSuper ? 'text-amber-300 font-bold' : 'text-slate-200'
-                          }`}>
-                            {user.role}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 font-medium ${
+                              isSuper ? 'text-amber-300 font-bold' : 'text-slate-200'
+                            }`}>
+                              {user.role}
+                            </span>
+                            {user.customPermissions && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-950/80 text-purple-300 border border-purple-500/40" title="Custom privileges active">
+                                Custom
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Entity */}
@@ -672,6 +558,20 @@ export const TeamModule: React.FC = () => {
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Super Admin Edit Privileges Button */}
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => {
+                                  setPrivilegeTargetUserId(user.id);
+                                  setActiveTab('matrix');
+                                }}
+                                title="Customize user privileges matrix"
+                                className="p-1.5 rounded-lg bg-slate-800 text-purple-300 hover:text-white hover:bg-purple-950/60 border border-slate-700/60 hover:border-purple-500/40 transition-colors cursor-pointer"
+                              >
+                                <Sliders className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
                             {/* Super Admin Edit Button */}
                             {isSuperAdmin && (
                               <button
@@ -987,70 +887,7 @@ export const TeamModule: React.FC = () => {
 
       {/* TAB 4: PERMISSIONS MATRIX */}
       {activeTab === 'matrix' && (
-        <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
-          <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
-            <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-              <Lock className="w-4 h-4 text-emerald-400" />
-              Enterprise Permissions & Separation of Duties Matrix
-            </h3>
-            <span className="text-xs text-slate-400">
-              Role-Based Authorization Policies
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 text-[11px] border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4 font-semibold min-w-[220px]">Operation / Authority</th>
-                  <th className="py-3 px-3 text-center">Super Admin</th>
-                  <th className="py-3 px-3 text-center">Procurement Director</th>
-                  <th className="py-3 px-3 text-center">Procurement Engineer</th>
-                  <th className="py-3 px-3 text-center">Purchasing Specialist</th>
-                  <th className="py-3 px-3 text-center">Site Receiving Officer</th>
-                  <th className="py-3 px-3 text-center">Financial Controller</th>
-                  <th className="py-3 px-3 text-center">Internal Auditor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {permissionMatrix.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-100">{item.permission}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{item.description}</div>
-                    </td>
-                    {(
-                      [
-                        'Super Admin',
-                        'Procurement Director',
-                        'Procurement Engineer',
-                        'Purchasing Specialist',
-                        'Site Receiving Officer',
-                        'Financial Controller',
-                        'Internal Auditor',
-                      ] as UserRole[]
-                    ).map((role) => {
-                      const hasPerm = item.roles[role];
-                      return (
-                        <td key={role} className="py-3 px-3 text-center whitespace-nowrap">
-                          {hasPerm ? (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 border border-slate-800 text-slate-600">
-                              <XCircle className="w-3.5 h-3.5" />
-                            </span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <UserPrivilegesEditor isSuperAdmin={isSuperAdmin} initialUserId={privilegeTargetUserId} />
       )}
 
       {/* MODAL: ADD USER (Super Admin Only) */}
@@ -1318,22 +1155,41 @@ export const TeamModule: React.FC = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setEditingUser(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={isSubmittingUser}
-                className="bg-cyan-600 hover:bg-cyan-500 text-white"
-              >
-                {isSubmittingUser ? 'Saving...' : 'Save Changes'}
-              </Button>
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              {isSuperAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editingUser) {
+                      setPrivilegeTargetUserId(editingUser.id);
+                      setEditingUser(null);
+                      setActiveTab('matrix');
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/50 text-purple-300 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  Customize Privileges
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={isSubmittingUser}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                >
+                  {isSubmittingUser ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
             </div>
           </form>
         </Modal>

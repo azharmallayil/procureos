@@ -41,6 +41,7 @@ import { useToast } from '../../context/ToastContext';
 import { Badge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
+import { UserPrivilegesEditor } from './UserPrivilegesEditor';
 import {
   downloadBackupFile,
   restoreFullBackup,
@@ -83,6 +84,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
   const isSuperAdmin = activeRole === 'Super Admin';
 
   const [activeTab, setActiveTab] = useState<'users' | 'backup' | 'audit' | 'privileges'>('users');
+  const [privilegeTargetUserId, setPrivilegeTargetUserId] = useState<string | undefined>(undefined);
 
   // Search & Filter
   const [userSearch, setUserSearch] = useState('');
@@ -612,15 +614,22 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
 
                                   {/* Role */}
                                   <td className="py-3.5 px-3 whitespace-nowrap">
-                                    <span
-                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
-                                        isSuper
-                                          ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 font-bold'
-                                          : 'bg-slate-900 text-slate-200 border border-slate-800'
-                                      }`}
-                                    >
-                                      {user.role}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                                          isSuper
+                                            ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 font-bold'
+                                            : 'bg-slate-900 text-slate-200 border border-slate-800'
+                                        }`}
+                                      >
+                                        {user.role}
+                                      </span>
+                                      {user.customPermissions && (
+                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-950/80 text-purple-300 border border-purple-500/40" title="Granular privileges customized">
+                                          Custom
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
 
                                   {/* Entity */}
@@ -659,6 +668,21 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                                   {/* Actions */}
                                   <td className="py-3.5 px-4 text-right whitespace-nowrap">
                                     <div className="flex items-center justify-end gap-1.5">
+                                      {/* Edit Privileges (Super Admin Only) */}
+                                      {isSuperAdmin && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPrivilegeTargetUserId(user.id);
+                                            setActiveTab('privileges');
+                                          }}
+                                          title="Customize granular privileges matrix"
+                                          className="p-1.5 rounded-lg bg-slate-900 text-purple-300 hover:text-purple-200 hover:bg-purple-950/50 border border-slate-800 hover:border-purple-500/40 transition-all cursor-pointer"
+                                        >
+                                          <Sliders className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+
                                       {/* Edit Button */}
                                       <button
                                         type="button"
@@ -941,64 +965,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
 
               {/* TAB 4: PRIVILEGE MATRIX */}
               {activeTab === 'privileges' && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/90 text-xs text-slate-300 leading-relaxed flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-bold text-white text-sm">Role-Based Access Control (RBAC) Governance</h3>
-                      <p className="text-slate-400 text-xs mt-0.5">
-                        The matrix defines strict operational boundaries. Super Admin possesses full override clearance, while functional roles adhere strictly to segregation of duties.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-800/90 bg-slate-950/60 overflow-hidden shadow-inner">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-950/90 text-slate-400 text-[10px] uppercase tracking-wider border-b border-slate-800">
-                          <tr>
-                            <th className="py-3 px-4 font-semibold min-w-[220px]">Enterprise Capability</th>
-                            <th className="py-3 px-3 text-center text-amber-300 font-bold">Super Admin</th>
-                            <th className="py-3 px-3 text-center">Procurement Dir</th>
-                            <th className="py-3 px-3 text-center">Procurement Eng</th>
-                            <th className="py-3 px-3 text-center">Purchasing Spec</th>
-                            <th className="py-3 px-3 text-center">Site Officer</th>
-                            <th className="py-3 px-3 text-center">Finance Dir</th>
-                            <th className="py-3 px-3 text-center">Auditor</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/60">
-                          {[
-                            { name: 'User Account Provisioning & Password Resets', sa: true, pd: false, pe: false, ps: false, so: false, fc: false, ia: false },
-                            { name: 'Disaster Recovery (Backup & Restore)', sa: true, pd: false, pe: false, ps: false, so: false, fc: false, ia: false },
-                            { name: 'RFQ & Competitive Tender Issuance', sa: true, pd: true, pe: true, ps: true, so: false, fc: false, ia: false },
-                            { name: 'Commercial Tender Award Authority', sa: true, pd: true, pe: false, ps: false, so: false, fc: false, ia: false },
-                            { name: 'Purchase Order Approval (< 1M SAR)', sa: true, pd: true, pe: false, ps: false, so: false, fc: true, ia: false },
-                            { name: 'High-Value PO Approval (> 1M SAR)', sa: true, pd: true, pe: false, ps: false, so: false, fc: true, ia: false },
-                            { name: 'Site Material Acceptance (GRN Sign-off)', sa: true, pd: false, pe: false, ps: false, so: true, fc: false, ia: false },
-                            { name: 'Treasury Wire Payment Disbursement', sa: true, pd: false, pe: false, ps: false, so: false, fc: true, ia: false },
-                            { name: 'Immutable Audit Ledger Inspection', sa: true, pd: true, pe: false, ps: false, so: false, fc: true, ia: true },
-                          ].map((row, i) => (
-                            <tr key={i} className="hover:bg-slate-900/40">
-                              <td className="py-3 px-4 font-medium text-slate-200">{row.name}</td>
-                              <td className="py-3 px-3 text-center text-emerald-400 font-bold bg-amber-500/5">
-                                <span className="inline-flex items-center gap-1">
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 text-center">{row.pd ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                              <td className="py-3 px-3 text-center">{row.pe ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                              <td className="py-3 px-3 text-center">{row.ps ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                              <td className="py-3 px-3 text-center">{row.so ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                              <td className="py-3 px-3 text-center">{row.fc ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                              <td className="py-3 px-3 text-center">{row.ia ? <Check className="w-3.5 h-3.5 mx-auto text-emerald-400" /> : <span className="text-slate-600">—</span>}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                <UserPrivilegesEditor isSuperAdmin={isSuperAdmin} initialUserId={privilegeTargetUserId} />
               )}
             </>
           )}
@@ -1265,17 +1232,36 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
               />
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
-              <Button variant="outline" type="button" onClick={() => setEditingUser(null)}>
-                Cancel
-              </Button>
-              <button
-                type="submit"
-                disabled={isSubmittingUser}
-                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isSubmittingUser ? 'Saving...' : 'Save Profile Changes'}
-              </button>
+            <div className="flex items-center justify-between gap-2.5 pt-3 border-t border-slate-800">
+              {isSuperAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editingUser) {
+                      setPrivilegeTargetUserId(editingUser.id);
+                      setEditingUser(null);
+                      setActiveTab('privileges');
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/50 text-purple-300 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  Customize Privileges
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <Button variant="outline" type="button" onClick={() => setEditingUser(null)}>
+                  Cancel
+                </Button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingUser}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmittingUser ? 'Saving...' : 'Save Profile Changes'}
+                </button>
+              </div>
             </div>
           </form>
         </Modal>
