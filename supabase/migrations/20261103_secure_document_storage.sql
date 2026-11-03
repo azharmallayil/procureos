@@ -36,3 +36,4 @@ ON storage.objects FOR UPDATE
 TO anon, authenticated
 USING (bucket_id = 'quote-documents')
 WITH CHECK (bucket_id = 'quote-documents');
+

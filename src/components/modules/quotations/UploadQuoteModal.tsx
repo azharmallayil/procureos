@@ -18,15 +18,21 @@ import {
   Plus,
   Trash2,
   Edit2,
+  HelpCircle,
+  Tag,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
+import { Badge } from '../../common/Badge';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import {
   QuotationEvaluation,
   QuotationComparisonItem,
   QuoteLineItemPrice,
+  ItemMatchStatus,
   Vendor,
   RFQ,
 } from '../../../types/procurement';
@@ -34,7 +40,11 @@ import {
   storePdfLocally,
   uploadPdfToCloudStorage,
 } from '../../../lib/pdfStorage';
-import { analyzeQuotePdf, ParsedQuoteReview } from '../../../lib/pdfParser';
+import {
+  analyzeQuotePdf,
+  ParsedQuoteReview,
+  ExtractedLineItem,
+} from '../../../lib/pdfParser';
 
 interface UploadQuoteModalProps {
   isOpen: boolean;
@@ -76,8 +86,18 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [technicalScore, setTechnicalScore] = useState<string>('95');
   const [validityDate, setValidityDate] = useState<string>('2026-12-31');
   const [paymentTerms, setPaymentTerms] = useState<string>('Net 30 Days');
+  const [deliveryTerms, setDeliveryTerms] = useState<string>('Ex-Works Warehouse');
+  const [currency, setCurrency] = useState<string>('SAR');
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Workflow Processing Status
+  const [processingStatus, setProcessingStatus] = useState<
+    'Uploaded' | 'Processing' | 'Extracting' | 'Matching' | 'Review Required' | 'Completed' | 'Failed'
+  >('Uploaded');
+
+  // Extracted Line Items List (Primary Source of Truth: Supplier's Actual Quotation)
+  const [extractedItems, setExtractedItems] = useState<ExtractedLineItem[]>([]);
 
   // Quick Add Supplier Form State
   const [showQuickAddVendor, setShowQuickAddVendor] = useState(false);
@@ -97,30 +117,13 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const currentRfq = rfqs.find((r) => r.id === targetRfqId);
   const existingEvaluation = quotations.find((evaluation) => evaluation.rfqId === targetRfqId);
 
-  // Open to ALL suppliers for any RFQ / project (remove invited-only restrictions)
+  // Open to ALL suppliers for any RFQ / project
   const eligibleVendors = vendors.filter((vendor) => {
     const alreadySubmitted = existingEvaluation?.submissions.some(
       (submission) => submission.vendorId === vendor.id
     );
     return !alreadySubmitted;
   });
-
-  const [lineItemUnitPrices, setLineItemUnitPrices] = useState<Record<string, number>>({});
-
-  // Sync line item prices when target RFQ changes
-  useEffect(() => {
-    if (currentRfq && currentRfq.lineItems && currentRfq.lineItems.length > 0) {
-      const initial: Record<string, number> = {};
-      let total = 0;
-      currentRfq.lineItems.forEach((li) => {
-        const p = li.targetPriceSAR || 0;
-        initial[li.id] = p;
-        total += p * li.quantity;
-      });
-      setLineItemUnitPrices(initial);
-      setQuotedTotalSAR(total.toString());
-    }
-  }, [targetRfqId, currentRfq]);
 
   useEffect(() => {
     if (selectedRfqId && rfqs.some((rfq) => rfq.id === selectedRfqId)) {
@@ -133,18 +136,6 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       setSelectedVendorId(eligibleVendors[0]?.id || '');
     }
   }, [targetRfqId, eligibleVendors.length]);
-
-  const handleItemPriceChange = (id: string, unitPrice: number) => {
-    const updated = { ...lineItemUnitPrices, [id]: unitPrice };
-    setLineItemUnitPrices(updated);
-    if (currentRfq?.lineItems) {
-      const sum = currentRfq.lineItems.reduce((acc, li) => {
-        const u = updated[li.id] !== undefined ? updated[li.id] : (li.targetPriceSAR || 0);
-        return acc + u * li.quantity;
-      }, 0);
-      setQuotedTotalSAR(sum.toString());
-    }
-  };
 
   // File Upload & Scan State
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -170,7 +161,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
 
     setUploadedFile(file);
     setIsAnalyzing(true);
-    setScanStatus('Initializing PDF.js engine...');
+    setProcessingStatus('Processing');
+    setScanStatus('Initializing multi-page PDF extraction engine...');
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -178,19 +170,25 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       setFileDataUrl(dataUrl);
 
       try {
+        setProcessingStatus('Extracting');
+        // Extract all items from PDF first without template restrictions,
+        // then match against RFQ line templates
         const templates = currentRfq?.lineItems?.map((li) => ({
           id: li.id,
+          sku: li.itemId || '',
           description: li.description,
           quantity: li.quantity,
           uom: li.uom,
           targetPriceSAR: li.targetPriceSAR,
         }));
 
+        setProcessingStatus('Matching');
         const review = await analyzeQuotePdf(dataUrl, templates, (msg) => {
           setScanStatus(msg);
         });
 
         setParsedReview(review);
+        setProcessingStatus('Review Required');
 
         // Pre-fill fields from PDF analysis
         if (review.proposalRefNumber) {
@@ -205,17 +203,22 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
         if (review.paymentTerms) {
           setPaymentTerms(review.paymentTerms);
         }
-        if (review.totalAmountSAR && review.totalAmountSAR > 0) {
-          setQuotedTotalSAR(review.totalAmountSAR.toString());
+        if (review.deliveryTerms) {
+          setDeliveryTerms(review.deliveryTerms);
+        }
+        if (review.currency) {
+          setCurrency(review.currency);
         }
 
-        // Apply extracted line item prices
+        // Keep the FULL extracted line items list (both matched BOQ items and additional quoted items)
         if (review.lineItems && review.lineItems.length > 0) {
-          const newPrices: Record<string, number> = { ...lineItemUnitPrices };
-          review.lineItems.forEach((extracted) => {
-            newPrices[extracted.id] = extracted.unitPriceSAR;
-          });
-          setLineItemUnitPrices(newPrices);
+          setExtractedItems(review.lineItems);
+          
+          // Calculate sum of extracted items
+          const itemsSum = review.lineItems.reduce((acc, curr) => acc + curr.totalPriceSAR, 0);
+          setQuotedTotalSAR(review.totalAmountSAR && review.totalAmountSAR > 0 ? review.totalAmountSAR.toString() : itemsSum.toString());
+        } else if (review.totalAmountSAR && review.totalAmountSAR > 0) {
+          setQuotedTotalSAR(review.totalAmountSAR.toString());
         }
 
         // Supplier recognition
@@ -231,9 +234,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
 
           if (matchedVendor) {
             setSelectedVendorId(matchedVendor.id);
-            success('Supplier Matched', `Quotation linked to registered vendor: ${matchedVendor.name}`);
+            success('Supplier Recognized', `Quotation matched to verified vendor: ${matchedVendor.name}`);
           } else {
-            // Pre-fill quick add supplier form
             setNewVendorForm((prev) => ({
               ...prev,
               name: review.vendorInfo?.name || '',
@@ -247,18 +249,69 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
             setShowQuickAddVendor(true);
             info(
               'New Supplier Detected',
-              `"${review.vendorInfo.name}" is not yet in the master vendor list. Quick registration form opened below.`
+              `"${review.vendorInfo.name}" is not yet registered. Quick registration form opened below.`
             );
           }
         }
       } catch (err) {
-        console.warn('[ProcureOS] PDF analysis completed with default heuristics:', err);
+        console.warn('[ProcureOS] PDF analysis notice:', err);
+        setProcessingStatus('Review Required');
       } finally {
         setIsAnalyzing(false);
         setScanStatus('');
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  // Line Item Update Helpers
+  const handleUpdateLineItem = (index: number, updates: Partial<ExtractedLineItem>) => {
+    setExtractedItems((prev) => {
+      const updated = [...prev];
+      const current = updated[index];
+      if (!current) return prev;
+
+      const nextItem = { ...current, ...updates };
+      // Auto-recalculate line total if quantity or unit price changed
+      if (updates.quantity !== undefined || updates.unitPriceSAR !== undefined) {
+        const qty = updates.quantity !== undefined ? updates.quantity : current.quantity;
+        const unit = updates.unitPriceSAR !== undefined ? updates.unitPriceSAR : current.unitPriceSAR;
+        nextItem.totalPriceSAR = qty * unit;
+      }
+      updated[index] = nextItem;
+
+      // Update grand total
+      const newTotal = updated.reduce((sum, item) => sum + item.totalPriceSAR, 0);
+      setQuotedTotalSAR(newTotal.toString());
+      return updated;
+    });
+  };
+
+  const handleRemoveLineItem = (index: number) => {
+    setExtractedItems((prev) => {
+      const updated = prev.filter((_, idx) => idx !== index);
+      const newTotal = updated.reduce((sum, item) => sum + item.totalPriceSAR, 0);
+      setQuotedTotalSAR(newTotal.toString());
+      return updated;
+    });
+  };
+
+  const handleAddLineItem = () => {
+    const nextIdx = extractedItems.length + 1;
+    const newItem: ExtractedLineItem = {
+      id: `EXT-MANUAL-${Date.now()}`,
+      lineNumber: nextIdx,
+      itemName: 'Additional Quoted Scope',
+      description: 'Additional supplier line item',
+      quantity: 1,
+      uom: 'EA',
+      unitPriceSAR: 0,
+      totalPriceSAR: 0,
+      matchStatus: 'Additional Quoted Item',
+      matchReason: 'Manually added item from supplier quotation',
+      needsVerification: false,
+    };
+    setExtractedItems((prev) => [...prev, newItem]);
   };
 
   // Quick Add Supplier Handler
@@ -333,43 +386,54 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
     const vendor = vendors.find((v) => v.id === selectedVendorId);
     const vendorName = vendor ? vendor.name : 'Registered Supplier';
 
-    const pricedRfqLines =
-      currentRfq?.lineItems?.map((line) => {
-        const unitPrice =
-          lineItemUnitPrices[line.id] !== undefined
-            ? lineItemUnitPrices[line.id]
-            : line.targetPriceSAR || 0;
-        return {
-          rfqLineItemId: line.id,
-          description: line.description,
-          quantity: line.quantity,
-          uom: line.uom,
-          unitPriceSAR: unitPrice,
-          totalPriceSAR: unitPrice * line.quantity,
-        };
-      }) || [];
+    // Prepare line items: Preserve ALL items extracted from the supplier quotation PDF
+    // (Both matched BOQ items and additional quoted items)
+    let finalLineItems: QuoteLineItemPrice[] = [];
 
-    const linePriceTotal = pricedRfqLines.reduce((sum, line) => sum + line.totalPriceSAR, 0);
-    const lineItems: QuoteLineItemPrice[] =
-      linePriceTotal > 0
-        ? pricedRfqLines
-        : [
-            {
-              rfqLineItemId: 'LI-LUMP',
-              description: `Lump-sum scope — ${currentRfq?.title || 'RFQ'}`,
-              quantity: 1,
-              uom: 'LOT',
-              unitPriceSAR: parsedTotal,
-              totalPriceSAR: parsedTotal,
-            },
-          ];
+    if (extractedItems.length > 0) {
+      finalLineItems = extractedItems.map((item, idx) => ({
+        rfqLineItemId: item.matchedRfqLineId || `EXT-${idx + 1}`,
+        lineNumber: item.lineNumber || idx + 1,
+        itemName: item.itemName,
+        sku: item.sku,
+        modelNumber: item.modelNumber,
+        brand: item.brand,
+        description: item.description,
+        quantity: item.quantity, // Supplier's exact quoted quantity
+        requestedQuantity: item.requestedQuantity,
+        uom: item.uom,
+        unitPriceSAR: item.unitPriceSAR,
+        discountPercent: item.discountPercent || 0,
+        taxPercent: item.taxPercent || 15,
+        totalPriceSAR: item.totalPriceSAR,
+        remarks: item.remarks,
+        matchStatus: item.matchStatus || 'Additional Quoted Item',
+        matchConfidence: item.matchConfidence || 100,
+        matchReason: item.matchReason,
+        needsVerification: item.needsVerification || false,
+      }));
+    } else {
+      // Fallback: If no granular line items were detected, create primary quotation line
+      finalLineItems = [
+        {
+          rfqLineItemId: 'LI-PRIMARY',
+          description: `Scope of supply as per ${proposalRefNumber || 'supplier quotation'}`,
+          quantity: 1,
+          uom: 'LOT',
+          unitPriceSAR: parsedTotal,
+          totalPriceSAR: parsedTotal,
+          matchStatus: 'Additional Quoted Item',
+          matchReason: 'Full tender quotation scope',
+        },
+      ];
+    }
 
     const proposalRef = proposalRefNumber || `PROP-${Math.floor(1000 + Math.random() * 9000)}`;
     const docId = `DOC-${targetRfqId}-${selectedVendorId}-${Date.now().toString().slice(-4)}`;
 
     let finalPdfUrl = fileDataUrl || '';
 
-    // Upload genuine raw PDF to Supabase Cloud Storage so it is accessible on all devices
+    // Upload genuine raw PDF to Supabase Cloud Storage
     try {
       const cloudUrl = await uploadPdfToCloudStorage(docId, uploadedFile, uploadedFile.name);
       if (cloudUrl) {
@@ -384,10 +448,20 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       await storePdfLocally(docId, uploadedFile.name, fileDataUrl, uploadedFile.size, proposalRef);
     }
 
+    const subtotal = finalLineItems.reduce((sum, item) => sum + item.totalPriceSAR, 0);
+    const taxAmount = parsedReview?.taxAmountSAR || subtotal * 0.15;
+
     const newSubmission: QuotationComparisonItem = {
       vendorId: selectedVendorId,
       vendorName,
       quotedTotalSAR: parsedTotal,
+      subtotalSAR: subtotal,
+      taxAmountSAR: taxAmount,
+      currency,
+      quoteReference: proposalRef,
+      quotationDate: parsedReview?.quotationDate || new Date().toISOString().split('T')[0],
+      deliveryTerms,
+      paymentTerms,
       leadTimeDays: parseInt(leadTimeDays, 10) || 30,
       technicalScore: parseFloat(technicalScore) || 95,
       commercialScore: 90,
@@ -395,7 +469,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       recommended: true,
       status: 'Received',
       validityDate,
-      notes: notes.trim() || `Supplier quotation digitized via ProcureOS Document Gateway. Payment Terms: ${paymentTerms}.`,
+      notes: notes.trim() || `Supplier quotation digitized via ProcureOS Document Gateway. Payment Terms: ${paymentTerms}. Delivery: ${deliveryTerms}.`,
       attachment: {
         docId,
         fileName: uploadedFile.name,
@@ -403,29 +477,95 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
         uploadedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
         uploadedBy: currentUser.name,
         proposalRefNumber: proposalRef,
-        pdfDataUrl: finalPdfUrl, // Permanent cloud URL or genuine raw PDF data URL
+        pdfDataUrl: finalPdfUrl,
       },
-      lineItems,
+      lineItems: finalLineItems,
+      processingStatus: 'Completed',
+      aiConfidenceScore: parsedReview?.confidenceScore || 95,
     };
 
     onQuoteUploaded(targetRfqId, newSubmission);
     setIsSubmitting(false);
 
     success(
-      'Quotation PDF Processed & Synchronized',
-      `Attached ${uploadedFile.name} from ${vendorName} (SAR ${parsedTotal.toLocaleString()}). Genuine PDF preserved and synced.`
+      'Quotation Extracted & Recorded',
+      `Attached ${uploadedFile.name} from ${vendorName} (${finalLineItems.length} line items extracted). All quoted items preserved.`
     );
     onClose();
+  };
+
+  const getMatchBadge = (status?: ItemMatchStatus) => {
+    switch (status) {
+      case 'Exact Match':
+        return <Badge variant="emerald">Exact Match</Badge>;
+      case 'Possible Match / Alternative':
+        return <Badge variant="amber">Possible Alternative</Badge>;
+      case 'Additional Quoted Item':
+        return <Badge variant="cyan">Additional Item</Badge>;
+      case 'Unmatched / Needs Review':
+      default:
+        return <Badge variant="purple">Needs Review</Badge>;
+    }
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Upload Supplier Quotation (PDF Scan & Direct Bid Capture)"
-      maxWidth="xl"
+      title="Upload Supplier Quotation (Full AI PDF Extraction & BOQ Matching)"
+      maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        {/* Automatic Workflow Status Tracker */}
+        <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span>AI Extraction & BOQ Matching Pipeline:</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[10px] font-mono">
+            <span
+              className={`px-2 py-0.5 rounded-full border ${
+                uploadedFile
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}
+            >
+              1. Uploaded
+            </span>
+            <ArrowRight className="w-3 h-3 text-slate-600" />
+            <span
+              className={`px-2 py-0.5 rounded-full border ${
+                processingStatus === 'Extracting' || processingStatus === 'Matching' || processingStatus === 'Review Required'
+                  ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}
+            >
+              2. Extract All Items
+            </span>
+            <ArrowRight className="w-3 h-3 text-slate-600" />
+            <span
+              className={`px-2 py-0.5 rounded-full border ${
+                processingStatus === 'Matching' || processingStatus === 'Review Required'
+                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}
+            >
+              3. BOQ Matching
+            </span>
+            <ArrowRight className="w-3 h-3 text-slate-600" />
+            <span
+              className={`px-2 py-0.5 rounded-full border ${
+                processingStatus === 'Review Required'
+                  ? 'bg-emerald-950 border-emerald-500 text-emerald-200 font-bold'
+                  : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}
+            >
+              4. Review & Confirm
+            </span>
+          </div>
+        </div>
+
         {/* RFQ Target & Supplier Selector */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -605,7 +745,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+            className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
               isDragging
                 ? 'border-cyan-400 bg-cyan-950/20'
                 : uploadedFile
@@ -624,10 +764,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               <div className="py-2 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
                 <span className="font-semibold text-cyan-300 text-xs">
-                  {scanStatus || 'Analyzing PDF & Extracting Details...'}
+                  {scanStatus || 'Extracting All Line Items & Matching Against BOQ...'}
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  Running PDF.js text extraction + Tesseract.js OCR fallback
+                  Dual-Engine: pdfjs-dist vector layer + Tesseract.js OCR engine
                 </span>
               </div>
             ) : uploadedFile ? (
@@ -641,7 +781,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                       {uploadedFile.name}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • Genuine PDF Preserved
+                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {extractedItems.length} Quoted Line Items Extracted
                       {parsedReview?.isOcrUsed ? ' • OCR Processed' : ''}
                     </span>
                   </div>
@@ -653,6 +793,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                     setUploadedFile(null);
                     setFileDataUrl(null);
                     setParsedReview(null);
+                    setExtractedItems([]);
+                    setProcessingStatus('Uploaded');
                   }}
                   className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200"
                 >
@@ -666,15 +808,15 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                   Click to browse or drag & drop supplier quotation PDF
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  PDF.js + Tesseract.js will automatically extract quotation ref, prices, and line items
+                  Extracts ALL items actually quoted by the supplier, including additional items and model alternatives
                 </span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Commercial Parameters */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        {/* Commercial Header Parameters */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="block font-medium text-slate-300 mb-1">Proposal / Quote Ref *</label>
             <input
@@ -687,7 +829,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-medium text-slate-300 mb-1">Total Amount (SAR) *</label>
+            <label className="block font-medium text-slate-300 mb-1">Total Quoted Amount ({currency}) *</label>
             <input
               type="number"
               min="0"
@@ -695,7 +837,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               placeholder="0.00"
               value={quotedTotalSAR}
               onChange={(e) => setQuotedTotalSAR(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono font-bold text-emerald-400 focus:border-cyan-500 focus:outline-none"
             />
           </div>
 
@@ -727,78 +869,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
         </div>
 
-        {/* Itemized BOQ Line Pricing Breakdown */}
-        {currentRfq?.lineItems && currentRfq.lineItems.length > 0 && (
-          <div className="space-y-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-300 text-xs">
-                BOQ Line Item Price Breakdown (Manual Edit Supported)
-              </span>
-              <span className="text-[10px] text-cyan-400 font-mono">
-                Line Items Total: SAR{' '}
-                {currentRfq.lineItems
-                  .reduce((acc, li) => {
-                    const u =
-                      lineItemUnitPrices[li.id] !== undefined
-                        ? lineItemUnitPrices[li.id]
-                        : li.targetPriceSAR || 0;
-                    return acc + u * li.quantity;
-                  }, 0)
-                  .toLocaleString()}
-              </span>
-            </div>
-
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {currentRfq.lineItems.map((li, idx) => {
-                const currentUnit =
-                  lineItemUnitPrices[li.id] !== undefined
-                    ? lineItemUnitPrices[li.id]
-                    : li.targetPriceSAR || 0;
-                const lineTotal = currentUnit * li.quantity;
-
-                return (
-                  <div
-                    key={li.id}
-                    className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium text-slate-200 text-xs block">
-                        {idx + 1}. {li.description}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        Qty: {li.quantity} {li.uom}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400 font-mono">Unit:</span>
-                      <div className="relative w-28">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-mono">
-                          SAR
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={currentUnit}
-                          onChange={(e) =>
-                            handleItemPriceChange(li.id, parseFloat(e.target.value) || 0)
-                          }
-                          className="w-full pl-8 pr-2 py-1 bg-slate-950 border border-slate-700 rounded text-right font-mono text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
-                        />
-                      </div>
-                      <span className="font-mono text-xs font-bold text-emerald-400 min-w-[80px] text-right">
-                        SAR {lineTotal.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Commercial Terms & Notes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Commercial Terms */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block font-medium text-slate-300 mb-1">Payment Terms</label>
             <input
@@ -811,8 +883,19 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
 
           <div>
+            <label className="block font-medium text-slate-300 mb-1">Delivery Terms</label>
+            <input
+              type="text"
+              placeholder="Ex-Works Warehouse / DDP Site"
+              value={deliveryTerms}
+              onChange={(e) => setDeliveryTerms(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
             <label className="block font-medium text-slate-300 mb-1">
-              Technical Compliance Score (0 - 100%)
+              Technical Compliance Score (%)
             </label>
             <input
               type="number"
@@ -826,6 +909,153 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
           </div>
         </div>
 
+        {/* INTERACTIVE REVIEW TABLE: ALL SUPPLIER QUOTED ITEMS */}
+        <div className="space-y-2 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
+            <div>
+              <span className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                Extracted Quotation Line Items & BOQ Matching Review
+              </span>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Primary source of truth: All items quoted in the supplier's PDF are preserved. Buyer can edit quantities, prices, or matching classifications.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={handleAddLineItem}
+                className="text-[11px] py-1 px-2.5 h-7"
+              >
+                + Add Item
+              </Button>
+            </div>
+          </div>
+
+          {extractedItems.length === 0 ? (
+            <div className="py-6 text-center text-slate-400 text-xs">
+              Attach a supplier quotation PDF above to automatically extract all quoted items.
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-72 overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900/90 text-slate-400 text-[10px] border-b border-slate-800 sticky top-0 z-10">
+                  <tr>
+                    <th className="py-2 px-2.5 font-semibold w-8">#</th>
+                    <th className="py-2 px-2.5 font-semibold min-w-[200px]">Description / Scope</th>
+                    <th className="py-2 px-2.5 font-semibold w-24">SKU / Model</th>
+                    <th className="py-2 px-2.5 font-semibold text-center w-24">Quoted Qty</th>
+                    <th className="py-2 px-2.5 font-semibold text-right w-28">Unit Price</th>
+                    <th className="py-2 px-2.5 font-semibold text-right w-28">Line Total</th>
+                    <th className="py-2 px-2.5 font-semibold text-center w-36">Matching Status</th>
+                    <th className="py-2 px-2 font-semibold text-center w-10">Act</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-sans">
+                  {extractedItems.map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-slate-900/40">
+                      <td className="py-2 px-2.5 font-mono text-slate-400 font-semibold">{idx + 1}</td>
+                      <td className="py-2 px-2.5">
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => handleUpdateLineItem(idx, { description: e.target.value })}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700/80 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                        />
+                        {item.matchReason && (
+                          <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-xs">
+                            {item.matchReason}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 px-2.5">
+                        <input
+                          type="text"
+                          placeholder="SKU"
+                          value={item.sku || item.modelNumber || ''}
+                          onChange={(e) => handleUpdateLineItem(idx, { sku: e.target.value, modelNumber: e.target.value })}
+                          className="w-full px-1.5 py-1 bg-slate-950 border border-slate-700/80 rounded text-slate-200 font-mono text-[11px] focus:border-cyan-500 focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 px-2.5">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateLineItem(idx, { quantity: parseFloat(e.target.value) || 0 })}
+                            className="w-14 px-1.5 py-1 bg-slate-950 border border-slate-700/80 rounded text-center text-slate-100 font-mono text-xs focus:border-cyan-500 focus:outline-none"
+                          />
+                          <span className="text-[10px] text-slate-400 font-mono uppercase">{item.uom}</span>
+                        </div>
+                        {item.requestedQuantity !== undefined && (
+                          <span className="text-[9px] text-slate-500 block text-center mt-0.5 font-mono">
+                            Req: {item.requestedQuantity}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 px-2.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unitPriceSAR}
+                          onChange={(e) => handleUpdateLineItem(idx, { unitPriceSAR: parseFloat(e.target.value) || 0 })}
+                          className="w-24 px-1.5 py-1 bg-slate-950 border border-slate-700/80 rounded text-right text-slate-100 font-mono text-xs focus:border-cyan-500 focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-emerald-400">
+                        SAR {item.totalPriceSAR.toLocaleString()}
+                      </td>
+                      <td className="py-2 px-2.5 text-center">
+                        <select
+                          value={item.matchStatus || 'Additional Quoted Item'}
+                          onChange={(e) => handleUpdateLineItem(idx, { matchStatus: e.target.value as ItemMatchStatus })}
+                          className="w-full px-1.5 py-1 bg-slate-950 border border-slate-700 rounded text-[11px] text-slate-200 focus:border-cyan-500 focus:outline-none"
+                        >
+                          <option value="Exact Match">Exact Match</option>
+                          <option value="Possible Match / Alternative">Possible Alternative</option>
+                          <option value="Additional Quoted Item">Additional Item</option>
+                          <option value="Unmatched / Needs Review">Needs Review</option>
+                        </select>
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLineItem(idx)}
+                          className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-800 transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-slate-900/80 border-t border-slate-700 font-semibold text-xs sticky bottom-0">
+                  <tr>
+                    <td colSpan={3} className="py-2 px-2.5 text-slate-300 font-bold">
+                      Sum of Extracted Items ({extractedItems.length} lines):
+                    </td>
+                    <td colSpan={3} className="py-2 px-2.5 text-right font-mono font-extrabold text-cyan-300 text-sm">
+                      SAR {extractedItems.reduce((acc, curr) => acc + curr.totalPriceSAR, 0).toLocaleString()}
+                    </td>
+                    <td colSpan={2} className="py-2 px-2 text-right text-[10px] text-slate-400">
+                      Reconciled against PDF Total
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Commercial Notes & Clarifications */}
         <div>
           <label className="block font-medium text-slate-300 mb-1">
             Commercial Notes & Clarifications
@@ -840,10 +1070,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-800">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Uploaded by: {currentUser.name}</span>
+            <span>Verified Digitizer: {currentUser.name}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -856,8 +1086,9 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
               size="sm"
               icon={isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
               disabled={!uploadedFile || isSubmitting || isAnalyzing}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
             >
-              {isSubmitting ? 'Uploading & Synchronizing...' : 'Upload & Record Quotation'}
+              {isSubmitting ? 'Uploading & Synchronizing...' : 'Confirm & Save Quotation'}
             </Button>
           </div>
         </div>

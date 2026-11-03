@@ -43,6 +43,8 @@ import {
 import { useLocalStorage } from './lib/useLocalStorage';
 import { recordAuditLog } from './lib/liveSync';
 import { useToast } from './context/ToastContext';
+import { deleteQuotationFiles } from './lib/pdfStorage';
+import { supabase, isSupabaseConfigured } from './lib/supabaseClient';
 
 const MainApplication: React.FC = () => {
   const { currentUser, activeRole } = useAuth();
@@ -666,6 +668,165 @@ const MainApplication: React.FC = () => {
     });
   };
 
+  // ── Quotation Deletion Management ──────────────────────────────────────────
+  const handleDeleteQuotation = async (rfqId: string, vendorId: string): Promise<boolean> => {
+    const targetEvaluation = quotations.find((evaluation) => evaluation.rfqId === rfqId);
+    const targetBid = targetEvaluation?.submissions.find((sub) => sub.vendorId === vendorId);
+    const targetRfq = rfqs.find((rfq) => rfq.id === rfqId);
+
+    if (!targetEvaluation || !targetBid) {
+      warning('Quotation Not Found', 'The requested quotation could not be located.');
+      return false;
+    }
+
+    // 1. Permanently delete PDF files from Supabase Storage and IndexedDB
+    try {
+      if (targetBid.attachment) {
+        await deleteQuotationFiles(targetBid.attachment);
+      }
+    } catch (err) {
+      console.warn('[ProcureOS Lifecycle] Failed to delete quotation PDF storage file:', err);
+    }
+
+    // 2. If Supabase is connected, delete from database
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('quotations')
+          .delete()
+          .eq('rfq_id', rfqId)
+          .eq('vendor_id', vendorId);
+      } catch (err) {
+        console.warn('[ProcureOS Database] Supabase quotation delete error:', err);
+      }
+    }
+
+    // 3. Update local state: remove submission & recalculate rankings
+    setQuotations((prev) =>
+      prev.map((evaluation) => {
+        if (evaluation.rfqId !== rfqId) return evaluation;
+        const remainingSubmissions = evaluation.submissions
+          .filter((sub) => sub.vendorId !== vendorId)
+          .sort((a, b) => a.quotedTotalSAR - b.quotedTotalSAR)
+          .map((sub, idx) => ({
+            ...sub,
+            compositeRank: idx + 1,
+            recommended: idx === 0 && sub.status !== 'Rejected',
+          }));
+        return {
+          ...evaluation,
+          submissions: remainingSubmissions,
+          status: remainingSubmissions.length > 0 ? evaluation.status : 'Draft Evaluation',
+        };
+      })
+    );
+
+    // 4. Update RFQ received bids count
+    setRfqs((prev) =>
+      prev.map((rfq) => {
+        if (rfq.id !== rfqId) return rfq;
+        const newCount = Math.max(0, (rfq.receivedBidsCount || 1) - 1);
+        return {
+          ...rfq,
+          receivedBidsCount: newCount,
+          status: newCount === 0 && rfq.status === 'Under Evaluation' ? 'Open' : rfq.status,
+        };
+      })
+    );
+
+    // 5. Audit log & notification
+    recordAuditLog(
+      'Quotation Deleted',
+      'Quotation',
+      `${rfqId}-${vendorId}`,
+      `Permanently deleted quotation from ${targetBid.vendorName} for RFQ ${targetRfq?.rfqNumber || rfqId}`,
+      {
+        name: currentUser?.name,
+        role: activeRole || 'User',
+      }
+    );
+    success(
+      'Quotation Deleted',
+      `Quotation from ${targetBid.vendorName} and all associated files have been permanently deleted.`
+    );
+    return true;
+  };
+
+  // ── RFQ Parent Deletion Management ─────────────────────────────────────────
+  const handleDeleteRfq = async (rfqId: string): Promise<boolean> => {
+    const targetRfq = rfqs.find((rfq) => rfq.id === rfqId);
+    if (!targetRfq) {
+      warning('RFQ Not Found', 'The requested RFQ could not be located.');
+      return false;
+    }
+
+    const targetEvaluation = quotations.find((evaluation) => evaluation.rfqId === rfqId);
+
+    // 1. Permanently delete all PDF files associated with all bids in this RFQ
+    if (targetEvaluation?.submissions) {
+      for (const sub of targetEvaluation.submissions) {
+        if (sub.attachment) {
+          try {
+            await deleteQuotationFiles(sub.attachment);
+          } catch (err) {
+            console.warn('[ProcureOS Lifecycle] Failed to delete RFQ quotation file:', err);
+          }
+        }
+      }
+    }
+
+    // 2. Delete from Supabase Database if configured
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('rfqs').delete().eq('id', rfqId);
+        await supabase.from('quotations').delete().eq('rfq_id', rfqId);
+      } catch (err) {
+        console.warn('[ProcureOS Database] Supabase RFQ delete error:', err);
+      }
+    }
+
+    // 3. Remove RFQ from local state
+    setRfqs((prev) => prev.filter((r) => r.id !== rfqId));
+
+    // 4. Remove quotation evaluation from local state
+    setQuotations((prev) => prev.filter((q) => q.rfqId !== rfqId));
+
+    // 5. If linked to a requisition, revert the requisition back to Approved so it can be re-tendered
+    setRequisitions((prev) =>
+      prev.map((req) =>
+        req.linkedRfqId === rfqId || req.id === targetRfq.purchaseRequisitionId
+          ? {
+              ...req,
+              status: 'Approved',
+              linkedRfqId: undefined,
+              linkedRfqNumber: undefined,
+            }
+          : req
+      )
+    );
+
+    if (selectedQuoteRfqId === rfqId) {
+      setSelectedQuoteRfqId(null);
+    }
+
+    // 6. Audit log & notification
+    recordAuditLog(
+      'RFQ Deleted',
+      'RFQ',
+      rfqId,
+      `Permanently deleted RFQ ${targetRfq.rfqNumber}: ${targetRfq.title} and all ${targetEvaluation?.submissions.length || 0} associated quotation files`,
+      {
+        name: currentUser?.name,
+        role: activeRole || 'User',
+      }
+    );
+    success(
+      'RFQ Deleted',
+      `Tender package ${targetRfq.rfqNumber} and all associated quotation files have been permanently deleted.`
+    );
+    return true;
+  };
+
   const handleQuickAction = (actionType: 'rfq' | 'po' | 'item' | 'delivery' | 'quote') => {
     if (actionType === 'rfq') {
       setActiveModule('rfqs');
@@ -762,6 +923,7 @@ const MainApplication: React.FC = () => {
                 vendors={vendors}
                 onAddRfq={handleAddRfq}
                 onNavigateToQuotes={(rfqId) => { setSelectedQuoteRfqId(rfqId); setActiveModule('quotations'); }}
+                onDeleteRfq={handleDeleteRfq}
                 openCreateModal={quickCreateModal === 'rfq'}
                 onCloseCreateModal={() => setQuickCreateModal(null)}
               />
@@ -778,6 +940,7 @@ const MainApplication: React.FC = () => {
                 onQuoteUploaded={handleQuoteUploaded}
                 onAddVendor={handleAddVendor}
                 onUpdateQuotePrice={handleUpdateQuotePrice}
+                onDeleteQuotation={handleDeleteQuotation}
               />
             )}
 

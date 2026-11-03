@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { RFQ, EntityId, Vendor } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
 import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 import { EmptyState } from '../../common/EmptyState';
 
 interface RfqsModuleProps {
@@ -24,6 +26,7 @@ interface RfqsModuleProps {
   vendors: Vendor[];
   onAddRfq: (newRfq: RFQ) => void;
   onNavigateToQuotes: (rfqId: string) => void;
+  onDeleteRfq?: (rfqId: string) => Promise<boolean> | void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
@@ -33,15 +36,19 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
   vendors,
   onAddRfq,
   onNavigateToQuotes,
+  onDeleteRfq,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
   const { matchesCompany } = useCompany();
-  const { success } = useToast();
+  const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
+  const { success, warning } = useToast();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
+  const [deleteConfirmRfq, setDeleteConfirmRfq] = useState<RFQ | null>(null);
+  const [isDeletingRfq, setIsDeletingRfq] = useState(false);
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>(() => vendors.filter((vendor) =>
     (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
     (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'FITCO Approved')
@@ -87,6 +94,33 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
       r.projectName.toLowerCase().includes(search.toLowerCase());
     return matchesScope && matchesStatus && matchesQuery;
   });
+
+  const handleDeleteRfqClick = (rfq: RFQ, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!permissions.canDeleteRFQ) {
+      warning(
+        'RFQ Deletion Restricted',
+        `Role '${activeRole}' does not have authority to delete tender packages. Super Admin or Procurement Director required.`
+      );
+      return;
+    }
+    setDeleteConfirmRfq(rfq);
+  };
+
+  const handleConfirmDeleteRfq = async () => {
+    if (!deleteConfirmRfq) return;
+    setIsDeletingRfq(true);
+    try {
+      if (onDeleteRfq) {
+        await onDeleteRfq(deleteConfirmRfq.id);
+      }
+      setDeleteConfirmRfq(null);
+    } catch (err) {
+      console.error('Failed to delete RFQ:', err);
+    } finally {
+      setIsDeletingRfq(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,14 +293,26 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                 <span className="text-[10px] text-slate-400">
                   Requested by: {rfq.requestedBy}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onNavigateToQuotes(rfq.id)}
-                  className="text-xs"
-                >
-                  Evaluate Bids <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {permissions.canDeleteRFQ && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteRfqClick(rfq, e)}
+                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 hover:border-rose-500/40 transition-colors cursor-pointer"
+                      title={`Delete RFQ ${rfq.rfqNumber}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onNavigateToQuotes(rfq.id)}
+                    className="text-xs"
+                  >
+                    Evaluate Bids <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -479,6 +525,34 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Confirmation Modal for RFQ Parent Deletion */}
+      {deleteConfirmRfq && (
+        <ConfirmationModal
+          isOpen={!!deleteConfirmRfq}
+          onClose={() => setDeleteConfirmRfq(null)}
+          onConfirm={handleConfirmDeleteRfq}
+          title="Delete RFQ Tender Package"
+          intent="danger"
+          isProcessing={isDeletingRfq}
+          confirmText={isDeletingRfq ? 'Deleting...' : 'Permanently Delete Tender Package'}
+          description="Are you sure you want to permanently delete this RFQ? Deleting an RFQ is a parent-level deletion that will permanently delete the RFQ record, its requested BOQ items, ALL associated supplier quotations, AI comparison matrices, and erase all quotation PDF files from storage."
+          details={[
+            { label: 'RFQ Number', value: deleteConfirmRfq.rfqNumber },
+            { label: 'Tender Title', value: deleteConfirmRfq.title },
+            { label: 'Project Name', value: deleteConfirmRfq.projectName },
+            { label: 'Target Entity', value: deleteConfirmRfq.entity },
+            {
+              label: 'Est. Budget',
+              value: `SAR ${deleteConfirmRfq.budgetEstimatedSAR.toLocaleString()}`,
+            },
+            {
+              label: 'Bids Received',
+              value: `${deleteConfirmRfq.receivedBidsCount} Quotes (will also be permanently deleted)`,
+            },
+          ]}
+        />
+      )}
     </div>
   );
 };

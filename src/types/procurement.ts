@@ -155,6 +155,12 @@ export interface RFQ {
   priority: 'Urgent' | 'High' | 'Normal';
 }
 
+export type ItemMatchStatus =
+  | 'Exact Match'
+  | 'Possible Match / Alternative'
+  | 'Additional Quoted Item'
+  | 'Unmatched / Needs Review';
+
 export interface QuotationPdfAttachment {
   docId?: string;
   fileName: string;
@@ -163,22 +169,43 @@ export interface QuotationPdfAttachment {
   uploadedBy: string;
   proposalRefNumber?: string;
   pdfDataUrl?: string;
+  cloudStoragePath?: string;
 }
 
 export interface QuoteLineItemPrice {
-  rfqLineItemId: string;
+  rfqLineItemId?: string;
+  lineNumber?: number;
+  itemName?: string;
+  sku?: string;
+  modelNumber?: string;
+  brand?: string;
   description: string;
-  quantity: number;
+  quantity: number; // Supplier's quoted quantity (primary source of truth)
+  requestedQuantity?: number; // Original RFQ requested quantity (if matched)
   uom: string;
   unitPriceSAR: number;
+  discountPercent?: number;
+  taxPercent?: number;
   totalPriceSAR: number;
   notes?: string;
+  remarks?: string;
+  matchStatus?: ItemMatchStatus;
+  matchConfidence?: number; // 0 - 100
+  matchReason?: string;
+  needsVerification?: boolean;
 }
 
 export interface QuotationComparisonItem {
   vendorId: string;
   vendorName: string;
   quotedTotalSAR: number;
+  subtotalSAR?: number;
+  taxAmountSAR?: number;
+  currency?: string;
+  quoteReference?: string;
+  quotationDate?: string;
+  deliveryTerms?: string;
+  paymentTerms?: string;
   leadTimeDays: number;
   technicalScore: number; // out of 100
   commercialScore: number; // out of 100
@@ -189,6 +216,8 @@ export interface QuotationComparisonItem {
   notes: string;
   attachment?: QuotationPdfAttachment;
   lineItems?: QuoteLineItemPrice[];
+  processingStatus?: 'Uploaded' | 'Processing' | 'Extracting' | 'Matching' | 'Review Required' | 'Completed' | 'Failed';
+  aiConfidenceScore?: number;
 }
 
 export interface QuotationEvaluation {

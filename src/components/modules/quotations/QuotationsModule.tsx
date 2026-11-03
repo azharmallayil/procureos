@@ -23,11 +23,16 @@ import {
   Lock,
   Layers,
   Coins,
+  Trash2,
+  Tag,
+  HelpCircle,
+  Plus,
 } from 'lucide-react';
 import {
   QuotationEvaluation,
   QuotationComparisonItem,
   QuoteLineItemPrice,
+  ItemMatchStatus,
   RFQ,
   Vendor,
 } from '../../../types/procurement';
@@ -37,12 +42,14 @@ import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
 import { Badge } from '../../common/Badge';
 import { Modal } from '../../common/Modal';
+import { ConfirmationModal } from '../../common/ConfirmationModal';
 import { UploadQuoteModal } from './UploadQuoteModal';
 import { EditQuotePriceModal } from './EditQuotePriceModal';
 import {
   getPdfLocally,
   generateSyntheticQuotationPdf,
   resolveSecurePdfBlobUrl,
+  deleteQuotationFiles,
 } from '../../../lib/pdfStorage';
 
 interface QuotationsModuleProps {
@@ -60,6 +67,7 @@ interface QuotationsModuleProps {
     updatedLineItems: QuoteLineItemPrice[],
     newTotalSAR: number
   ) => void;
+  onDeleteQuotation?: (rfqId: string, vendorId: string) => Promise<boolean> | void;
 }
 
 export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
@@ -72,6 +80,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   onQuoteUploaded,
   onAddVendor,
   onUpdateQuotePrice,
+  onDeleteQuotation,
 }) => {
   const { matchesCompany } = useCompany();
   const { permissions: _perms, activeRole } = useAuth(); const permissions = _perms!;
@@ -102,6 +111,73 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     evaluation: QuotationEvaluation;
   } | null>(null);
   const [activeRawPdfUrl, setActiveRawPdfUrl] = useState<string | null>(null);
+
+  // Deletion modal state
+  const [deleteConfirmQuote, setDeleteConfirmQuote] = useState<{
+    bid: QuotationComparisonItem;
+    evaluation: QuotationEvaluation;
+  } | null>(null);
+  const [isDeletingQuote, setIsDeletingQuote] = useState(false);
+
+  // Helper to render Match Status Badge
+  const renderMatchBadge = (status?: ItemMatchStatus) => {
+    switch (status) {
+      case 'Exact Match':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Exact Match
+          </span>
+        );
+      case 'Possible Match / Alternative':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 border border-amber-500/40 text-amber-300">
+            <AlertCircle className="w-3 h-3 text-amber-400" /> Alternative
+          </span>
+        );
+      case 'Additional Quoted Item':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-950/80 border border-purple-500/40 text-purple-300">
+            <Plus className="w-3 h-3 text-purple-400" /> Additional Item
+          </span>
+        );
+      case 'Unmatched / Needs Review':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-950/80 border border-rose-500/40 text-rose-300">
+            <HelpCircle className="w-3 h-3 text-rose-400" /> Needs Review
+          </span>
+        );
+    }
+  };
+
+  const handleDeleteQuoteClick = (evaluation: QuotationEvaluation, bid: QuotationComparisonItem) => {
+    if (!permissions.canDeleteQuotation) {
+      warning(
+        'Quotation Deletion Restricted',
+        `Role '${activeRole}' does not have authority to delete supplier quotations. Super Admin or Procurement Director required.`
+      );
+      return;
+    }
+    setDeleteConfirmQuote({ bid, evaluation });
+  };
+
+  const handleConfirmDeleteQuotation = async () => {
+    if (!deleteConfirmQuote) return;
+    setIsDeletingQuote(true);
+    try {
+      if (onDeleteQuotation) {
+        await onDeleteQuotation(deleteConfirmQuote.evaluation.rfqId, deleteConfirmQuote.bid.vendorId);
+      }
+      if (selectedPdfBid?.bid.vendorId === deleteConfirmQuote.bid.vendorId) {
+        setSelectedPdfBid(null);
+      }
+      setDeleteConfirmQuote(null);
+    } catch (err) {
+      console.error('Failed to delete quotation:', err);
+    } finally {
+      setIsDeletingQuote(false);
+    }
+  };
 
   // When a dossier is opened, resolve genuine raw original uploaded PDF into secure browser memory blob
   useEffect(() => {
@@ -624,6 +700,18 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                           >
                             Award Bid
                           </Button>
+
+                          {/* Delete Quotation Button */}
+                          {permissions.canDeleteQuotation && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteQuoteClick(selectedEvaluation, sub)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 border border-slate-700/80 transition-colors cursor-pointer"
+                              title={`Delete Quotation from ${sub.vendorName}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -640,7 +728,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                                   Itemized Scope & Pricing Breakdown — {sub.vendorName}
                                 </span>
                                 <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[10px]">
-                                  {lineItems.length} BOQ Line Items
+                                  {lineItems.length} Quoted Line Items
                                 </span>
                               </div>
 
@@ -678,7 +766,10 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                                       Line Item Scope & Description
                                     </th>
                                     <th className="py-2 px-3 font-semibold text-center whitespace-nowrap">
-                                      Quantity & UOM
+                                      Match Classification
+                                    </th>
+                                    <th className="py-2 px-3 font-semibold text-center whitespace-nowrap">
+                                      Requested vs Quoted Qty
                                     </th>
                                     <th className="py-2 px-3 font-semibold text-right whitespace-nowrap">
                                       Quoted Unit Price (SAR)
@@ -712,15 +803,41 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                                           <div className="font-medium text-slate-200">
                                             {item.description}
                                           </div>
+                                          {(item.sku || item.modelNumber || item.brand) && (
+                                            <div className="text-[10px] text-slate-400 mt-0.5 font-mono flex items-center gap-2 flex-wrap">
+                                              {item.sku && <span>SKU: <span className="text-cyan-300 font-semibold">{item.sku}</span></span>}
+                                              {item.modelNumber && <span>Model: <span className="text-slate-200">{item.modelNumber}</span></span>}
+                                              {item.brand && <span>Brand: <span className="text-slate-300">{item.brand}</span></span>}
+                                            </div>
+                                          )}
+                                          {item.matchReason && (
+                                            <div className="text-[10px] text-amber-300/80 mt-0.5 italic">
+                                              {item.matchReason}
+                                            </div>
+                                          )}
                                           {item.notes && (
                                             <div className="text-[10px] text-slate-400 mt-0.5">
                                               {item.notes}
                                             </div>
                                           )}
                                         </td>
-                                        <td className="py-2.5 px-3 text-center whitespace-nowrap font-mono text-slate-300">
-                                          <span className="font-bold text-cyan-300">{item.quantity}</span>{' '}
-                                          {item.uom}
+                                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                          {renderMatchBadge(item.matchStatus)}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center whitespace-nowrap font-mono text-xs">
+                                          {item.matchStatus === 'Additional Quoted Item' ? (
+                                            <div>
+                                              <span className="text-[10px] text-purple-300 font-semibold block">Not in BOQ</span>
+                                              <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                                            </div>
+                                          ) : (
+                                            <div>
+                                              <span className="text-[10px] text-slate-400 block">
+                                                Req: {item.requestedQuantity ?? rfqItem?.quantity ?? '—'}
+                                              </span>
+                                              <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                                            </div>
+                                          )}
                                         </td>
                                         <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-100 whitespace-nowrap">
                                           SAR {item.unitPriceSAR.toLocaleString()}
@@ -754,7 +871,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                                 </tbody>
                                 <tfoot className="bg-slate-900/60 border-t border-slate-700 font-semibold text-xs">
                                   <tr>
-                                    <td colSpan={3} className="py-2.5 px-3 text-slate-300 font-bold">
+                                    <td colSpan={4} className="py-2.5 px-3 text-slate-300 font-bold">
                                       Total Quoted Proposal Sum:
                                     </td>
                                     <td colSpan={2} className="py-2.5 px-3 text-right font-mono text-sm text-cyan-300 font-extrabold">
@@ -785,6 +902,86 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
         </div>
       </div>
 
+      {/* Dedicated Section: Additional Quoted Items (Outside Original BOQ Scope) */}
+      {(() => {
+        const additionalItemsAcrossBids = selectedEvaluation.submissions.flatMap((sub) => {
+          const items = getSubmissionLineItems(sub);
+          return items
+            .filter((item) => item.matchStatus === 'Additional Quoted Item')
+            .map((item) => ({
+              ...item,
+              vendorName: sub.vendorName,
+              vendorId: sub.vendorId,
+            }));
+        });
+
+        if (additionalItemsAcrossBids.length === 0) return null;
+
+        return (
+          <div className="glass-panel rounded-xl overflow-hidden border border-purple-900/50 bg-purple-950/10">
+            <div className="px-5 py-3.5 border-b border-purple-900/40 bg-purple-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-bold text-purple-200 text-sm flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-purple-400" />
+                  Additional Quoted Items (Outside Original BOQ Scope)
+                </h3>
+                <p className="text-[11px] text-purple-300/70 mt-0.5">
+                  The following items were identified in supplier quotation PDFs beyond the requested BOQ items. They are fully accounted for in the quotation totals.
+                </p>
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 font-mono font-semibold">
+                {additionalItemsAcrossBids.length} Additional {additionalItemsAcrossBids.length === 1 ? 'Item' : 'Items'} Found
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-950 text-slate-400 text-[10px] border-b border-slate-800">
+                  <tr>
+                    <th className="py-2.5 px-4 font-semibold">Supplier</th>
+                    <th className="py-2.5 px-4 font-semibold">Quoted SKU / Code</th>
+                    <th className="py-2.5 px-4 font-semibold min-w-[220px]">Item Description & Specs</th>
+                    <th className="py-2.5 px-4 font-semibold text-center">Quoted Qty & UOM</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Unit Price (SAR)</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Line Total (SAR)</th>
+                    <th className="py-2.5 px-4 font-semibold">Classification</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {additionalItemsAcrossBids.map((item, idx) => (
+                    <tr key={`${item.vendorId}-${item.rfqLineItemId || idx}`} className="hover:bg-slate-800/30">
+                      <td className="py-3 px-4 font-semibold text-slate-200 whitespace-nowrap">
+                        {item.vendorName}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-cyan-300 whitespace-nowrap">
+                        {item.sku || item.modelNumber || '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-slate-100">{item.description}</div>
+                        {item.brand && <div className="text-[10px] text-slate-400">Brand: {item.brand}</div>}
+                        {item.remarks && <div className="text-[10px] text-purple-300/80 mt-0.5">{item.remarks}</div>}
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap font-mono">
+                        <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap">
+                        SAR {item.unitPriceSAR.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">
+                        SAR {item.totalPriceSAR.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {renderMatchBadge(item.matchStatus)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* PDF Inspection Dossier Modal with Full Itemized Pricing & Edit Access */}
       {selectedPdfBid && (
         <Modal
@@ -800,6 +997,16 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                 <span>Digitized via ProcureOS Commercial Gateway</span>
               </div>
               <div className="flex items-center gap-2">
+                {permissions.canDeleteQuotation && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                    onClick={() => handleDeleteQuoteClick(selectedPdfBid.evaluation, selectedPdfBid.bid)}
+                  >
+                    Delete Quote
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -867,6 +1074,28 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               </div>
             </div>
 
+            {/* Extracted Commercial Terms & Header Details */}
+            {(selectedPdfBid.bid.paymentTerms || selectedPdfBid.bid.deliveryTerms || selectedPdfBid.bid.leadTimeDays) && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Lead Time</span>
+                  <span className="text-slate-200 font-semibold">{selectedPdfBid.bid.leadTimeDays} Calendar Days</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Payment Terms</span>
+                  <span className="text-slate-200">{selectedPdfBid.bid.paymentTerms || 'Standard 30 Days Net'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Delivery Terms</span>
+                  <span className="text-slate-200">{selectedPdfBid.bid.deliveryTerms || 'DDP Project Site'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Tax / VAT</span>
+                  <span className="text-slate-200 font-mono">15% KSA Standard VAT</span>
+                </div>
+              </div>
+            )}
+
             {/* ITEM-BY-ITEM PRICING BREAKDOWN IN PROPOSAL DOSSIER */}
             <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
               <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
@@ -903,8 +1132,9 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                   <thead className="bg-slate-950 text-slate-400 text-[10px] border-b border-slate-800">
                     <tr>
                       <th className="py-2 px-3 font-semibold w-8">#</th>
-                      <th className="py-2 px-3 font-semibold min-w-[200px]">Item Description</th>
-                      <th className="py-2 px-3 font-semibold text-center whitespace-nowrap">Qty & UOM</th>
+                      <th className="py-2 px-3 font-semibold min-w-[200px]">Item Description & Specs</th>
+                      <th className="py-2 px-3 font-semibold text-center whitespace-nowrap">Match Classification</th>
+                      <th className="py-2 px-3 font-semibold text-center whitespace-nowrap">Requested vs Quoted Qty</th>
                       <th className="py-2 px-3 font-semibold text-right whitespace-nowrap">Quoted Unit Price (SAR)</th>
                       <th className="py-2 px-3 font-semibold text-right whitespace-nowrap">Total Price (SAR)</th>
                       <th className="py-2 px-3 font-semibold text-right whitespace-nowrap">Target Budget / Item</th>
@@ -922,10 +1152,33 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                           <td className="py-2.5 px-3 font-mono text-slate-400 font-semibold">{idx + 1}</td>
                           <td className="py-2.5 px-3">
                             <div className="font-medium text-slate-100">{item.description}</div>
+                            {(item.sku || item.modelNumber || item.brand) && (
+                              <div className="text-[10px] text-slate-400 mt-0.5 font-mono flex items-center gap-2 flex-wrap">
+                                {item.sku && <span>SKU: <span className="text-cyan-300 font-semibold">{item.sku}</span></span>}
+                                {item.modelNumber && <span>Model: <span className="text-slate-200">{item.modelNumber}</span></span>}
+                                {item.brand && <span>Brand: <span className="text-slate-300">{item.brand}</span></span>}
+                              </div>
+                            )}
+                            {item.matchReason && <div className="text-[10px] text-amber-300/80 mt-0.5 italic">{item.matchReason}</div>}
                             {item.notes && <div className="text-[10px] text-slate-400 mt-0.5">{item.notes}</div>}
                           </td>
-                          <td className="py-2.5 px-3 text-center whitespace-nowrap font-mono text-slate-300">
-                            <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                            {renderMatchBadge(item.matchStatus)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap font-mono text-xs">
+                            {item.matchStatus === 'Additional Quoted Item' ? (
+                              <div>
+                                <span className="text-[10px] text-purple-300 font-semibold block">Not in BOQ</span>
+                                <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">
+                                  Req: {item.requestedQuantity ?? rfqItem?.quantity ?? '—'}
+                                </span>
+                                <span className="font-bold text-cyan-300">{item.quantity}</span> {item.uom}
+                              </div>
+                            )}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-100 whitespace-nowrap">
                             SAR {item.unitPriceSAR.toLocaleString()}
@@ -955,7 +1208,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                   </tbody>
                   <tfoot className="bg-slate-900/60 border-t border-slate-700 font-semibold text-xs">
                     <tr>
-                      <td colSpan={3} className="py-2 px-3 text-slate-300 font-bold">
+                      <td colSpan={4} className="py-2 px-3 text-slate-300 font-bold">
                         Quoted Total Amount:
                       </td>
                       <td colSpan={2} className="py-2 px-3 text-right font-mono text-sm text-cyan-300 font-extrabold">
@@ -1154,6 +1407,36 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Confirmation Modal for Quotation Deletion */}
+      {deleteConfirmQuote && (
+        <ConfirmationModal
+          isOpen={!!deleteConfirmQuote}
+          onClose={() => setDeleteConfirmQuote(null)}
+          onConfirm={handleConfirmDeleteQuotation}
+          title="Delete Supplier Quotation"
+          intent="danger"
+          isProcessing={isDeletingQuote}
+          confirmText={isDeletingQuote ? 'Deleting...' : 'Permanently Delete Quotation'}
+          description="Are you sure you want to permanently delete this supplier quotation? This action removes the database record, extracted line items, AI analysis, and deletes the PDF file from storage. The parent RFQ and other bids remain intact."
+          details={[
+            { label: 'Supplier', value: deleteConfirmQuote.bid.vendorName },
+            {
+              label: 'Proposal Ref',
+              value: deleteConfirmQuote.bid.attachment?.proposalRefNumber || deleteConfirmQuote.bid.quoteReference || 'N/A',
+            },
+            {
+              label: 'Quoted Total',
+              value: `SAR ${deleteConfirmQuote.bid.quotedTotalSAR.toLocaleString()}`,
+            },
+            {
+              label: 'Attached PDF',
+              value: deleteConfirmQuote.bid.attachment?.fileName || 'None',
+            },
+            { label: 'Linked RFQ', value: deleteConfirmQuote.evaluation.rfqNumber },
+          ]}
+        />
       )}
     </div>
   );

@@ -95,6 +95,24 @@ export async function getPdfLocally(docId: string): Promise<string | null> {
   }
 }
 
+// ── 3b. Delete PDF Document Locally (IndexedDB) ─────────────────────────────
+export async function deletePdfLocally(docId: string): Promise<boolean> {
+  if (!docId) return true;
+  try {
+    const db = await openPdfDatabase();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PDF_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(PDF_STORE_NAME);
+      const req = store.delete(docId);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    });
+  } catch (err) {
+    console.warn('[ProcureOS Document Gateway] Failed to delete from IndexedDB:', err);
+    return false;
+  }
+}
+
 // ── 4. Upload to Private Supabase Storage ───────────────────────────────────
 export async function uploadPdfToCloudStorage(
   docId: string,
@@ -137,6 +155,89 @@ export async function uploadPdfToCloudStorage(
   } catch (err) {
     console.warn('[ProcureOS Cloud Storage] Storage exception:', err);
     return null;
+  }
+}
+
+// ── 4b. Delete from Private Supabase Cloud Storage ──────────────────────────
+export async function deletePdfFromCloudStorage(
+  pathOrUrl?: string | null,
+  docId?: string
+): Promise<boolean> {
+  if (!pathOrUrl && !docId) return true;
+  if (!isSupabaseConfigured || !supabase) {
+    return true; // nothing in cloud to delete
+  }
+
+  try {
+    const pathsToDelete: string[] = [];
+
+    if (pathOrUrl) {
+      let relativePath = pathOrUrl;
+      if (relativePath.startsWith(`storage://${STORAGE_BUCKET}/`)) {
+        relativePath = relativePath.replace(`storage://${STORAGE_BUCKET}/`, '');
+      } else if (relativePath.includes('/object/public/quote-documents/')) {
+        relativePath = relativePath.split('/object/public/quote-documents/')[1];
+      } else if (relativePath.includes('/object/sign/quote-documents/')) {
+        relativePath = relativePath.split('/object/sign/quote-documents/')[1].split('?')[0];
+      } else if (relativePath.includes('/quote-documents/')) {
+        relativePath = relativePath.split('/quote-documents/')[1].split('?')[0];
+      }
+
+      if (relativePath && !relativePath.startsWith('data:') && !relativePath.startsWith('blob:')) {
+        pathsToDelete.push(relativePath);
+      }
+    }
+
+    // If docId is provided, also search for any matching file in proposals/
+    if (docId) {
+      const { data: listData } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .list('proposals', { search: docId });
+      if (listData && listData.length > 0) {
+        listData.forEach((f) => {
+          const p = `proposals/${f.name}`;
+          if (!pathsToDelete.includes(p)) {
+            pathsToDelete.push(p);
+          }
+        });
+      }
+    }
+
+    if (pathsToDelete.length > 0) {
+      const { error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove(pathsToDelete);
+      if (error) {
+        console.warn('[ProcureOS Cloud Storage] Failed to remove file from Supabase storage:', error.message);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (err) {
+    console.warn('[ProcureOS Cloud Storage] Exception during cloud file deletion:', err);
+    return false;
+  }
+}
+
+// ── 4c. Unified Helper to Delete All Files Associated with a Quotation ──────
+export async function deleteQuotationFiles(
+  attachment?: { docId?: string; pdfDataUrl?: string; fileName?: string }
+): Promise<boolean> {
+  if (!attachment) return true;
+  try {
+    const promises: Promise<boolean>[] = [];
+    if (attachment.docId) {
+      promises.push(deletePdfLocally(attachment.docId));
+    }
+    if (attachment.pdfDataUrl || attachment.docId) {
+      promises.push(deletePdfFromCloudStorage(attachment.pdfDataUrl, attachment.docId));
+    }
+    await Promise.all(promises);
+    return true;
+  } catch (err) {
+    console.warn('[ProcureOS Storage] deleteQuotationFiles error:', err);
+    return false;
   }
 }
 

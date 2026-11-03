@@ -315,6 +315,19 @@ export const EditQuotePriceModal: React.FC<EditQuotePriceModalProps> = ({
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="font-medium text-slate-100">{item.description}</div>
+                        {(item.sku || item.modelNumber) && (
+                          <div className="text-[10px] text-cyan-300 font-mono mt-0.5">
+                            {item.sku && <span>SKU: {item.sku} </span>}
+                            {item.modelNumber && <span>Model: {item.modelNumber}</span>}
+                          </div>
+                        )}
+                        {item.matchStatus && (
+                          <div className="mt-0.5">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+                              {item.matchStatus}
+                            </span>
+                          </div>
+                        )}
                         <input
                           type="text"
                           placeholder="Optional item note or supplier clarification..."

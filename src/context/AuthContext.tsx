@@ -45,6 +45,8 @@ export interface PermissionMatrix {
   canManageVendors: boolean;
   canReceiveShipment: boolean;
   canEditQuotePrice: boolean;
+  canDeleteQuotation: boolean;
+  canDeleteRFQ: boolean;
 }
 
 export type LoginResult =
@@ -97,6 +99,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: true,
     canReceiveShipment: true,
     canEditQuotePrice: true,
+    canDeleteQuotation: true,
+    canDeleteRFQ: true,
   },
   'Procurement Director': {
     canApprovePO: true,
@@ -108,6 +112,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: true,
     canReceiveShipment: false,
     canEditQuotePrice: true,
+    canDeleteQuotation: true,
+    canDeleteRFQ: true,
   },
   'Procurement Engineer': {
     canApprovePO: false,
@@ -119,6 +125,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: true,
     canReceiveShipment: false,
     canEditQuotePrice: true,
+    canDeleteQuotation: true,
+    canDeleteRFQ: true,
   },
   'Purchasing Specialist': {
     canApprovePO: false,
@@ -130,6 +138,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: true,
     canReceiveShipment: false,
     canEditQuotePrice: true,
+    canDeleteQuotation: true,
+    canDeleteRFQ: false,
   },
   'Site Receiving Officer': {
     canApprovePO: false,
@@ -141,6 +151,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: false,
     canReceiveShipment: true,
     canEditQuotePrice: false,
+    canDeleteQuotation: false,
+    canDeleteRFQ: false,
   },
   'Financial Controller': {
     canApprovePO: true,
@@ -152,6 +164,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: false,
     canReceiveShipment: false,
     canEditQuotePrice: true,
+    canDeleteQuotation: false,
+    canDeleteRFQ: false,
   },
   'Internal Auditor': {
     canApprovePO: false,
@@ -163,6 +177,8 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionMatrix> = {
     canManageVendors: false,
     canReceiveShipment: false,
     canEditQuotePrice: false,
+    canDeleteQuotation: false,
+    canDeleteRFQ: false,
   },
 };
 
