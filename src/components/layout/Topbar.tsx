@@ -23,17 +23,20 @@ import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { AdminControlPanelModal } from '../admin/AdminControlPanelModal';
+import { ModuleId } from '../../types/procurement';
 
 interface TopbarProps {
   onOpenMobileMenu: () => void;
   onQuickAction: (actionType: 'rfq' | 'po' | 'item' | 'delivery' | 'quote') => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onNavigateModule?: (module: ModuleId) => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
   onOpenMobileMenu,
   onQuickAction,
+  onNavigateModule,
 }) => {
   const { currentUser, activeRole, logout, elevateToSuperAdmin } = useAuth();
   const { info } = useToast();
@@ -41,6 +44,12 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showAdminControlPanel, setShowAdminControlPanel] = useState(false);
+
+  const isAdmin =
+    activeRole === 'Super Admin' ||
+    currentUser?.role === 'Super Admin' ||
+    currentUser?.email === 'admin@procureos.com' ||
+    currentUser?.email === 'muhammed.azhar@arabitra.com';
 
   const notifications: any[] = [];
 
@@ -63,14 +72,20 @@ export const Topbar: React.FC<TopbarProps> = ({
       {/* Right controls: Quick Create, Notifications, Role Switcher */}
       <div className="flex items-center gap-3">
         {/* Super Admin Status Badge / Control Panel Trigger */}
-        {activeRole === 'Super Admin' && (
+        {isAdmin && (
           <button
-            onClick={() => setShowAdminControlPanel(true)}
+            onClick={() => {
+              if (onNavigateModule) {
+                onNavigateModule('admin');
+              } else {
+                setShowAdminControlPanel(true);
+              }
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 border border-amber-400/60 text-white text-xs font-bold shadow-md shadow-amber-950/50 transition-all cursor-pointer transform hover:scale-[1.02] active:scale-95"
-            title="Open Super Admin Control Panel"
+            title="Open Super Admin Command Center"
           >
             <ShieldCheck className="w-4 h-4 text-amber-300" />
-            <span>Admin Control Panel</span>
+            <span>Admin Command Center</span>
           </button>
         )}
 

@@ -49,7 +49,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   counts,
 }) => {
-  const { activeRole } = useAuth();
+  const { activeRole, currentUser } = useAuth();
+
+  const isAdmin =
+    activeRole === 'Super Admin' ||
+    currentUser?.role === 'Super Admin' ||
+    currentUser?.email === 'admin@procureos.com' ||
+    currentUser?.email === 'muhammed.azhar@arabitra.com';
 
   const navigationItems: {
     id: ModuleId;
@@ -122,12 +128,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Wrench className="w-5 h-5" />,
       badge: counts?.assets !== undefined ? `${counts.assets}` : undefined,
     },
-    {
-      id: 'team',
-      label: 'Team & Governance',
-      icon: <Users className="w-5 h-5" />,
-      badgeVariant: 'emerald',
-    },
+    ...(isAdmin
+      ? [
+          {
+            id: 'admin' as ModuleId,
+            label: 'Admin Command Center',
+            icon: <ShieldCheck className="w-5 h-5 text-amber-400" />,
+            badge: 'Admin',
+            badgeVariant: 'amber' as const,
+          },
+        ]
+      : []),
   ];
 
   return (

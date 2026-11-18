@@ -22,12 +22,16 @@ import {
   PurchaseOrder,
   Delivery,
   ModuleId,
+  Vendor,
+  Item,
 } from '../../../types/procurement';
 
 interface DashboardModuleProps {
   rfqs: RFQ[];
   purchaseOrders: PurchaseOrder[];
   deliveries: Delivery[];
+  vendors?: Vendor[];
+  items?: Item[];
   onNavigateModule: (module: ModuleId) => void;
   onApprovePO: (poId: string) => void;
   onRejectPO: (poId: string) => void;
@@ -38,6 +42,8 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   rfqs,
   purchaseOrders,
   deliveries,
+  vendors = [],
+  items = [],
   onNavigateModule,
   onApprovePO,
   onRejectPO,
@@ -49,6 +55,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const filteredRfqs = rfqs.filter((r) => matchesCompany(r.entity));
   const filteredPOs = purchaseOrders.filter((p) => matchesCompany(p.entity));
   const filteredDeliveries = deliveries.filter((d) => matchesCompany(d.entity));
+  const filteredVendors = vendors.filter((v) => matchesCompany(v.entityScope));
 
   // Compute live KPI metrics
   const totalSpendSAR = filteredPOs.reduce((acc, curr) => acc + curr.grandTotalSAR, 0);
@@ -63,6 +70,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const pendingApprovalsCount = filteredPOs.filter((p) => p.status === 'Pending Approval').length;
   const openPosCount = filteredPOs.filter((p) => p.status !== 'Closed' && p.status !== 'Cancelled').length;
   const overdueCount = filteredDeliveries.filter((d) => d.isOverdue || d.status === 'Delayed').length;
+  const activeVendorsCount = filteredVendors.filter((v) => v.status === 'Approved' || v.status === 'Preferred').length;
 
   return (
     <div className="space-y-6">
@@ -83,7 +91,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         <KpiCard
           title="Total Spend YTD"
           value={formattedSpend}
-          change="+14.2% vs 2025"
+          change={filteredPOs.length > 0 ? `${filteredPOs.length} Active POs` : 'Zero Commitments'}
           isPositive={true}
           subtitle="Capital & Opex"
           icon={<DollarSign className="w-5 h-5" />}
@@ -111,7 +119,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         <KpiCard
           title="POs in Pipeline"
           value={`${openPosCount}`}
-          change="89.4% On Schedule"
+          change={openPosCount > 0 ? `${openPosCount} Orders Active` : 'Pipeline Cleared'}
           isPositive={true}
           subtitle="Issued & In Transit"
           icon={<FileCheck2 className="w-5 h-5" />}
@@ -129,8 +137,8 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         />
         <KpiCard
           title="Active Approved Vendors"
-          value="7"
-          change="97.2% Compliance"
+          value={`${activeVendorsCount}`}
+          change={`${filteredVendors.length} Total Registered`}
           isPositive={true}
           subtitle="Strategic Supply Base"
           icon={<Building2 className="w-5 h-5" />}
@@ -139,7 +147,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Spend Charts Section */}
-      <SpendCharts />
+      <SpendCharts purchaseOrders={filteredPOs} vendors={vendors} />
 
       {/* Operational Modules Split View: Pending Approvals & Recent RFQs */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

@@ -13,7 +13,8 @@ export type ModuleId =
   | 'deliveries'
   | 'payments'
   | 'assets'
-  | 'team';
+  | 'team'
+  | 'admin';
 
 export type UserRole =
   | 'Super Admin'

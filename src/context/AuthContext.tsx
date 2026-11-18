@@ -186,15 +186,21 @@ export function getStoredUsers(): UserProfile[] {
   try {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
     if (raw) {
-      const parsed: UserProfile[] = JSON.parse(raw);
-      if (parsed.some((u) => u.email.toLowerCase() === 'muhammed.azhar@arabitra.com')) {
-        return parsed.map((u) =>
-          u.email.toLowerCase() === 'muhammed.azhar@arabitra.com'
-            ? { ...u, role: 'Super Admin' as UserRole }
-            : u
-        );
-      }
-      return [MOCK_USERS[0], ...parsed];
+      let parsed: UserProfile[] = JSON.parse(raw);
+      // Ensure both Super Admins exist and maintain Super Admin role
+      MOCK_USERS.forEach((adminUser) => {
+        const found = parsed.find((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
+        if (!found) {
+          parsed = [adminUser, ...parsed];
+        } else {
+          parsed = parsed.map((u) =>
+            u.email.toLowerCase() === adminUser.email.toLowerCase()
+              ? { ...u, role: 'Super Admin' as UserRole }
+              : u
+          );
+        }
+      });
+      return parsed;
     }
   } catch {
     // fallback
@@ -391,13 +397,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let user = users.find((u) => u.email.toLowerCase() === emailNorm || u.id === cred.userId);
     if (emailNorm === 'muhammed.azhar@arabitra.com') {
       user = {
-        ...(user || MOCK_USERS[0]),
+        ...(user || MOCK_USERS[1]),
         id: 'USR-AZHAR',
         name: 'Muhammed Azhar',
         email: 'muhammed.azhar@arabitra.com',
         role: 'Super Admin',
         entity: 'GROUP',
         department: 'Executive Administration',
+        status: 'Active',
+      };
+    } else if (emailNorm === 'admin@procureos.com') {
+      user = {
+        ...(user || MOCK_USERS[0]),
+        id: 'USR-ADMIN',
+        name: 'ProcureOS System Administrator',
+        email: 'admin@procureos.com',
+        role: 'Super Admin',
+        entity: 'GROUP',
+        department: 'Technical Systems & Security',
         status: 'Active',
       };
     }

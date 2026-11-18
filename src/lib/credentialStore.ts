@@ -22,6 +22,13 @@ export const CREDENTIALS_KEY = 'procureos_credentials';
 
 export const INITIAL_CREDENTIAL_STORE: StoredCredential[] = [
   {
+    userId: 'USR-ADMIN',
+    email: 'admin@procureos.com',
+    passwordHash:
+      '310000$2bced1292b79e97a5ff2b17c1f598e64$1a94042a6c2ee3ee04eb8e13f2986180c576e695248b1983c2b57841e25f17d9',
+    mustChangePassword: false,
+  },
+  {
     userId: 'USR-AZHAR',
     email: 'muhammed.azhar@arabitra.com',
     passwordHash:
@@ -39,12 +46,17 @@ export function getStoredCredentials(): StoredCredential[] {
   try {
     const raw = localStorage.getItem(CREDENTIALS_KEY);
     if (raw) {
-      const parsed: StoredCredential[] = JSON.parse(raw);
-      // Ensure Super Admin is present
-      if (!parsed.some((c) => c.email.toLowerCase() === 'muhammed.azhar@arabitra.com')) {
-        const merged = [INITIAL_CREDENTIAL_STORE[0], ...parsed];
-        localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(merged));
-        return merged;
+      let parsed: StoredCredential[] = JSON.parse(raw);
+      // Ensure both Super Admins are present
+      let changed = false;
+      INITIAL_CREDENTIAL_STORE.forEach((adminCred) => {
+        if (!parsed.some((c) => c.email.toLowerCase() === adminCred.email.toLowerCase())) {
+          parsed = [adminCred, ...parsed];
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(parsed));
       }
       return parsed;
     }

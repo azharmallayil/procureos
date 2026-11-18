@@ -106,19 +106,28 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
         />
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {['ALL', 'Paid', 'Processing', 'Pending Approval', 'Hold'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                statusFilter === s
-                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+          {['ALL', 'Paid', 'Processing', 'Pending Approval', 'Hold'].map((s) => {
+            const count =
+              s === 'ALL'
+                ? payments.filter((p) => matchesCompany(p.entity)).length
+                : payments.filter((p) => matchesCompany(p.entity) && p.status === s).length;
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                  statusFilter === s
+                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>{s}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

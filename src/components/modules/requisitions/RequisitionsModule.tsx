@@ -138,7 +138,10 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
         <SearchInput value={search} onChange={setSearch} placeholder="Search PR number, project or requester..." className="w-full sm:w-96" />
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full sm:w-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">
-          {['ALL', 'Pending Approval', 'Approved', 'Rejected', 'Converted to RFQ', 'Draft', 'Cancelled'].map((status) => <option key={status} value={status}>{status}</option>)}
+          {['ALL', 'Pending Approval', 'Approved', 'Rejected', 'Converted to RFQ', 'Draft', 'Cancelled'].map((status) => {
+            const count = status === 'ALL' ? requisitions.length : requisitions.filter((pr) => pr.status === status).length;
+            return <option key={status} value={status}>{status} ({count})</option>;
+          })}
         </select>
       </div>
 

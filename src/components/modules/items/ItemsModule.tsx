@@ -155,11 +155,17 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
           >
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c === 'ALL' ? 'All Commodity Categories' : c}
-              </option>
-            ))}
+            {categories.map((c) => {
+              const count =
+                c === 'ALL'
+                  ? items.filter((i) => matchesCompany(i.entity)).length
+                  : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
+              return (
+                <option key={c} value={c}>
+                  {c === 'ALL' ? `All Commodity Categories (${count})` : `${c} (${count})`}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>

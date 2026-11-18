@@ -14,9 +14,20 @@ export const DEMO_DATA_DISCLAIMER = '';
 
 // ============================================================================
 // Production Master User Store
-// Primary Super Admin: Muhammed Azhar (muhammed.azhar@arabitra.com)
+// Super Admins: admin@procureos.com & Muhammed Azhar (muhammed.azhar@arabitra.com)
 // ============================================================================
 export const MOCK_USERS: UserProfile[] = [
+  {
+    id: 'USR-ADMIN',
+    name: 'ProcureOS System Administrator',
+    email: 'admin@procureos.com',
+    role: 'Super Admin',
+    entity: 'GROUP',
+    department: 'Technical Systems & Security',
+    status: 'Active',
+    twoFactorEnabled: true,
+    lastLogin: 'Just now',
+  },
   {
     id: 'USR-AZHAR',
     name: 'Muhammed Azhar',

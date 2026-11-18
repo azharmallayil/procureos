@@ -16,6 +16,7 @@ import { DeliveriesModule } from './components/modules/deliveries/DeliveriesModu
 import { PaymentsModule } from './components/modules/payments/PaymentsModule';
 import { AssetsModule } from './components/modules/assets/AssetsModule';
 import { TeamModule } from './components/modules/team/TeamModule';
+import { AdminModule } from './components/modules/admin/AdminModule';
 import {
   MOCK_ITEMS,
   MOCK_VENDORS,
@@ -25,6 +26,7 @@ import {
   MOCK_DELIVERIES,
   MOCK_PAYMENTS,
   MOCK_ASSETS,
+  MOCK_USERS,
 } from './data/mockData';
 import {
   ModuleId,
@@ -50,8 +52,22 @@ import { supabase, isSupabaseConfigured } from './lib/supabaseClient';
 const MainApplication: React.FC = () => {
   const { currentUser, activeRole } = useAuth();
   const { success, warning } = useToast();
+
+  const isAdmin =
+    activeRole === 'Super Admin' ||
+    currentUser?.role === 'Super Admin' ||
+    currentUser?.email === 'admin@procureos.com' ||
+    currentUser?.email === 'muhammed.azhar@arabitra.com';
+
   // Navigation module and workspace filter are user-scoped session states
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
+
+  useEffect(() => {
+    if ((activeModule === 'admin' || (activeModule as string) === 'team') && !isAdmin) {
+      setActiveModule('dashboard');
+      warning('Access Restricted', 'The Admin Command Center is reserved exclusively for system administrators.');
+    }
+  }, [activeModule, isAdmin]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,7 +91,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.18.prod_pure';
+    const PROD_LIVE_VER = '2026.11.18.admin_console';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -100,20 +116,8 @@ const MainApplication: React.FC = () => {
       setVendors([]);
       localStorage.setItem('procureos_vendors', JSON.stringify([]));
 
-      // 3. Reset users & credentials to sole Super Admin: Muhammed Azhar
-      localStorage.setItem('procureos_users', JSON.stringify([
-        {
-          id: 'USR-AZHAR',
-          name: 'Muhammed Azhar',
-          email: 'muhammed.azhar@arabitra.com',
-          role: 'Super Admin',
-          entity: 'GROUP',
-          department: 'Executive Administration',
-          status: 'Active',
-          twoFactorEnabled: true,
-          lastLogin: 'Just now',
-        }
-      ]));
+      // 3. Reset users & credentials to Super Admins
+      localStorage.setItem('procureos_users', JSON.stringify(MOCK_USERS));
 
       // 4. Clear all stored quote PDFs in IndexedDB
       clearAllStoredPdfDocuments().catch(() => {});
@@ -124,11 +128,11 @@ const MainApplication: React.FC = () => {
 
       // 6. Immutable audit entry
       recordAuditLog(
-        'Production Live Stage Initialized',
+        'Admin Console Initialized',
         'System',
-        'PROD-CUTOVER',
-        'System transitioned to active live office production. Sole Super Admin: Muhammed Azhar (muhammed.azhar@arabitra.com).',
-        { name: 'Muhammed Azhar', role: 'Super Admin' }
+        'ADMIN-SETUP',
+        'System administrative module activated for admin@procureos.com and muhammed.azhar@arabitra.com.',
+        { name: 'System Admin', role: 'Super Admin' }
       );
     }
   }, []);
@@ -909,6 +913,7 @@ const MainApplication: React.FC = () => {
             onQuickAction={handleQuickAction}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            onNavigateModule={setActiveModule}
           />
 
           {/* Module Content View */}
@@ -918,6 +923,8 @@ const MainApplication: React.FC = () => {
                 rfqs={rfqs}
                 purchaseOrders={purchaseOrders}
                 deliveries={deliveries}
+                vendors={vendors}
+                items={items}
                 onNavigateModule={setActiveModule}
                 onApprovePO={handleApprovePO}
                 onRejectPO={handleRejectPO}
@@ -1011,7 +1018,19 @@ const MainApplication: React.FC = () => {
               <AssetsModule assets={assets} onAddAsset={handleAddAsset} />
             )}
 
-            {activeModule === 'team' && <TeamModule />}
+            {(activeModule === 'admin' || activeModule === 'team') && (
+              <AdminModule
+                items={items}
+                vendors={vendors}
+                rfqs={rfqs}
+                quotations={quotations}
+                purchaseOrders={purchaseOrders}
+                deliveries={deliveries}
+                payments={payments}
+                assets={assets}
+                requisitions={requisitions}
+              />
+            )}
           </main>
 
           {/* Enterprise Footer */}

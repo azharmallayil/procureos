@@ -195,20 +195,29 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
           className="w-full sm:w-96"
         />
 
-        <div className="flex items-center gap-2">
-          {['ALL', 'Open', 'Under Evaluation', 'Awarded', 'Closed'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === s
-                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          {['ALL', 'Open', 'Under Evaluation', 'Awarded', 'Closed'].map((s) => {
+            const count =
+              s === 'ALL'
+                ? rfqs.filter((r) => matchesCompany(r.entity)).length
+                : rfqs.filter((r) => matchesCompany(r.entity) && r.status === s).length;
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                  statusFilter === s
+                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>{s}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
