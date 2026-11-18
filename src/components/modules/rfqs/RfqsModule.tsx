@@ -51,14 +51,14 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
   const [isDeletingRfq, setIsDeletingRfq] = useState(false);
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>(() => vendors.filter((vendor) =>
     (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
-    (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'FITCO Approved')
+    (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'Arabitra Approved')
   ).slice(0, 4).map((vendor) => vendor.id));
 
   // Form State
   const [form, setForm] = useState({
     title: '',
     projectName: '',
-    entity: 'FITCO' as EntityId,
+    entity: 'ARABITRA' as EntityId,
     closingDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     budgetEstimatedSAR: '',
     priority: 'High' as 'Urgent' | 'High' | 'Normal',
@@ -70,9 +70,7 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
 
   const eligibleVendors = vendors.filter((vendor) =>
     (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
-    (vendor.entityScope === 'Joint / Group' ||
-      (form.entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
-      (form.entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'))
+    (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'Arabitra Approved')
   );
 
   const addLineItem = () => {
@@ -131,7 +129,7 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
     const suffix = `${now.getTime().toString().slice(-6)}${Math.floor(Math.random() * 10)}`;
     const newRfq: RFQ = {
       id: `RFQ-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
-      rfqNumber: `RFQ-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-${year}-${suffix}`,
+      rfqNumber: `RFQ-ARB-${year}-${suffix}`,
       title: form.title,
       projectName: form.projectName,
       entity: form.entity,
@@ -242,8 +240,8 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                     <span className="font-mono text-xs font-bold text-cyan-300">
                       {rfq.rfqNumber}
                     </span>
-                    <Badge variant={rfq.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                      {rfq.entity}
+                    <Badge variant="amber">
+                      Arabitra
                     </Badge>
                   </div>
                   <Badge
@@ -350,16 +348,13 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                   setForm({ ...form, entity });
                   const nextEligible = vendors.filter((vendor) =>
                     (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
-                    (vendor.entityScope === 'Joint / Group' ||
-                      (entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
-                      (entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved'))
+                    (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'Arabitra Approved')
                   );
                   setSelectedVendorIds(nextEligible.slice(0, 4).map((vendor) => vendor.id));
                 }}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
-                <option value="FITCO">FITCO Telematics & AI Safety</option>
-                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
+                <option value="ARABITRA">Arabitra Enterprise</option>
               </select>
             </div>
             <div>

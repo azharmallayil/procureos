@@ -167,25 +167,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800/90 bg-topbar">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-11 h-11 rounded-xl bg-slate-900/90 border border-emerald-500/30 p-1.5 flex items-center justify-center shadow-lg shadow-emerald-950/40 shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-slate-900/90 border border-amber-500/30 p-1.5 flex items-center justify-center shadow-lg shadow-amber-950/40 shrink-0">
               <img
-                src="/fitco-logo.png"
-                alt="Fitco Logo"
+                src="/arabitra-icon.png"
+                alt="Arabitra Logo"
                 className="w-full h-full object-contain"
               />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-base tracking-tight text-white">
-                    Procure<span className="text-emerald-400">OS</span>
+                  <span className="font-extrabold text-base tracking-tight text-amber-200">
+                    Arabitra
                   </span>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                    v2.6
+                    ProcureOS
                   </span>
                 </div>
                 <p className="text-[11px] font-semibold text-emerald-400/90 truncate tracking-wide">
-                  by Fitco
+                  Powered by Fitco
                 </p>
               </div>
             )}

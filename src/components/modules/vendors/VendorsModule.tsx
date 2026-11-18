@@ -55,7 +55,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
     vatNumber: '',
     category: 'Mechanical & Piping' as ItemCategory,
     tier: 'Tier 1' as 'Tier 1' | 'Tier 2' | 'Tier 3',
-    entityScope: 'FITCO Approved' as 'FITCO Approved' | 'Arabitra Approved' | 'Joint / Group',
+    entityScope: 'Arabitra Approved' as 'Arabitra Approved' | 'Joint / Group' | 'FITCO Approved',
     contactPerson: '',
     contactEmail: '',
     contactPhone: '',
@@ -130,7 +130,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
       vatNumber: '',
       category: 'Mechanical & Piping',
       tier: 'Tier 1',
-      entityScope: 'FITCO Approved',
+      entityScope: 'Arabitra Approved',
       contactPerson: '',
       contactEmail: '',
       contactPhone: '',
@@ -294,14 +294,12 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <Badge
                           variant={
-                            vendor.entityScope === 'FITCO Approved'
-                              ? 'cyan'
-                              : vendor.entityScope === 'Arabitra Approved'
-                              ? 'emerald'
-                              : 'purple'
+                            vendor.entityScope === 'Joint / Group'
+                              ? 'purple'
+                              : 'amber'
                           }
                         >
-                          {vendor.entityScope}
+                          {vendor.entityScope === 'Joint / Group' ? 'Enterprise' : 'Arabitra Approved'}
                         </Badge>
                         <span className="block text-[10px] text-slate-400 mt-1 font-semibold">
                           {vendor.tier}
@@ -481,7 +479,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Register New Vendor"
-        subtitle="Onboard supplier for FITCO and Arabitra procurement"
+        subtitle="Onboard supplier for Arabitra procurement (Powered by Fitco)"
         maxWidth="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -518,9 +516,8 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                 onChange={(e) => setForm({ ...form, entityScope: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
-                <option value="FITCO Approved">FITCO Approved</option>
                 <option value="Arabitra Approved">Arabitra Approved</option>
-                <option value="Joint / Group">Joint / Group</option>
+                <option value="Joint / Group">Enterprise / Group</option>
               </select>
             </div>
             <div>

@@ -48,9 +48,9 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
 
   // Form State
   const [form, setForm] = useState({
-    poNumber: 'PO-FTC-26-0491',
+    poNumber: 'PO-ARB-26-0491',
     vendorName: 'Al-Tamimi Industrial Flow Systems Co.',
-    entity: 'FITCO' as EntityId,
+    entity: 'ARABITRA' as EntityId,
     destinationSite: 'Shedgum Gas Compression Station 3',
     carrier: 'Hala Supply Chain Services',
     driverName: 'Mustafa Kamel',
@@ -92,7 +92,7 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
 
     const newDelivery: Delivery = {
       id: `DEL-${Date.now().toString().slice(-3)}`,
-      trackingNumber: `TRK-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-26-${Math.floor(1000 + Math.random() * 8999)}`,
+      trackingNumber: `TRK-ARB-26-${Math.floor(1000 + Math.random() * 8999)}`,
       poNumber: form.poNumber,
       vendorName: form.vendorName,
       entity: form.entity,
@@ -213,8 +213,8 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                       {del.poNumber}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge variant={del.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                        {del.entity}
+                      <Badge variant="amber">
+                        Arabitra
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4">
@@ -369,8 +369,7 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                 onChange={(e) => setForm({ ...form, entity: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
               >
-                <option value="FITCO">FITCO Telematics & AI Safety</option>
-                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
+                <option value="ARABITRA">Arabitra Enterprise</option>
               </select>
             </div>
             <div>

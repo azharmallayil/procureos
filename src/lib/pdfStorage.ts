@@ -495,7 +495,7 @@ export function generateSyntheticQuotationPdf(params: {
       </div>` : ''}
 
       <div class="footer">
-        <div>Cryptographically archived in ProcureOS Cloud Ledger • FITCO / ARABITRA ERP Integration</div>
+        <div>Cryptographically archived in Arabitra ProcureOS Cloud Ledger • Powered by Fitco</div>
         <div>Document ID: ${proposalRef}</div>
       </div>
     </div>

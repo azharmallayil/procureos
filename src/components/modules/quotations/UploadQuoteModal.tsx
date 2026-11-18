@@ -69,7 +69,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
 }) => {
   const { success, warning, info } = useToast();
   const { currentUser: _cu } = useAuth();
-  const currentUser = _cu || { name: 'Procurement Specialist', email: 'procurement@fitcotech.com' };
+  const currentUser = _cu || { name: 'Procurement Specialist', email: 'procurement@arabitra.com' };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initialRfq =
@@ -104,7 +104,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [newVendorForm, setNewVendorForm] = useState({
     name: '',
     category: 'Telematics & IoT Hardware',
-    entityScope: 'Joint / Group' as 'Joint / Group' | 'FITCO Approved' | 'Arabitra Approved',
+    entityScope: 'Arabitra Approved' as 'Joint / Group' | 'FITCO Approved' | 'Arabitra Approved',
     crNumber: '',
     vatNumber: '',
     contactPerson: '',
@@ -645,9 +645,8 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
                   onChange={(e) => setNewVendorForm({ ...newVendorForm, entityScope: e.target.value as any })}
                   className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
                 >
-                  <option value="Joint / Group">Joint / Group (Both)</option>
-                  <option value="FITCO Approved">FITCO Approved</option>
                   <option value="Arabitra Approved">Arabitra Approved</option>
+                  <option value="Joint / Group">Enterprise / Group</option>
                 </select>
               </div>
 

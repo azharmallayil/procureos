@@ -337,9 +337,7 @@ const MainApplication: React.FC = () => {
       .filter((category): category is NonNullable<typeof category> => Boolean(category)));
     const invitedVendorIds = vendors.filter((vendor) =>
       (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
-      (vendor.entityScope === 'Joint / Group' ||
-        (requisition.entity === 'FITCO' && vendor.entityScope === 'FITCO Approved') ||
-        (requisition.entity === 'ARABITRA' && vendor.entityScope === 'Arabitra Approved')) &&
+      (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'Arabitra Approved') &&
       (requestedCategories.size === 0 || requestedCategories.has(vendor.category))
     ).map((vendor) => vendor.id);
     if (invitedVendorIds.length === 0) {
@@ -350,7 +348,7 @@ const MainApplication: React.FC = () => {
     const suffix = `${now.getTime().toString().slice(-7)}${Math.floor(Math.random() * 10)}`;
     const newRfq: RFQ = {
       id: `RFQ-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
-      rfqNumber: `RFQ-${requisition.entity === 'FITCO' ? 'FTC' : 'ARB'}-${now.getFullYear()}-${suffix}`,
+      rfqNumber: `RFQ-ARB-${now.getFullYear()}-${suffix}`,
       title: requisition.title,
       projectName: requisition.projectName,
       entity: requisition.entity,
@@ -638,7 +636,7 @@ const MainApplication: React.FC = () => {
       const initialStatus: POStatus = autoSubmitForApproval ? 'Pending Approval' : 'Draft';
       const newPO: PurchaseOrder = {
         id: `PO-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
-        poNumber: `PO-${targetEvaluation.entity === 'FITCO' ? 'FTC' : 'ARB'}-${now.getFullYear()}-${now.getTime().toString().slice(-7)}`,
+        poNumber: `PO-ARB-${now.getFullYear()}-${now.getTime().toString().slice(-7)}`,
         rfqNumber: targetEvaluation.rfqNumber,
         vendorId: targetBid.vendorId,
         vendorName: targetBid.vendorName,
@@ -1134,14 +1132,14 @@ const MainApplication: React.FC = () => {
           <footer className="border-t border-slate-800/80 bg-[#090d16] px-6 py-4 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <img
-                src="/fitco-logo.png"
-                alt="Fitco"
-                className="h-4.5 w-auto object-contain opacity-90"
+                src="/arabitra-icon.png"
+                alt="Arabitra"
+                className="h-5 w-auto object-contain"
               />
-              <span className="font-bold text-slate-200">ProcureOS</span>
-              <span className="text-emerald-400 font-semibold">by Fitco</span>
+              <span className="font-bold text-slate-200">Arabitra ProcureOS</span>
+              <span className="text-emerald-400 font-semibold">Powered by Fitco</span>
               <span className="text-slate-600">•</span>
-              <span>Unified EPC Procurement System for FITCO & Arabitra</span>
+              <span>Enterprise Procurement Operations Platform</span>
             </div>
             <div className="flex items-center gap-4 text-[11px] text-slate-400">
               <span>Kingdom of Saudi Arabia</span>

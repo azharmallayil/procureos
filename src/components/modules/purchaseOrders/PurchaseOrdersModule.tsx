@@ -67,7 +67,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   // New PO Form State
   const [form, setForm] = useState({
     vendorName: 'Al-Tamimi Industrial Flow Systems Co.',
-    entity: 'FITCO' as EntityId,
+    entity: 'ARABITRA' as EntityId,
     projectSite: 'Shedgum Gas Compression Station 3',
     expectedDeliveryDate: '2026-11-20',
     totalAmountSAR: '',
@@ -180,7 +180,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
 
     const newPO: PurchaseOrder = {
       id: `PO-${Date.now().toString().slice(-4)}`,
-      poNumber: `PO-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-26-0${Math.floor(500 + Math.random() * 499)}`,
+      poNumber: `PO-ARB-26-0${Math.floor(500 + Math.random() * 499)}`,
       vendorId: 'VND-001',
       vendorName: form.vendorName,
       entity: form.entity,
@@ -322,8 +322,8 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                       {po.poNumber}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge variant={po.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                        {po.entity}
+                      <Badge variant="amber">
+                        Arabitra
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]">
@@ -797,8 +797,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                 onChange={(e) => setForm({ ...form, entity: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
-                <option value="FITCO">FITCO Telematics & AI Safety</option>
-                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
+                <option value="ARABITRA">Arabitra Enterprise</option>
               </select>
             </div>
             <div>

@@ -462,8 +462,8 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
               <span className="font-mono text-xs font-bold text-cyan-300">
                 {selectedEvaluation.rfqNumber}
               </span>
-              <Badge variant={selectedEvaluation.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                {selectedEvaluation.entity}
+              <Badge variant="amber">
+                Arabitra
               </Badge>
               <Badge variant="amber" dot className="text-[10px]">
                 {selectedEvaluation.status}

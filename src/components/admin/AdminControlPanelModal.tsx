@@ -146,9 +146,9 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
   }, [isOpen, onClose]);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('Procurement Engineer');
-  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [newDept, setNewDept] = useState('');
-  const [newPassword, setNewPassword] = useState('Fitco@2026!Secure');
+  const [newPassword, setNewPassword] = useState('Arabitra@2026!Secure');
   const [newStatus, setNewStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
   const [formError, setFormError] = useState('');
@@ -157,7 +157,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('Procurement Engineer');
-  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [editDept, setEditDept] = useState('');
   const [editStatus, setEditStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [editPassword, setEditPassword] = useState('');
@@ -234,7 +234,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
       setNewName('');
       setNewEmail('');
       setNewDept('');
-      setNewPassword('Fitco@2026!Secure');
+      setNewPassword('Arabitra@2026!Secure');
     } else {
       setFormError(result.error || 'Failed to create user account.');
       toastError('User Creation Failed', result.error || 'Unknown error');
@@ -652,10 +652,8 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                         onChange={(e) => setEntityFilter(e.target.value)}
                         className="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-amber-500/70"
                       >
-                        <option value="ALL">All Entities</option>
-                        <option value="FITCO">FITCO (Industrial)</option>
-                        <option value="ARABITRA">ARABITRA (Trading)</option>
-                        <option value="GROUP">GROUP Holding</option>
+                        <option value="ALL">All Records</option>
+                        <option value="ARABITRA">Arabitra Enterprise</option>
                       </select>
                     </div>
 
@@ -1305,22 +1303,10 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                           Synchronization Rules & Mapping
                         </h4>
 
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 gap-2.5">
                           <div>
                             <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                              FITCO Company Code
-                            </label>
-                            <input
-                              type="text"
-                              value={erpConfig.fitcoCompanyCode}
-                              onChange={(e) => setErpConfig({ ...erpConfig, fitcoCompanyCode: e.target.value })}
-                              placeholder="1000"
-                              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                              ARABITRA Company Code
+                              Arabitra ERP Company Code
                             </label>
                             <input
                               type="text"
@@ -1525,7 +1511,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="tariq.ghamdi@fitco-group.com"
+                placeholder="tariq.ghamdi@arabitra.com"
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -1557,9 +1543,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                   onChange={(e) => setNewEntity(e.target.value as any)}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="FITCO">FITCO (Industrial Supply)</option>
-                  <option value="ARABITRA">ARABITRA (Trading)</option>
-                  <option value="GROUP">GROUP Holding</option>
+                  <option value="ARABITRA">ARABITRA Enterprise</option>
                 </select>
               </div>
             </div>
@@ -1694,9 +1678,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                   onChange={(e) => setEditEntity(e.target.value as any)}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="FITCO">FITCO</option>
-                  <option value="ARABITRA">ARABITRA</option>
-                  <option value="GROUP">GROUP</option>
+                  <option value="ARABITRA">ARABITRA Enterprise</option>
                 </select>
               </div>
             </div>
@@ -1888,7 +1870,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                 <li>All sample items and demo vendor listings</li>
               </ul>
               <p className="text-emerald-300 pt-1">
-                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (FITCO & ARABITRA), and system settings.
+                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (ARABITRA), and system settings.
               </p>
             </div>
 

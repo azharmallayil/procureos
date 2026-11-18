@@ -79,10 +79,10 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-xs font-bold text-cyan-300">{po.poNumber}</span>
                 <Badge
-                  variant={po.entity === 'FITCO' ? 'cyan' : 'emerald'}
+                  variant="amber"
                   className="text-[10px]"
                 >
-                  {po.entity}
+                  Arabitra
                 </Badge>
                 <Badge variant="amber" dot className="text-[10px]">
                   Stage: {po.approvalStage}

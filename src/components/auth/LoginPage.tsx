@@ -335,22 +335,22 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo + Branding */}
         <div className="flex flex-col items-center mb-6">
-          <div className="px-5 py-3 rounded-2xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-950/60 mb-3 backdrop-blur-md">
+          <div className="px-6 py-4 rounded-2xl bg-slate-900/90 border border-amber-500/30 flex items-center justify-center shadow-2xl shadow-amber-950/60 mb-3 backdrop-blur-md">
             <img
-              src="/fitco-logo.png"
-              alt="Fitco"
-              className="h-10 sm:h-12 w-auto object-contain"
+              src="/arabitra-logo.png"
+              alt="Arabitra"
+              className="h-12 sm:h-14 w-auto object-contain"
             />
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">
-              Procure<span className="text-emerald-400">OS</span>
+              Arabitra <span className="text-amber-400">ProcureOS</span>
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
               Enterprise
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">Telematics & Industrial Procurement Platform</p>
+          <p className="text-xs text-slate-400 mt-1">Fleet & Industrial Procurement Operations • Powered by Fitco</p>
         </div>
 
         {/* Login Card */}
@@ -381,7 +381,7 @@ export const LoginPage: React.FC = () => {
                   disabled={lockoutMs > 0 || isSubmitting}
                   inputMode="email"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-800/70 border border-slate-700 rounded-xl text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/60 transition-all disabled:opacity-50"
-                  placeholder="you@fitcogroup.com"
+                  placeholder="you@arabitra.com"
                 />
               </div>
             </div>

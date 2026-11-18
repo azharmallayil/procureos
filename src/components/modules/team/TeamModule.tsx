@@ -74,9 +74,9 @@ export const TeamModule: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('Procurement Engineer');
-  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [newDept, setNewDept] = useState('');
-  const [newPassword, setNewPassword] = useState('Fitco@2026!Secure');
+  const [newPassword, setNewPassword] = useState('Arabitra@2026!Secure');
   const [newStatus, setNewStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
   const [formError, setFormError] = useState('');
@@ -85,7 +85,7 @@ export const TeamModule: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('Procurement Engineer');
-  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [editDept, setEditDept] = useState('');
   const [editStatus, setEditStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [editPassword, setEditPassword] = useState('');
@@ -159,7 +159,7 @@ export const TeamModule: React.FC = () => {
       setNewName('');
       setNewEmail('');
       setNewDept('');
-      setNewPassword('Fitco@2026!Secure');
+      setNewPassword('Arabitra@2026!Secure');
     } else {
       setFormError(result.error || 'Failed to create user account.');
       toastError('User Creation Failed', result.error || 'Unknown error');
@@ -1001,7 +1001,7 @@ export const TeamModule: React.FC = () => {
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="tariq.ghamdi@fitco-group.com"
+                placeholder="tariq.ghamdi@arabitra.com"
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
@@ -1033,9 +1033,7 @@ export const TeamModule: React.FC = () => {
                   onChange={(e) => setNewEntity(e.target.value as any)}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 >
-                  <option value="FITCO">FITCO (Industrial Supply)</option>
-                  <option value="ARABITRA">ARABITRA (Trading & Logistics)</option>
-                  <option value="GROUP">GROUP (Parent Holding)</option>
+                  <option value="ARABITRA">ARABITRA Enterprise</option>
                 </select>
               </div>
             </div>
@@ -1176,9 +1174,7 @@ export const TeamModule: React.FC = () => {
                   onChange={(e) => setEditEntity(e.target.value as any)}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 >
-                  <option value="FITCO">FITCO</option>
-                  <option value="ARABITRA">ARABITRA</option>
-                  <option value="GROUP">GROUP</option>
+                  <option value="ARABITRA">ARABITRA Enterprise</option>
                 </select>
               </div>
             </div>
@@ -1382,7 +1378,7 @@ export const TeamModule: React.FC = () => {
                 <li>All sample items and demo vendor listings</li>
               </ul>
               <p className="text-emerald-300 pt-1">
-                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (FITCO & ARABITRA), and system settings.
+                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (ARABITRA), and system settings.
               </p>
             </div>
 

@@ -40,7 +40,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [form, setForm] = useState({
-    title: '', entity: 'FITCO' as EntityId, department: currentUser?.department || 'Procurement',
+    title: '', entity: 'ARABITRA' as EntityId, department: currentUser?.department || 'Procurement',
     requiredDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     projectName: '', deliveryLocation: '', justification: '', priority: 'Normal' as 'Urgent' | 'High' | 'Normal',
   });
@@ -97,7 +97,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
     const suffix = `${now.getTime().toString().slice(-7)}${Math.floor(Math.random() * 10)}`;
     const requisition: PurchaseRequisition = {
       id: `PR-${globalThis.crypto?.randomUUID?.() || now.getTime().toString()}`,
-      prNumber: `PR-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-${now.getFullYear()}-${suffix}`,
+      prNumber: `PR-ARB-${now.getFullYear()}-${suffix}`,
       title: form.title.trim(), entity: form.entity, department: form.department.trim() || 'Unassigned',
       requestedBy: currentUser?.name || 'Current User', requestDate: now.toISOString().split('T')[0],
       requiredDate: form.requiredDate, projectName: form.projectName.trim(),
@@ -157,7 +157,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
             <div key={pr.id} className="glass-panel rounded-xl border border-slate-800 p-4 md:p-5">
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-bold text-cyan-300">{pr.prNumber}</span><Badge variant={statusVariant(pr.status)} dot>{pr.status}</Badge><Badge variant={pr.entity === 'FITCO' ? 'cyan' : 'emerald'}>{pr.entity}</Badge></div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-bold text-cyan-300">{pr.prNumber}</span><Badge variant={statusVariant(pr.status)} dot>{pr.status}</Badge><Badge variant="amber">Arabitra</Badge></div>
                   <h3 className="text-sm font-bold text-slate-100">{pr.title}</h3>
                   <p className="text-xs text-slate-400">{pr.projectName} · {pr.department} · Requested by {pr.requestedBy}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400"><span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> Required: {pr.requiredDate}</span><span className="inline-flex items-center gap-1"><Package className="w-3 h-3" /> {pr.lineItems.length} item line(s)</span><span className="font-mono text-emerald-300">Est. SAR {pr.estimatedTotalSAR.toLocaleString()}</span></div>
@@ -183,7 +183,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label className="block text-slate-300 mb-1">Request title *</label><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" placeholder="e.g. Site instrumentation materials" /></div>
-            <div><label className="block text-slate-300 mb-1">Company *</label><select value={form.entity} onChange={(e) => setForm({ ...form, entity: e.target.value as EntityId })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100"><option value="FITCO">FITCO</option><option value="ARABITRA">Arabitra</option></select></div>
+            <div><label className="block text-slate-300 mb-1">Company *</label><select value={form.entity} onChange={(e) => setForm({ ...form, entity: e.target.value as EntityId })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100"><option value="ARABITRA">Arabitra</option></select></div>
             <div><label className="block text-slate-300 mb-1">Department</label><input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>
             <div><label className="block text-slate-300 mb-1">Project / Cost Centre *</label><input required value={form.projectName} onChange={(e) => setForm({ ...form, projectName: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>
             <div><label className="block text-slate-300 mb-1">Required delivery date *</label><input required type="date" min={new Date().toISOString().split('T')[0]} value={form.requiredDate} onChange={(e) => setForm({ ...form, requiredDate: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>

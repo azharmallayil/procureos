@@ -286,7 +286,7 @@ export const ROLE_DETAILS: Record<
   'General Manager (GM)': {
     title: 'General Manager (GM)',
     category: 'Executive Leadership',
-    description: 'Operational and commercial management across FITCO & Arabitra business divisions',
+    description: 'Operational and commercial management across Arabitra enterprise business divisions',
     badgeVariant: 'purple',
   },
   'Operations Director (COO)': {

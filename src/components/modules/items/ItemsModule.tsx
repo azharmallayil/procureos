@@ -48,7 +48,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     unitPriceSAR: '',
     stockLevel: '',
     reorderPoint: '',
-    entity: 'FITCO' as EntityId | 'SHARED',
+    entity: 'ARABITRA' as EntityId | 'SHARED',
     location: '',
   });
 
@@ -131,7 +131,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       unitPriceSAR: '',
       stockLevel: '',
       reorderPoint: '',
-      entity: 'FITCO',
+      entity: 'ARABITRA',
       location: '',
     });
   };
@@ -319,15 +319,9 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <Badge
-                          variant={
-                            item.entity === 'FITCO'
-                              ? 'cyan'
-                              : item.entity === 'ARABITRA'
-                              ? 'emerald'
-                              : 'purple'
-                          }
+                          variant={item.entity === 'SHARED' ? 'purple' : 'amber'}
                         >
-                          {item.entity}
+                          {item.entity === 'SHARED' ? 'Shared' : 'Arabitra'}
                         </Badge>
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-100 whitespace-nowrap">
@@ -412,7 +406,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
           if (onCloseCreateModal) onCloseCreateModal();
         }}
         title="Add New Catalog Item"
-        subtitle="Register standard procurement item for FITCO or Arabitra ERP"
+        subtitle="Register standard procurement item for Arabitra ERP (Powered by Fitco)"
         maxWidth="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -422,7 +416,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
               <input
                 type="text"
                 required
-                placeholder="e.g. FIT-VAL-9021"
+                placeholder="e.g. ARB-VAL-9021"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
@@ -435,8 +429,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                 onChange={(e) => setFormData({ ...formData, entity: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:border-cyan-500 focus:outline-none"
               >
-                <option value="FITCO">FITCO Telematics & AI Safety</option>
-                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
+                <option value="ARABITRA">Arabitra Enterprise</option>
                 <option value="SHARED">Shared Group Item</option>
               </select>
             </div>

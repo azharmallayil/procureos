@@ -36,7 +36,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
     name: '',
     serialNumber: '',
     category: 'Heavy Plant & Machinery',
-    entity: 'FITCO' as EntityId,
+    entity: 'ARABITRA' as EntityId,
     assignedProject: 'Shedgum Plant Decarbonization Ph-2',
     custodian: 'Eng. Khalid Al-Shehri',
     acquisitionCostSAR: '',
@@ -59,7 +59,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
 
     const newAsset: Asset = {
       id: `AST-${Date.now().toString().slice(-4)}`,
-      assetTag: `AST-${form.entity === 'FITCO' ? 'FTC' : 'ARB'}-${Math.floor(100 + Math.random() * 899)}`,
+      assetTag: `AST-ARB-${Math.floor(100 + Math.random() * 899)}`,
       name: form.name,
       serialNumber: form.serialNumber,
       category: form.category,
@@ -151,8 +151,8 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
                     <span className="font-mono text-xs font-bold text-cyan-300">
                       {asset.assetTag}
                     </span>
-                    <Badge variant={asset.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                      {asset.entity}
+                    <Badge variant="amber">
+                      Arabitra
                     </Badge>
                   </div>
                   <Badge variant={getConditionBadge(asset.condition)} dot>
@@ -273,8 +273,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
                 onChange={(e) => setForm({ ...form, entity: e.target.value as any })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
               >
-                <option value="FITCO">FITCO Telematics & AI Safety</option>
-                <option value="ARABITRA">Arabitra Fleet & LMI Tracking</option>
+                <option value="ARABITRA">Arabitra Enterprise</option>
               </select>
             </div>
             <div>

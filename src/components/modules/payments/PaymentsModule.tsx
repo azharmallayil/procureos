@@ -164,8 +164,8 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
                       {pay.poNumber}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge variant={pay.entity === 'FITCO' ? 'cyan' : 'emerald'}>
-                        {pay.entity}
+                      <Badge variant="amber">
+                        Arabitra
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]">

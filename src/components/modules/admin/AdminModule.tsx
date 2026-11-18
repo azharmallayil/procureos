@@ -192,7 +192,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('Procurement Engineer');
-  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [newEntity, setNewEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [newDept, setNewDept] = useState('');
   const [newPassword, setNewPassword] = useState('Admin@251');
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
@@ -201,7 +201,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('Procurement Engineer');
-  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('FITCO');
+  const [editEntity, setEditEntity] = useState<EntityId | 'GROUP'>('ARABITRA');
   const [editDept, setEditDept] = useState('');
   const [editStatus, setEditStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [editPassword, setEditPassword] = useState('');
@@ -1172,7 +1172,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               required
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="e.g. tariq@fitco.sa"
+              placeholder="e.g. tariq@arabitra.com"
               className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
             />
           </div>
@@ -1200,9 +1200,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                 onChange={(e) => setNewEntity(e.target.value as any)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
               >
-                <option value="FITCO">FITCO</option>
-                <option value="ARABITRA">ARABITRA</option>
-                <option value="GROUP">GROUP (All Entities)</option>
+                <option value="ARABITRA">ARABITRA Enterprise</option>
               </select>
             </div>
           </div>
@@ -1300,9 +1298,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                 onChange={(e) => setEditEntity(e.target.value as any)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
               >
-                <option value="FITCO">FITCO</option>
-                <option value="ARABITRA">ARABITRA</option>
-                <option value="GROUP">GROUP</option>
+                <option value="ARABITRA">ARABITRA Enterprise</option>
               </select>
             </div>
           </div>

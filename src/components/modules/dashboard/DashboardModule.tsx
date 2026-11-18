@@ -233,10 +233,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                         {rfq.rfqNumber}
                       </span>
                       <Badge
-                        variant={rfq.entity === 'FITCO' ? 'cyan' : 'emerald'}
+                        variant="amber"
                         className="text-[10px]"
                       >
-                        {rfq.entity}
+                        Arabitra
                       </Badge>
                       <Badge
                         variant={

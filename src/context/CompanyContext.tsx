@@ -11,28 +11,16 @@ interface CompanyContextType {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeCompany, setActiveCompany] = useState<Company>('ALL');
+  const [activeCompany, setActiveCompany] = useState<Company>('ARABITRA');
 
   const matchesCompany = (
-    entity: EntityId | 'SHARED' | 'GROUP' | 'FITCO Approved' | 'Arabitra Approved' | 'Joint / Group'
+    _entity: EntityId | 'SHARED' | 'GROUP' | 'FITCO Approved' | 'Arabitra Approved' | 'Joint / Group'
   ): boolean => {
-    if (activeCompany === 'ALL') return true;
-    if (entity === 'SHARED' || entity === 'GROUP' || entity === 'Joint / Group') return true;
-    if (activeCompany === 'FITCO') {
-      return entity === 'FITCO' || entity === 'FITCO Approved';
-    }
-    if (activeCompany === 'ARABITRA') {
-      return entity === 'ARABITRA' || entity === 'Arabitra Approved';
-    }
+    // Single operating company: Arabitra (Powered by Fitco)
     return true;
   };
 
-  const companyLabel =
-    activeCompany === 'FITCO'
-      ? 'FITCO Industrial & EPC'
-      : activeCompany === 'ARABITRA'
-      ? 'Arabitra Infrastructure'
-      : 'All Companies (Consolidated)';
+  const companyLabel = 'Arabitra';
 
   return (
     <CompanyContext.Provider value={{ activeCompany, setActiveCompany, matchesCompany, companyLabel }}>

@@ -65,7 +65,7 @@ export const DemoBanner: React.FC = () => {
                     <span>Server-Side Controls in Production:</span>
                   </div>
                   <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1">
-                    <li>Database Row-Level Security (PostgreSQL RLS) scoped to tenant IDs (FITCO vs Arabitra).</li>
+                    <li>Database Row-Level Security (PostgreSQL RLS) scoped to tenant IDs (Arabitra Enterprise).</li>
                     <li>Cryptographically signed JWT claims enforcing exact user approvals and spending limits.</li>
                     <li>Immutable audit logs for all PO approvals, budget overrides, and vendor tenders.</li>
                     <li>Multi-Factor Authentication (2FA) required for PO releases above SAR 500,000.</li>

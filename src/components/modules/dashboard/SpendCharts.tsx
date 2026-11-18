@@ -58,11 +58,7 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
       const mappedIdx = monthIndex >= 4 && monthIndex <= 10 ? monthIndex - 4 : 6;
       const amountMillions = Number(((po.grandTotalSAR || 0) / 1000000).toFixed(3));
 
-      if (po.entity === 'FITCO') {
-        result[mappedIdx].fitco += amountMillions;
-      } else {
-        result[mappedIdx].arabitra += amountMillions;
-      }
+      result[mappedIdx].arabitra += amountMillions;
       result[mappedIdx].total += amountMillions;
     });
 
@@ -122,28 +118,14 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
       <div className="lg:col-span-8">
         <Card
           title="Procurement Spend Trajectory (SAR Millions)"
-          subtitle="Multi-entity historical commitments & monthly disbursements"
+          subtitle="Arabitra enterprise commitments & monthly disbursements • Powered by Fitco"
           icon={<TrendingUp className="w-5 h-5 text-cyan-400" />}
           headerAction={
             <div className="flex items-center gap-4 text-xs">
-              {(activeCompany === 'ALL' || activeCompany === 'FITCO') && (
-                <div className="flex items-center gap-1.5 text-cyan-400">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
-                  <span>FITCO</span>
-                </div>
-              )}
-              {(activeCompany === 'ALL' || activeCompany === 'ARABITRA') && (
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span>Arabitra</span>
-                </div>
-              )}
-              {activeCompany === 'ALL' && (
-                <div className="flex items-center gap-1.5 text-indigo-400">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  <span>Combined</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span>Arabitra Enterprise Spend</span>
+              </div>
             </div>
           }
         >
@@ -151,17 +133,9 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorFitco" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                  </linearGradient>
                   <linearGradient id="colorArabitra" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -171,28 +145,15 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
                   contentStyle={customTooltipStyle}
                   formatter={(val: any) => [`SAR ${val}M`, '']}
                 />
-                {(activeCompany === 'ALL' || activeCompany === 'FITCO') && (
-                  <Area
-                    type="monotone"
-                    dataKey="fitco"
-                    name="FITCO Spend"
-                    stroke="#06b6d4"
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#colorFitco)"
-                  />
-                )}
-                {(activeCompany === 'ALL' || activeCompany === 'ARABITRA') && (
-                  <Area
-                    type="monotone"
-                    dataKey="arabitra"
-                    name="Arabitra Spend"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#colorArabitra)"
-                  />
-                )}
+                <Area
+                  type="monotone"
+                  dataKey="arabitra"
+                  name="Arabitra Spend"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorArabitra)"
+                />
                 {activeCompany === 'ALL' && (
                   <Area
                     type="monotone"
