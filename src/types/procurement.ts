@@ -18,22 +18,64 @@ export type ModuleId =
 
 export type UserRole =
   | 'Super Admin'
+  | 'Managing Director / CEO'
+  | 'General Manager (GM)'
+  | 'Operations Director (COO)'
+  | 'Finance Director (CFO)'
+  | 'Department Head (HOD)'
+  | 'Project Manager (PM)'
   | 'Procurement Director'
+  | 'Warehouse & Inventory Manager'
+  | 'Quality & Safety (QHSE) Manager'
+  | 'Human Resources (HR) Manager'
+  | 'Project Engineer'
+  | 'Site Engineer'
   | 'Procurement Engineer'
   | 'Purchasing Specialist'
   | 'Site Receiving Officer'
   | 'Financial Controller'
-  | 'Internal Auditor';
+  | 'Internal Auditor'
+  | 'General Staff / Employee';
 
 export const ALL_USER_ROLES: UserRole[] = [
   'Super Admin',
+  'Managing Director / CEO',
+  'General Manager (GM)',
+  'Operations Director (COO)',
+  'Finance Director (CFO)',
+  'Department Head (HOD)',
+  'Project Manager (PM)',
   'Procurement Director',
+  'Warehouse & Inventory Manager',
+  'Quality & Safety (QHSE) Manager',
+  'Human Resources (HR) Manager',
+  'Project Engineer',
+  'Site Engineer',
   'Procurement Engineer',
   'Purchasing Specialist',
   'Site Receiving Officer',
   'Financial Controller',
   'Internal Auditor',
+  'General Staff / Employee',
 ];
+
+export const HEAD_ROLES: UserRole[] = [
+  'Super Admin',
+  'Managing Director / CEO',
+  'General Manager (GM)',
+  'Operations Director (COO)',
+  'Finance Director (CFO)',
+  'Department Head (HOD)',
+  'Project Manager (PM)',
+  'Procurement Director',
+  'Warehouse & Inventory Manager',
+  'Quality & Safety (QHSE) Manager',
+];
+
+export const isHeadRole = (role: UserRole | string | undefined | null): boolean => {
+  if (!role) return false;
+  return HEAD_ROLES.includes(role as UserRole);
+};
 
 export const ROLE_MODULE_ACCESS: Record<UserRole, ModuleId[]> = {
   'Super Admin': [
@@ -49,6 +91,73 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, ModuleId[]> = {
     'assets',
     'admin',
   ],
+  'Managing Director / CEO': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+    'admin',
+  ],
+  'General Manager (GM)': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+    'admin',
+  ],
+  'Operations Director (COO)': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Finance Director (CFO)': [
+    'dashboard',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+  ],
+  'Department Head (HOD)': [
+    'dashboard',
+    'items',
+    'requisitions',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Project Manager (PM)': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
   'Procurement Director': [
     'dashboard',
     'items',
@@ -59,6 +168,45 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, ModuleId[]> = {
     'purchaseOrders',
     'deliveries',
     'payments',
+    'assets',
+  ],
+  'Warehouse & Inventory Manager': [
+    'dashboard',
+    'items',
+    'requisitions',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Quality & Safety (QHSE) Manager': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Human Resources (HR) Manager': [
+    'dashboard',
+    'requisitions',
+    'assets',
+  ],
+  'Project Engineer': [
+    'dashboard',
+    'items',
+    'requisitions',
+    'rfqs',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Site Engineer': [
+    'dashboard',
+    'items',
+    'requisitions',
+    'purchaseOrders',
+    'deliveries',
     'assets',
   ],
   'Procurement Engineer': [
@@ -106,6 +254,12 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, ModuleId[]> = {
     'payments',
     'assets',
   ],
+  'General Staff / Employee': [
+    'dashboard',
+    'items',
+    'requisitions',
+    'assets',
+  ],
 };
 
 export const ROLE_DETAILS: Record<
@@ -123,11 +277,77 @@ export const ROLE_DETAILS: Record<
     description: 'Full unconstrained platform control, telemetry, user management & disaster recovery',
     badgeVariant: 'amber',
   },
+  'Managing Director / CEO': {
+    title: 'Managing Director / CEO',
+    category: 'Executive Leadership',
+    description: 'Chief executive officer, corporate governance, ultimate commitment sign-offs & board reviews',
+    badgeVariant: 'amber',
+  },
+  'General Manager (GM)': {
+    title: 'General Manager (GM)',
+    category: 'Executive Leadership',
+    description: 'Operational and commercial management across FITCO & Arabitra business divisions',
+    badgeVariant: 'purple',
+  },
+  'Operations Director (COO)': {
+    title: 'Operations Director (COO)',
+    category: 'Executive Operations',
+    description: 'Head of EPC execution, operational logistics, site delivery coordination & plant equipment',
+    badgeVariant: 'blue',
+  },
+  'Finance Director (CFO)': {
+    title: 'Finance Director (CFO)',
+    category: 'Executive Finance',
+    description: 'Chief financial officer, corporate budget approvals, treasury sign-offs & high-value PO releases',
+    badgeVariant: 'indigo',
+  },
+  'Department Head (HOD)': {
+    title: 'Department Head (HOD)',
+    category: 'Department Leadership',
+    description: 'Prior departmental review & authorization of requisitions, material additions & equipment demands',
+    badgeVariant: 'purple',
+  },
+  'Project Manager (PM)': {
+    title: 'Project Manager (PM)',
+    category: 'Project Leadership',
+    description: 'Site project head, authorizer of project procurement demands, field assets & site orders',
+    badgeVariant: 'blue',
+  },
   'Procurement Director': {
     title: 'Procurement Director',
     category: 'Executive Procurement',
-    description: 'High-value PO sign-offs, commercial vendor governance & tender awards',
+    description: 'High-value PO sign-offs, commercial vendor governance, supplier onboarding & tender awards',
     badgeVariant: 'purple',
+  },
+  'Warehouse & Inventory Manager': {
+    title: 'Warehouse & Inventory Manager',
+    category: 'Inventory & Materials',
+    description: 'Central store head, catalogue item approvals, stock levels, safety thresholds & storage depots',
+    badgeVariant: 'emerald',
+  },
+  'Quality & Safety (QHSE) Manager': {
+    title: 'Quality & Safety (QHSE) Manager',
+    category: 'Quality & Compliance',
+    description: 'Vendor qualification audits, quality assurance, safety compliance & goods acceptance standards',
+    badgeVariant: 'cyan',
+  },
+  'Human Resources (HR) Manager': {
+    title: 'Human Resources (HR) Manager',
+    category: 'Human Capital',
+    description: 'Personnel administration, team organization, departmental requests & administrative approvals',
+    badgeVariant: 'slate',
+  },
+  'Project Engineer': {
+    title: 'Project Engineer',
+    category: 'Project Engineering',
+    description: 'Technical project execution, material requisition generator, engineering specifications',
+    badgeVariant: 'cyan',
+  },
+  'Site Engineer': {
+    title: 'Site Engineer',
+    category: 'Site Operations',
+    description: 'On-site execution, field material requests, delivery staging & physical inspection support',
+    badgeVariant: 'cyan',
   },
   'Procurement Engineer': {
     title: 'Procurement Engineer',
@@ -159,11 +379,20 @@ export const ROLE_DETAILS: Record<
     description: 'Read-only audit inspection across all transactions, ledgers & audit logs',
     badgeVariant: 'slate',
   },
+  'General Staff / Employee': {
+    title: 'General Staff / Employee',
+    category: 'General Staff',
+    description: 'Company employee, raising material and tools requisitions subject to prior Head sign-off',
+    badgeVariant: 'slate',
+  },
 };
 
 export interface PermissionMatrix {
   canApprovePO: boolean;
   canApproveHighValuePO: boolean;
+  canApprovePR: boolean;
+  canApproveVendor: boolean;
+  canApproveItem: boolean;
   canCreateRFQ: boolean;
   canAwardBid: boolean;
   canReleasePayment: boolean;
@@ -219,12 +448,17 @@ export interface Item {
   entity: EntityId | 'SHARED';
   primaryVendorId: string;
   location: string;
-  status: 'In Stock' | 'Low Stock' | 'Critical' | 'Discontinued';
+  status: 'In Stock' | 'Low Stock' | 'Critical' | 'Discontinued' | 'Pending Head Approval';
+  approvalStatus?: 'Pending Head Approval' | 'Approved' | 'Rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  requestedBy?: string;
   leadTimeDays: number;
   updatedAt: string;
 }
 
-export type VendorStatus = 'Approved' | 'Preferred' | 'Under Audit' | 'Probation' | 'Blacklisted';
+export type VendorStatus = 'Approved' | 'Preferred' | 'Under Audit' | 'Probation' | 'Blacklisted' | 'Pending Head Approval';
 
 export interface Vendor {
   id: string;
@@ -235,6 +469,11 @@ export interface Vendor {
   category: ItemCategory;
   tier: 'Tier 1' | 'Tier 2' | 'Tier 3';
   status: VendorStatus;
+  approvalStatus?: 'Pending Head Approval' | 'Approved' | 'Rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  requestedBy?: string;
   entityScope: 'FITCO Approved' | 'Arabitra Approved' | 'Joint / Group';
   rating: number; // 1-5
   onTimeDeliveryRate: number; // percentage e.g. 96

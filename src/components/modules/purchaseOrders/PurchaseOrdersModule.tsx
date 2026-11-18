@@ -16,7 +16,7 @@ import {
   ArrowRight,
   FileText,
 } from 'lucide-react';
-import { PurchaseOrder, POStatus, EntityId } from '../../../types/procurement';
+import { PurchaseOrder, POStatus, EntityId, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -84,11 +84,13 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
     return matchesScope && matchesStatus && matchesQuery;
   });
 
+  const canApprove = permissions?.canApprovePO || isHeadRole(activeRole) || activeRole === 'Super Admin';
+
   const handleApprove = (po: PurchaseOrder) => {
-    if (!permissions.canApprovePO) {
+    if (!canApprove) {
       warning(
         'Authorization Denied',
-        `Role '${activeRole}' does not possess the requisite authority to approve Purchase Orders.`
+        `Role '${activeRole}' does not possess the requisite authority to approve Purchase Orders. Prior Department Head or Executive authorization required.`
       );
       return;
     }

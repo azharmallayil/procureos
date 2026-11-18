@@ -1185,13 +1185,11 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                 onChange={(e) => setNewRole(e.target.value as UserRole)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
               >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Procurement Director">Procurement Director</option>
-                <option value="Procurement Engineer">Procurement Engineer</option>
-                <option value="Purchasing Specialist">Purchasing Specialist</option>
-                <option value="Site Receiving Officer">Site Receiving Officer</option>
-                <option value="Financial Controller">Financial Controller</option>
-                <option value="Internal Auditor">Internal Auditor</option>
+                {ALL_USER_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1287,13 +1285,11 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                 onChange={(e) => setEditRole(e.target.value as UserRole)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
               >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Procurement Director">Procurement Director</option>
-                <option value="Procurement Engineer">Procurement Engineer</option>
-                <option value="Purchasing Specialist">Purchasing Specialist</option>
-                <option value="Site Receiving Officer">Site Receiving Officer</option>
-                <option value="Financial Controller">Financial Controller</option>
-                <option value="Internal Auditor">Internal Auditor</option>
+                {ALL_USER_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
 

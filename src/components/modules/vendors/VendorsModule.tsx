@@ -4,15 +4,19 @@ import {
   Plus,
   Star,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   FileText,
   Phone,
   Mail,
   MapPin,
   ExternalLink,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
-import { Vendor, ItemCategory } from '../../../types/procurement';
+import { Vendor, ItemCategory, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
 import { Badge } from '../../common/Badge';
@@ -23,13 +27,24 @@ import { EmptyState } from '../../common/EmptyState';
 interface VendorsModuleProps {
   vendors: Vendor[];
   onAddVendor: (vendor: Vendor) => void;
+  onApproveVendor?: (vendorId: string) => void;
+  onRejectVendor?: (vendorId: string, reason?: string) => void;
 }
 
-export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVendor }) => {
+export const VendorsModule: React.FC<VendorsModuleProps> = ({
+  vendors,
+  onAddVendor,
+  onApproveVendor,
+  onRejectVendor,
+}) => {
   const { matchesCompany } = useCompany();
-  const { success } = useToast();
+  const { currentUser, activeRole, permissions } = useAuth();
+  const { success, warning } = useToast();
+
+  const isHead = isHeadRole(activeRole) || permissions?.canApproveVendor || activeRole === 'Super Admin';
 
   const [search, setSearch] = useState('');
+  const [vendorTab, setVendorTab] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -47,15 +62,29 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
     city: 'Riyadh',
   });
 
+  const pendingCount = vendors.filter(
+    (v) => matchesCompany(v.entityScope) && (v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval')
+  ).length;
+
+  const approvedCount = vendors.filter(
+    (v) => matchesCompany(v.entityScope) && v.status === 'Approved' && v.approvalStatus !== 'Pending Head Approval'
+  ).length;
+
   const filteredVendors = vendors.filter((v) => {
     const matchesScope = matchesCompany(v.entityScope);
+    const isPending = v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval';
+    const isApproved = v.status === 'Approved' && !isPending;
+    const matchesTab =
+      vendorTab === 'ALL' ||
+      (vendorTab === 'APPROVED' && isApproved) ||
+      (vendorTab === 'PENDING' && isPending);
     const matchesQuery =
       v.name.toLowerCase().includes(search.toLowerCase()) ||
       v.crNumber.includes(search) ||
       v.vatNumber.includes(search) ||
       v.city.toLowerCase().includes(search.toLowerCase()) ||
       v.category.toLowerCase().includes(search.toLowerCase());
-    return matchesScope && matchesQuery;
+    return matchesScope && matchesTab && matchesQuery;
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,9 +99,13 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
       vatNumber: form.vatNumber || `300${Math.floor(1000000000 + Math.random() * 9000000000)}00003`,
       category: form.category,
       tier: form.tier,
-      status: 'Approved',
+      status: isHead ? 'Approved' : 'Under Audit',
+      approvalStatus: isHead ? 'Approved' : 'Pending Head Approval',
+      approvedBy: isHead ? (currentUser?.name || 'Authorized Head') : undefined,
+      approvedAt: isHead ? new Date().toISOString() : undefined,
+      requestedBy: currentUser?.name || 'Staff User',
       entityScope: form.entityScope,
-      rating: 4.5,
+      rating: isHead ? 4.8 : 3.5,
       onTimeDeliveryRate: 95.0,
       qualityComplianceRate: 98.0,
       contactPerson: form.contactPerson || 'Vendor Representative',
@@ -81,11 +114,15 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
       city: form.city,
       country: 'Saudi Arabia',
       totalSpendSAR: 0,
-      activeContractsCount: 1,
+      activeContractsCount: 0,
     };
 
     onAddVendor(newVendor);
-    success('Vendor Registered', `${newVendor.name} onboarded into approved vendor database.`);
+    if (isHead) {
+      success('Vendor Qualified & Approved', `${newVendor.name} approved directly by Head into directory.`);
+    } else {
+      success('Submitted for Head Review', `${newVendor.name} queued for Department Head qualification audit.`);
+    }
     setIsModalOpen(false);
     setForm({
       name: '',
@@ -111,7 +148,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
             Approved Vendor Directory
           </h1>
           <p className="text-xs md:text-sm text-slate-400 mt-0.5">
-            Verified suppliers, Aramco/SEC qualification standards, compliance audits & performance scores
+            Verified suppliers, Aramco/SEC qualification standards, compliance audits & performance scores. <span className="text-amber-400 font-medium">All new suppliers require prior Department Head sign-off.</span>
           </p>
         </div>
 
@@ -125,16 +162,84 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
         </Button>
       </div>
 
-      {/* Search and Overview stats */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by vendor name, CR number, VAT ID or city..."
-          className="w-full sm:w-96"
-        />
-        <div className="text-xs text-slate-400">
-          Showing <span className="font-semibold text-slate-200">{filteredVendors.length}</span> verified suppliers
+      {/* Pending Head Approval Banner */}
+      {pendingCount > 0 && (
+        <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-900/60 border border-amber-500/50 flex items-center justify-center text-amber-400 shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-200">
+                {pendingCount} Supplier{pendingCount > 1 ? 's' : ''} Awaiting Prior Head Qualification
+              </h4>
+              <p className="text-xs text-amber-300/80">
+                {isHead
+                  ? 'As Department Head / Super Admin, you hold authority to approve or reject supplier onboarding applications.'
+                  : 'Supplier submissions have been routed to Department Head for prequalification verification.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setVendorTab('PENDING')}
+            className="text-xs font-bold text-amber-300 hover:text-white px-3 py-1.5 rounded-lg bg-amber-900/50 border border-amber-500/40 transition-colors shrink-0"
+          >
+            Review Pending ({pendingCount})
+          </button>
+        </div>
+      )}
+
+      {/* Tabs and Search Bar */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setVendorTab('ALL')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              vendorTab === 'ALL'
+                ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            All Suppliers ({vendors.filter((v) => matchesCompany(v.entityScope)).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setVendorTab('APPROVED')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              vendorTab === 'APPROVED'
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Head Approved Directory ({approvedCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setVendorTab('PENDING')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              vendorTab === 'PENDING'
+                ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Pending Head Approval ({pendingCount})
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by vendor name, CR number, VAT ID or city..."
+            className="w-full sm:w-96"
+          />
+          <div className="text-xs text-slate-400">
+            Showing <span className="font-semibold text-slate-200">{filteredVendors.length}</span> suppliers
+          </div>
         </div>
       </div>
 
@@ -158,83 +263,111 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
                   <th className="py-3.5 px-4 font-semibold">Category</th>
                   <th className="py-3.5 px-4 font-semibold text-center">Score / Rating</th>
                   <th className="py-3.5 px-4 font-semibold text-right">YTD Spend</th>
-                  <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Profile</th>
+                  <th className="py-3.5 px-4 font-semibold">Head Clearance</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {filteredVendors.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 min-w-[220px]">
-                      <div className="font-semibold text-slate-100 flex items-center gap-1.5">
-                        {vendor.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-cyan-400" />
-                        {vendor.city}, {vendor.country}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-300">
-                      <div>CR: {vendor.crNumber}</div>
-                      <div className="text-[10px] text-slate-400">VAT: {vendor.vatNumber}</div>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge
-                        variant={
-                          vendor.entityScope === 'FITCO Approved'
-                            ? 'cyan'
-                            : vendor.entityScope === 'Arabitra Approved'
-                            ? 'emerald'
-                            : 'purple'
-                        }
-                      >
-                        {vendor.entityScope}
-                      </Badge>
-                      <span className="block text-[10px] text-slate-400 mt-1 font-semibold">
-                        {vendor.tier}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                      {vendor.category}
-                    </td>
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1 font-bold text-amber-400">
-                        <Star className="w-3.5 h-3.5 fill-amber-400" />
-                        <span>{vendor.rating.toFixed(1)}</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        OTD: {vendor.onTimeDeliveryRate}%
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-200 whitespace-nowrap">
-                      SAR {(vendor.totalSpendSAR / 1000000).toFixed(2)}M
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge
-                        variant={
-                          vendor.status === 'Preferred'
-                            ? 'emerald'
-                            : vendor.status === 'Approved'
-                            ? 'cyan'
-                            : vendor.status === 'Under Audit'
-                            ? 'amber'
-                            : 'rose'
-                        }
-                        dot
-                      >
-                        {vendor.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedVendor(vendor)}
-                        className="px-2.5 py-1 rounded bg-slate-800 text-cyan-300 hover:bg-slate-700 text-xs font-medium transition-colors"
-                      >
-                        View Dossier
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredVendors.map((vendor) => {
+                  const isVendorPending = vendor.status === 'Under Audit' || vendor.approvalStatus === 'Pending Head Approval';
+
+                  return (
+                    <tr key={vendor.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 min-w-[220px]">
+                        <div className="font-semibold text-slate-100 flex items-center gap-1.5">
+                          {vendor.name}
+                        </div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-cyan-400" />
+                          {vendor.city}, {vendor.country}
+                        </div>
+                        {vendor.requestedBy && (
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Created by: <span className="text-slate-300 font-medium">{vendor.requestedBy}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-300">
+                        <div>CR: {vendor.crNumber}</div>
+                        <div className="text-[10px] text-slate-400">VAT: {vendor.vatNumber}</div>
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            vendor.entityScope === 'FITCO Approved'
+                              ? 'cyan'
+                              : vendor.entityScope === 'Arabitra Approved'
+                              ? 'emerald'
+                              : 'purple'
+                          }
+                        >
+                          {vendor.entityScope}
+                        </Badge>
+                        <span className="block text-[10px] text-slate-400 mt-1 font-semibold">
+                          {vendor.tier}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
+                        {vendor.category}
+                      </td>
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1 font-bold text-amber-400">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{vendor.rating.toFixed(1)}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          OTD: {vendor.onTimeDeliveryRate}%
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-200 whitespace-nowrap">
+                        SAR {(vendor.totalSpendSAR / 1000000).toFixed(2)}M
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {isVendorPending ? (
+                          <Badge variant="amber" dot className="font-semibold">
+                            Pending Head Approval
+                          </Badge>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <Badge
+                              variant={vendor.status === 'Preferred' ? 'emerald' : 'cyan'}
+                              dot
+                              className="font-semibold"
+                            >
+                              Head Approved
+                            </Badge>
+                            {vendor.approvedBy && (
+                              <p className="text-[9px] text-slate-400 truncate max-w-[120px]">
+                                by {vendor.approvedBy}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isVendorPending && isHead && onApproveVendor ? (
+                            <button
+                              type="button"
+                              onClick={() => onApproveVendor(vendor.id)}
+                              className="px-2 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Sign off & approve supplier into active directory"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Approve
+                            </button>
+                          ) : null}
+                          <button
+                            onClick={() => setSelectedVendor(vendor)}
+                            className="px-2.5 py-1 rounded bg-slate-800 text-cyan-300 hover:bg-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            View Dossier
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -250,9 +383,41 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({ vendors, onAddVend
           subtitle={`Commercial Reg: ${selectedVendor.crNumber} | Status: ${selectedVendor.status}`}
           maxWidth="2xl"
           footer={
-            <Button variant="outline" size="sm" onClick={() => setSelectedVendor(null)}>
-              Close Dossier
-            </Button>
+            <div className="flex items-center justify-between w-full gap-2">
+              <div>
+                {(selectedVendor.status === 'Under Audit' || selectedVendor.approvalStatus === 'Pending Head Approval') && isHead && onApproveVendor ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<CheckCircle2 className="w-4 h-4" />}
+                      onClick={() => {
+                        onApproveVendor(selectedVendor.id);
+                        setSelectedVendor({ ...selectedVendor, status: 'Approved', approvalStatus: 'Approved' });
+                      }}
+                    >
+                      Approve Supplier (Head Sign-off)
+                    </Button>
+                    {onRejectVendor && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        icon={<XCircle className="w-4 h-4" />}
+                        onClick={() => {
+                          onRejectVendor(selectedVendor.id, 'Qualification criteria returned by Head');
+                          setSelectedVendor({ ...selectedVendor, status: 'Probation', approvalStatus: 'Rejected' });
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSelectedVendor(null)}>
+                Close Dossier
+              </Button>
+            </div>
           }
         >
           <div className="space-y-4 text-xs">

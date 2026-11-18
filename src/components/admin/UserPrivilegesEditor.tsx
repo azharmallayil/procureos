@@ -75,6 +75,27 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     riskLevel: 'CRITICAL',
   },
   {
+    key: 'canApprovePR',
+    name: 'Purchase Requisition Sign-off (Prior Head Approval)',
+    category: 'Approvals & Financial',
+    description: 'Prior departmental head sign-off on material and equipment purchase requisitions before tendering.',
+    riskLevel: 'HIGH',
+  },
+  {
+    key: 'canApproveItem',
+    name: 'Master Catalogue Item Approval (Head Sign-off)',
+    category: 'Approvals & Financial',
+    description: 'Prior departmental head sign-off to authorize new catalogue SKUs into the enterprise master index.',
+    riskLevel: 'MEDIUM',
+  },
+  {
+    key: 'canApproveVendor',
+    name: 'Vendor Qualification Sign-off (Head Sign-off)',
+    category: 'Approvals & Financial',
+    description: 'Prior head review & qualification sign-off before vendor can be awarded contracts or receive POs.',
+    riskLevel: 'HIGH',
+  },
+  {
     key: 'canApprovePO',
     name: 'Standard Purchase Order Approval (< 1M SAR)',
     category: 'Approvals & Financial',
@@ -300,6 +321,9 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
     const updated: PermissionMatrix = {
       canApprovePO: value,
       canApproveHighValuePO: value,
+      canApprovePR: value,
+      canApproveVendor: value,
+      canApproveItem: value,
       canCreateRFQ: value,
       canAwardBid: value,
       canReleasePayment: value,

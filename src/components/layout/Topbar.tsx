@@ -77,12 +77,18 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const isSuperAdmin =
     currentUser?.role === 'Super Admin' ||
+    currentUser?.role === 'Managing Director / CEO' ||
     currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com';
+    currentUser?.email === 'muhammed.azhar@arabitra.com' ||
+    activeRole === 'Super Admin';
 
   const isAdmin =
     activeRole === 'Super Admin' ||
+    activeRole === 'Managing Director / CEO' ||
+    activeRole === 'General Manager (GM)' ||
     currentUser?.role === 'Super Admin' ||
+    currentUser?.role === 'Managing Director / CEO' ||
+    currentUser?.role === 'General Manager (GM)' ||
     currentUser?.email === 'admin@procureos.com' ||
     currentUser?.email === 'muhammed.azhar@arabitra.com';
 

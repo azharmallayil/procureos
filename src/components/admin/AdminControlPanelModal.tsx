@@ -42,7 +42,7 @@ import {
   Radio,
   CheckCheck,
 } from 'lucide-react';
-import { UserRole, UserProfile, EntityId, PurchaseOrder, PaymentMilestone } from '../../types/procurement';
+import { UserRole, ALL_USER_ROLES, UserProfile, EntityId, PurchaseOrder, PaymentMilestone } from '../../types/procurement';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Badge } from '../common/Badge';
@@ -1540,13 +1540,11 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Procurement Director">Procurement Director</option>
-                  <option value="Procurement Engineer">Procurement Engineer</option>
-                  <option value="Purchasing Specialist">Purchasing Specialist</option>
-                  <option value="Site Receiving Officer">Site Receiving Officer</option>
-                  <option value="Financial Controller">Financial Controller</option>
-                  <option value="Internal Auditor">Internal Auditor</option>
+                  {ALL_USER_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1679,13 +1677,11 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                   onChange={(e) => setEditRole(e.target.value as UserRole)}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Procurement Director">Procurement Director</option>
-                  <option value="Procurement Engineer">Procurement Engineer</option>
-                  <option value="Purchasing Specialist">Purchasing Specialist</option>
-                  <option value="Site Receiving Officer">Site Receiving Officer</option>
-                  <option value="Financial Controller">Financial Controller</option>
-                  <option value="Internal Auditor">Internal Auditor</option>
+                  {ALL_USER_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
 

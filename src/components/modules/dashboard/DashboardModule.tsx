@@ -68,6 +68,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
 
   const activeRfqsCount = filteredRfqs.filter((r) => r.status === 'Open' || r.status === 'Under Evaluation').length;
   const pendingApprovalsCount = filteredPOs.filter((p) => p.status === 'Pending Approval').length;
+  const pendingItemsCount = items.filter(
+    (i) => matchesCompany(i.entity) && (i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval')
+  ).length;
+  const pendingVendorsCount = filteredVendors.filter(
+    (v) => v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval'
+  ).length;
+  const totalPendingActionCount = pendingApprovalsCount + pendingItemsCount + pendingVendorsCount;
+
   const openPosCount = filteredPOs.filter((p) => p.status !== 'Closed' && p.status !== 'Cancelled').length;
   const overdueCount = filteredDeliveries.filter((d) => d.isOverdue || d.status === 'Delayed').length;
   const activeVendorsCount = filteredVendors.filter((v) => v.status === 'Approved' || v.status === 'Preferred').length;
@@ -107,14 +115,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           accentColor="blue"
         />
         <KpiCard
-          title="Pending Approvals"
-          value={`${pendingApprovalsCount}`}
-          change={pendingApprovalsCount > 0 ? 'Requires Action' : 'Cleared'}
-          isPositive={pendingApprovalsCount === 0}
-          subtitle="PO Authorizations"
+          title="Pending Head Sign-offs"
+          value={`${totalPendingActionCount}`}
+          change={totalPendingActionCount > 0 ? `${totalPendingActionCount} Pending Approval` : 'All Cleared'}
+          isPositive={totalPendingActionCount === 0}
+          subtitle={`${pendingApprovalsCount} PO · ${pendingItemsCount} Item · ${pendingVendorsCount} Vendor`}
           icon={<CheckSquare className="w-5 h-5" />}
           accentColor="amber"
-          alert={pendingApprovalsCount > 0}
+          alert={totalPendingActionCount > 0}
         />
         <KpiCard
           title="POs in Pipeline"
@@ -155,17 +163,37 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         <div className="lg:col-span-6">
           <Card
             title="Authorizations & Approvals Queue"
-            subtitle="Purchase orders awaiting departmental & executive authorization"
+            subtitle="Prior Head authorization required for POs, Catalogue Items & Vendors"
             icon={<CheckSquare className="w-5 h-5 text-amber-400" />}
             headerAction={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onNavigateModule('purchaseOrders')}
-                className="text-xs text-cyan-400 hover:text-cyan-300"
-              >
-                All POs <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {pendingItemsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateModule('items')}
+                    className="px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-[10px] text-amber-300 font-bold hover:text-white cursor-pointer"
+                  >
+                    {pendingItemsCount} Items
+                  </button>
+                )}
+                {pendingVendorsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateModule('vendors')}
+                    className="px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-[10px] text-amber-300 font-bold hover:text-white cursor-pointer"
+                  >
+                    {pendingVendorsCount} Vendors
+                  </button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onNavigateModule('purchaseOrders')}
+                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                >
+                  All POs <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
             }
           >
             <PendingApprovalsList

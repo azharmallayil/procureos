@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ClipboardList, Plus, CheckCircle2, XCircle, ArrowRight, Calendar, Package } from 'lucide-react';
-import { Item, EntityId, PurchaseRequisition, PurchaseRequisitionLineItem } from '../../../types/procurement';
+import { Item, EntityId, PurchaseRequisition, PurchaseRequisitionLineItem, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -32,7 +32,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
   requisitions, items, onCreate, onApprove, onReject, onCreateRfq,
 }) => {
   const { matchesCompany } = useCompany();
-  const { currentUser, activeRole } = useAuth();
+  const { currentUser, activeRole, permissions } = useAuth();
   const { success, warning } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -46,7 +46,11 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
   });
   const [draftLines, setDraftLines] = useState<DraftLine[]>([{ itemId: '', quantity: 1 }]);
 
-  const canApprove = ['Super Admin', 'Procurement Director', 'Financial Controller'].includes(activeRole || '');
+  const canApprove =
+    permissions?.canApprovePR ||
+    isHeadRole(activeRole) ||
+    activeRole === 'Super Admin' ||
+    ['Super Admin', 'Procurement Director', 'Financial Controller', 'Managing Director / CEO', 'General Manager (GM)', 'Department Head (HOD)', 'Project Manager (PM)'].includes(activeRole || '');
   const filtered = useMemo(() => requisitions.filter((pr) => {
     const inScope = matchesCompany(pr.entity);
     const statusMatch = statusFilter === 'ALL' || pr.status === statusFilter;
@@ -163,11 +167,11 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   {pr.status === 'Pending Approval' && canApprove && <>
-                    <Button size="sm" variant="outline" icon={<XCircle className="w-3.5 h-3.5" />} onClick={() => setRejectTarget(pr.id)}>Reject</Button>
-                    <Button size="sm" variant="primary" icon={<CheckCircle2 className="w-3.5 h-3.5" />} onClick={() => onApprove(pr.id)}>Approve</Button>
+                    <Button size="sm" variant="outline" icon={<XCircle className="w-3.5 h-3.5" />} onClick={() => setRejectTarget(pr.id)}>Return</Button>
+                    <Button size="sm" variant="primary" icon={<CheckCircle2 className="w-3.5 h-3.5" />} onClick={() => onApprove(pr.id)}>Approve (Head Sign-off)</Button>
                   </>}
                   {pr.status === 'Approved' && <Button size="sm" variant="primary" icon={<ArrowRight className="w-3.5 h-3.5" />} onClick={() => onCreateRfq(pr)}>Create RFQ</Button>}
-                  {pr.status === 'Pending Approval' && !canApprove && <span className="text-[11px] text-amber-300 self-center">Awaiting authorized approval</span>}
+                  {pr.status === 'Pending Approval' && !canApprove && <span className="text-[11px] text-amber-300 self-center">Awaiting Prior Head Sign-off</span>}
                 </div>
               </div>
             </div>

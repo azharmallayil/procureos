@@ -168,10 +168,52 @@ const MainApplication: React.FC = () => {
   // Transaction mutations
   const handleAddItem = (item: Item) => {
     setItems((prev) => [item, ...prev]);
-    recordAuditLog('Item Cataloged', 'Item', item.id, `Created inventory SKU ${item.sku}: ${item.name}`, {
+    recordAuditLog('Item Cataloged', 'Item', item.id, `Created inventory SKU ${item.sku}: ${item.name} (Approval: ${item.approvalStatus || 'Pending Head Approval'})`, {
       name: currentUser?.name,
       role: activeRole || 'User',
     });
+  };
+
+  const handleApproveItem = (itemId: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              status: 'In Stock',
+              approvalStatus: 'Approved',
+              approvedBy: currentUser?.name || 'Department Head',
+              approvedAt: new Date().toISOString(),
+            }
+          : item
+      )
+    );
+    const item = items.find((i) => i.id === itemId);
+    recordAuditLog('Item Approved', 'Item', itemId, `Department Head approved catalogue SKU ${item?.sku || itemId}`, {
+      name: currentUser?.name,
+      role: activeRole || 'Department Head',
+    });
+    success('Catalogue Item Approved', `${item?.sku || 'Item'} authorized and active in master inventory.`);
+  };
+
+  const handleRejectItem = (itemId: string, reason?: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              status: 'Discontinued',
+              approvalStatus: 'Rejected',
+              rejectionReason: reason || 'Returned by Department Head',
+            }
+          : item
+      )
+    );
+    recordAuditLog('Item Rejected', 'Item', itemId, `Department Head rejected catalogue SKU ${itemId}`, {
+      name: currentUser?.name,
+      role: activeRole || 'Department Head',
+    });
+    warning('Item Returned', 'Catalogue addition request was returned with recorded reason.');
   };
 
   const handleAddVendor = (vendor: Vendor) => {
@@ -180,6 +222,49 @@ const MainApplication: React.FC = () => {
       name: currentUser?.name,
       role: activeRole || 'User',
     });
+  };
+
+  const handleApproveVendor = (vendorId: string) => {
+    setVendors((prev) =>
+      prev.map((v) =>
+        v.id === vendorId
+          ? {
+              ...v,
+              status: 'Approved',
+              approvalStatus: 'Approved',
+              approvedBy: currentUser?.name || 'Department Head',
+              approvedAt: new Date().toISOString(),
+              rating: Math.max(v.rating, 4.5),
+            }
+          : v
+      )
+    );
+    const vendor = vendors.find((v) => v.id === vendorId);
+    recordAuditLog('Vendor Approved', 'Vendor', vendorId, `Department Head qualified supplier ${vendor?.name || vendorId}`, {
+      name: currentUser?.name,
+      role: activeRole || 'Department Head',
+    });
+    success('Supplier Qualified & Approved', `${vendor?.name || 'Vendor'} is now eligible for procurement bidding and PO issuance.`);
+  };
+
+  const handleRejectVendor = (vendorId: string, reason?: string) => {
+    setVendors((prev) =>
+      prev.map((v) =>
+        v.id === vendorId
+          ? {
+              ...v,
+              status: 'Probation',
+              approvalStatus: 'Rejected',
+              rejectionReason: reason || 'Prequalification returned by Head',
+            }
+          : v
+      )
+    );
+    recordAuditLog('Vendor Rejected', 'Vendor', vendorId, `Department Head rejected supplier application ${vendorId}`, {
+      name: currentUser?.name,
+      role: activeRole || 'Department Head',
+    });
+    warning('Supplier Application Returned', 'Vendor prequalification returned.');
   };
 
   const handleAddRfq = (rfq: RFQ) => {
@@ -900,7 +985,7 @@ const MainApplication: React.FC = () => {
           counts={{
             items: items.length,
             vendors: vendors.length,
-            requisitions: requisitions.length,
+            requisitions: requisitions.filter((r) => r.status === 'Pending Approval').length,
             rfqs: rfqs.filter((r) => r.status === 'Open' || r.status === 'Under Evaluation').length,
             quotations: quotations.length,
             purchaseOrders: purchaseOrders.filter((p) => p.status === 'Pending Approval').length,
@@ -941,13 +1026,20 @@ const MainApplication: React.FC = () => {
               <ItemsModule
                 items={items}
                 onAddItem={handleAddItem}
+                onApproveItem={handleApproveItem}
+                onRejectItem={handleRejectItem}
                 openCreateModal={quickCreateModal === 'item'}
                 onCloseCreateModal={() => setQuickCreateModal(null)}
               />
             )}
 
             {activeModule === 'vendors' && canAccessModule('vendors') && (
-              <VendorsModule vendors={vendors} onAddVendor={handleAddVendor} />
+              <VendorsModule
+                vendors={vendors}
+                onAddVendor={handleAddVendor}
+                onApproveVendor={handleApproveVendor}
+                onRejectVendor={handleRejectVendor}
+              />
             )}
 
             {activeModule === 'requisitions' && canAccessModule('requisitions') && (

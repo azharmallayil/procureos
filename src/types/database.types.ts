@@ -8,12 +8,24 @@ export type Json =
 
 export type UserRole =
   | 'Super Admin'
+  | 'Managing Director / CEO'
+  | 'General Manager (GM)'
+  | 'Operations Director (COO)'
+  | 'Finance Director (CFO)'
+  | 'Department Head (HOD)'
+  | 'Project Manager (PM)'
   | 'Procurement Director'
+  | 'Warehouse & Inventory Manager'
+  | 'Quality & Safety (QHSE) Manager'
+  | 'Human Resources (HR) Manager'
+  | 'Project Engineer'
+  | 'Site Engineer'
   | 'Procurement Engineer'
   | 'Purchasing Specialist'
   | 'Site Receiving Officer'
   | 'Financial Controller'
-  | 'Internal Auditor';
+  | 'Internal Auditor'
+  | 'General Staff / Employee';
 
 export interface Database {
   public: {

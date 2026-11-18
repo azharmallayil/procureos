@@ -25,7 +25,7 @@ import {
   FileCode,
   Sliders,
 } from 'lucide-react';
-import { UserRole, UserProfile, EntityId } from '../../../types/procurement';
+import { UserRole, ALL_USER_ROLES, UserProfile, EntityId } from '../../../types/procurement';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Badge } from '../../common/Badge';
@@ -1016,13 +1016,11 @@ export const TeamModule: React.FC = () => {
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Procurement Director">Procurement Director</option>
-                  <option value="Procurement Engineer">Procurement Engineer</option>
-                  <option value="Purchasing Specialist">Purchasing Specialist</option>
-                  <option value="Site Receiving Officer">Site Receiving Officer</option>
-                  <option value="Financial Controller">Financial Controller</option>
-                  <option value="Internal Auditor">Internal Auditor</option>
+                  {ALL_USER_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1159,15 +1157,13 @@ export const TeamModule: React.FC = () => {
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value as UserRole)}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Procurement Director">Procurement Director</option>
-                  <option value="Procurement Engineer">Procurement Engineer</option>
-                  <option value="Purchasing Specialist">Purchasing Specialist</option>
-                  <option value="Site Receiving Officer">Site Receiving Officer</option>
-                  <option value="Financial Controller">Financial Controller</option>
-                  <option value="Internal Auditor">Internal Auditor</option>
+                  {ALL_USER_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
 

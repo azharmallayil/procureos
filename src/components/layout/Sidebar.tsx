@@ -53,7 +53,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isAdmin =
     activeRole === 'Super Admin' ||
+    activeRole === 'Managing Director / CEO' ||
+    activeRole === 'General Manager (GM)' ||
     currentUser?.role === 'Super Admin' ||
+    currentUser?.role === 'Managing Director / CEO' ||
+    currentUser?.role === 'General Manager (GM)' ||
     currentUser?.email === 'admin@procureos.com' ||
     currentUser?.email === 'muhammed.azhar@arabitra.com';
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Boxes, Filter, AlertTriangle, ArrowUpDown, Download } from 'lucide-react';
-import { Item, ItemCategory, EntityId } from '../../../types/procurement';
+import { Plus, Boxes, Filter, AlertTriangle, ArrowUpDown, Download, CheckCircle2, XCircle, Clock, ShieldCheck } from 'lucide-react';
+import { Item, ItemCategory, EntityId, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
 import { Badge } from '../../common/Badge';
@@ -12,6 +13,8 @@ import { EmptyState } from '../../common/EmptyState';
 interface ItemsModuleProps {
   items: Item[];
   onAddItem: (newItem: Item) => void;
+  onApproveItem?: (itemId: string) => void;
+  onRejectItem?: (itemId: string, reason?: string) => void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
@@ -19,14 +22,20 @@ interface ItemsModuleProps {
 export const ItemsModule: React.FC<ItemsModuleProps> = ({
   items,
   onAddItem,
+  onApproveItem,
+  onRejectItem,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
   const { activeCompany, matchesCompany } = useCompany();
-  const { success } = useToast();
+  const { currentUser, activeRole, permissions } = useAuth();
+  const { success, warning } = useToast();
+
+  const isHead = isHeadRole(activeRole) || permissions?.canApproveItem || activeRole === 'Super Admin';
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [approvalTab, setApprovalTab] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
 
   // Form State
@@ -53,14 +62,28 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     'IT & Automation',
   ];
 
+  const pendingCount = items.filter(
+    (i) => matchesCompany(i.entity) && (i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval')
+  ).length;
+
+  const approvedCount = items.filter(
+    (i) => matchesCompany(i.entity) && i.approvalStatus !== 'Pending Head Approval' && i.status !== 'Pending Head Approval' && i.approvalStatus !== 'Rejected'
+  ).length;
+
   const filteredItems = items.filter((item) => {
     const matchesScope = matchesCompany(item.entity);
     const matchesCat = selectedCategory === 'ALL' || item.category === selectedCategory;
+    const isPending = item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
+    const isApproved = !isPending && item.approvalStatus !== 'Rejected';
+    const matchesTab =
+      approvalTab === 'ALL' ||
+      (approvalTab === 'APPROVED' && isApproved) ||
+      (approvalTab === 'PENDING' && isPending);
     const matchesQuery =
       item.sku.toLowerCase().includes(search.toLowerCase()) ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.description.toLowerCase().includes(search.toLowerCase());
-    return matchesScope && matchesCat && matchesQuery;
+    return matchesScope && matchesCat && matchesTab && matchesQuery;
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -80,13 +103,21 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       entity: formData.entity,
       primaryVendorId: 'VND-001',
       location: formData.location || 'Central Depot',
-      status: parseInt(formData.stockLevel) <= 2 ? 'Critical' : 'In Stock',
+      status: isHead ? (parseInt(formData.stockLevel) <= 2 ? 'Critical' : 'In Stock') : 'Pending Head Approval',
+      approvalStatus: isHead ? 'Approved' : 'Pending Head Approval',
+      approvedBy: isHead ? (currentUser?.name || 'Department Head') : undefined,
+      approvedAt: isHead ? new Date().toISOString() : undefined,
+      requestedBy: currentUser?.name || 'Staff User',
       leadTimeDays: 20,
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
     onAddItem(newItem);
-    success('Item Cataloged', `${newItem.sku} successfully added to Master Catalog.`);
+    if (isHead) {
+      success('Item Approved & Cataloged', `${newItem.sku} authorized directly by Head into Master Catalog.`);
+    } else {
+      success('Submitted for Head Approval', `${newItem.sku} queued for Department Head sign-off before entering inventory.`);
+    }
     setIsModalOpen(false);
     if (onCloseCreateModal) onCloseCreateModal();
 
@@ -115,7 +146,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             Items & Material Master Data
           </h1>
           <p className="text-xs md:text-sm text-slate-400 mt-0.5">
-            Standardized catalog, SKUs, inventory thresholds, and pricing for FITCO & Arabitra
+            Standardized catalog, SKUs, inventory thresholds, and pricing. <span className="text-amber-400 font-medium">All new items require prior Department Head sign-off.</span>
           </p>
         </div>
 
@@ -139,34 +170,102 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by SKU, item name or specification..."
-          className="w-full md:w-96"
-        />
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+      {/* Pending Head Approval Banner */}
+      {pendingCount > 0 && (
+        <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-900/60 border border-amber-500/50 flex items-center justify-center text-amber-400 shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-200">
+                {pendingCount} Item{pendingCount > 1 ? 's' : ''} Awaiting Prior Head Approval
+              </h4>
+              <p className="text-xs text-amber-300/80">
+                {isHead
+                  ? 'As Department Head / Super Admin, you hold authorization authority to sign off these additions.'
+                  : 'Items have been submitted to Department Head for review and commercial qualification.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setApprovalTab('PENDING')}
+            className="text-xs font-bold text-amber-300 hover:text-white px-3 py-1.5 rounded-lg bg-amber-900/50 border border-amber-500/40 transition-colors shrink-0"
           >
-            {categories.map((c) => {
-              const count =
-                c === 'ALL'
-                  ? items.filter((i) => matchesCompany(i.entity)).length
-                  : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
-              return (
-                <option key={c} value={c}>
-                  {c === 'ALL' ? `All Commodity Categories (${count})` : `${c} (${count})`}
-                </option>
-              );
-            })}
-          </select>
+            Review Pending ({pendingCount})
+          </button>
+        </div>
+      )}
+
+      {/* Approval Status Tabs & Search Filter */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setApprovalTab('ALL')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              approvalTab === 'ALL'
+                ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            All Items ({items.filter((i) => matchesCompany(i.entity)).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setApprovalTab('APPROVED')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              approvalTab === 'APPROVED'
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Head Approved Catalog ({approvedCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setApprovalTab('PENDING')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              approvalTab === 'PENDING'
+                ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Pending Head Approval ({pendingCount})
+          </button>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by SKU, item name or specification..."
+            className="w-full md:w-96"
+          />
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+            >
+              {categories.map((c) => {
+                const count =
+                  c === 'ALL'
+                    ? items.filter((i) => matchesCompany(i.entity)).length
+                    : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
+                return (
+                  <option key={c} value={c}>
+                    {c === 'ALL' ? `All Commodity Categories (${count})` : `${c} (${count})`}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -190,68 +289,115 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                   <th className="py-3.5 px-4 font-semibold">Entity</th>
                   <th className="py-3.5 px-4 font-semibold text-right">Standard Price</th>
                   <th className="py-3.5 px-4 font-semibold text-right">Stock Level</th>
-                  <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-4 font-semibold">Storage Depot</th>
+                  <th className="py-3.5 px-4 font-semibold">Head Clearance</th>
+                  <th className="py-3.5 px-4 font-semibold">Actions / Decision</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
-                      {item.sku}
-                    </td>
-                    <td className="py-3.5 px-4 min-w-[240px]">
-                      <div className="font-semibold text-slate-100">{item.name}</div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                        {item.description}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                      {item.category}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge
-                        variant={
-                          item.entity === 'FITCO'
-                            ? 'cyan'
-                            : item.entity === 'ARABITRA'
-                            ? 'emerald'
-                            : 'purple'
-                        }
-                      >
-                        {item.entity}
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-100 whitespace-nowrap">
-                      SAR {item.unitPriceSAR.toLocaleString()} / {item.uom}
-                    </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="font-mono font-bold text-slate-200">
-                        {item.stockLevel.toLocaleString()} {item.uom}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        Reorder at {item.reorderPoint} {item.uom}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge
-                        variant={
-                          item.status === 'In Stock'
-                            ? 'emerald'
-                            : item.status === 'Low Stock'
-                            ? 'amber'
-                            : 'rose'
-                        }
-                        dot
-                      >
-                        {item.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 text-[11px] whitespace-nowrap">
-                      {item.location}
-                    </td>
-                  </tr>
-                ))}
+                {filteredItems.map((item) => {
+                  const isItemPending = item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
+                  const isItemRejected = item.approvalStatus === 'Rejected';
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
+                        {item.sku}
+                      </td>
+                      <td className="py-3.5 px-4 min-w-[240px]">
+                        <div className="font-semibold text-slate-100">{item.name}</div>
+                        <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                          {item.description}
+                        </div>
+                        {item.requestedBy && (
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Created by: <span className="text-slate-300 font-medium">{item.requestedBy}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
+                        {item.category}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            item.entity === 'FITCO'
+                              ? 'cyan'
+                              : item.entity === 'ARABITRA'
+                              ? 'emerald'
+                              : 'purple'
+                          }
+                        >
+                          {item.entity}
+                        </Badge>
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-100 whitespace-nowrap">
+                        SAR {item.unitPriceSAR.toLocaleString()} / {item.uom}
+                      </td>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="font-mono font-bold text-slate-200">
+                          {item.stockLevel.toLocaleString()} {item.uom}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Reorder at {item.reorderPoint} {item.uom}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {isItemPending ? (
+                          <Badge variant="amber" dot className="font-semibold">
+                            Pending Head Approval
+                          </Badge>
+                        ) : isItemRejected ? (
+                          <Badge variant="rose" dot className="font-semibold">
+                            Rejected by Head
+                          </Badge>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <Badge variant="emerald" dot className="font-semibold">
+                              Head Approved
+                            </Badge>
+                            {item.approvedBy && (
+                              <p className="text-[9px] text-slate-400 truncate max-w-[120px]">
+                                by {item.approvedBy}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {isItemPending && isHead && onApproveItem && onRejectItem ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onApproveItem(item.id)}
+                              className="px-2 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Sign off item into master catalog"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onRejectItem(item.id, 'Returned by Department Head')}
+                              className="px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Reject item addition"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              Reject
+                            </button>
+                          </div>
+                        ) : isItemPending ? (
+                          <span className="text-[10px] text-amber-300 italic">
+                            Awaiting Head Sign-off
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">
+                            {item.location}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
