@@ -34,8 +34,15 @@ import {
   LockKeyhole,
   FileSpreadsheet,
   FileCode,
+  Cpu,
+  Network,
+  Globe,
+  Play,
+  Zap,
+  Radio,
+  CheckCheck,
 } from 'lucide-react';
-import { UserRole, UserProfile, EntityId } from '../../types/procurement';
+import { UserRole, UserProfile, EntityId, PurchaseOrder, PaymentMilestone } from '../../types/procurement';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Badge } from '../common/Badge';
@@ -48,6 +55,7 @@ import {
   getAuditLogs,
   AuditLogEntry,
   EnterpriseBackupPayload,
+  initializeCleanProductionSlate,
 } from '../../lib/liveSync';
 import {
   MOCK_ITEMS,
@@ -61,6 +69,19 @@ import {
   MOCK_USERS,
 } from '../../data/mockData';
 import { INITIAL_CREDENTIAL_STORE } from '../../lib/credentialStore';
+import {
+  getErpConfig,
+  saveErpConfig,
+  DEFAULT_ERP_CONFIG,
+  testErpWebhookPing,
+  downloadErpPoBatchJson,
+  downloadErpInvoiceBatchCsv,
+  downloadMasterDataStarterTemplates,
+  formatPurchaseOrderForErp,
+  formatInvoiceForErp,
+  ErpConfig,
+  ErpSystemType,
+} from '../../lib/erpIntegration';
 
 interface AdminControlPanelModalProps {
   isOpen: boolean;
@@ -83,8 +104,16 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
 
   const isSuperAdmin = activeRole === 'Super Admin';
 
-  const [activeTab, setActiveTab] = useState<'users' | 'backup' | 'audit' | 'privileges'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'backup' | 'audit' | 'privileges' | 'erp'>('users');
   const [privilegeTargetUserId, setPrivilegeTargetUserId] = useState<string | undefined>(undefined);
+
+  // ERP & Production Clean Slate State
+  const [showCleanSlateModal, setShowCleanSlateModal] = useState(false);
+  const [isCleaningSlate, setIsCleaningSlate] = useState(false);
+  const [erpConfig, setErpConfig] = useState<ErpConfig>(getErpConfig);
+  const [isTestingPing, setIsTestingPing] = useState(false);
+  const [pingResult, setPingResult] = useState<{ ok: boolean; statusCode?: number; latencyMs: number; message: string } | null>(null);
+  const [erpPayloadView, setErpPayloadView] = useState<'PO' | 'INVOICE'>('PO');
 
   // Search & Filter
   const [userSearch, setUserSearch] = useState('');
@@ -337,6 +366,85 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
     }
   };
 
+  // Load current POs & Payments for ERP export and preview
+  const storedPos: PurchaseOrder[] = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('procureos_purchase_orders');
+      return raw ? JSON.parse(raw) : MOCK_PURCHASE_ORDERS;
+    } catch {
+      return MOCK_PURCHASE_ORDERS;
+    }
+  }, [isOpen]);
+
+  const storedPayments: PaymentMilestone[] = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('procureos_payments');
+      return raw ? JSON.parse(raw) : MOCK_PAYMENTS;
+    } catch {
+      return MOCK_PAYMENTS;
+    }
+  }, [isOpen]);
+
+  // Clean Production Slate Handler
+  const handleCleanSlateConfirm = async () => {
+    setIsCleaningSlate(true);
+    const result = await initializeCleanProductionSlate({
+      name: currentUser?.name || 'Super Admin',
+      role: activeRole || 'Super Admin',
+      email: currentUser?.email,
+    });
+    setIsCleaningSlate(false);
+    setShowCleanSlateModal(false);
+
+    if (result.ok) {
+      success('Production Slate Initialized', result.message);
+      info('Database Ready', 'All test transactions and quote PDFs purged. System ready for live company data.');
+      refreshAuditLogs();
+      setTimeout(() => window.location.reload(), 600);
+    } else {
+      toastError('Initialization Failed', result.message);
+    }
+  };
+
+  // ERP Gateway Handlers
+  const handleSaveErpConfig = () => {
+    saveErpConfig(erpConfig);
+    success('ERP Settings Saved', `Gateway configured for ${erpConfig.systemType}.`);
+  };
+
+  const handleTestPing = async () => {
+    const target = erpConfig.poWebhookUrl || erpConfig.apiBaseUrl;
+    if (!target) {
+      toastError('Missing Endpoint', 'Please configure an ERP API Base URL or Webhook endpoint.');
+      return;
+    }
+    setIsTestingPing(true);
+    setPingResult(null);
+    const res = await testErpWebhookPing(target, erpConfig.authType, erpConfig.apiSecret);
+    setIsTestingPing(false);
+    setPingResult(res);
+    if (res.ok) {
+      success('ERP Connectivity Verified', res.message);
+    } else {
+      toastError('Ping Failed', res.message);
+    }
+  };
+
+  const handleExportErpPos = () => {
+    downloadErpPoBatchJson(storedPos, erpConfig);
+    success('ERP PO Batch Exported', `Generated standard JSON payload for ${storedPos.length} Purchase Orders.`);
+  };
+
+  const handleExportErpInvoices = () => {
+    downloadErpInvoiceBatchCsv(storedPayments);
+    success('ERP Invoices Exported', `Generated AP Voucher CSV for ${storedPayments.length} Payment Milestones.`);
+  };
+
+  const handleDownloadStarterTemplates = () => {
+    downloadMasterDataStarterTemplates();
+    success('Starter Templates Downloaded', 'Items & Vendors CSV templates saved to your device.');
+  };
+
   if (!isOpen) return null;
 
   const content = (
@@ -449,6 +557,21 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
             >
               <Sliders className="w-4 h-4 text-purple-400" />
               <span>Privilege Matrix</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('erp')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'erp'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
+              }`}
+            >
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              <span>ERP Gateway & Sync</span>
+              {erpConfig.enabled && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
             </button>
           </nav>
 
@@ -867,6 +990,52 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Production Master Data Starter Templates */}
+                  <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                        Production Master Data Starter Templates (CSV)
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Download pre-formatted Items Catalog and Vendor Master CSV templates to populate with real company SKUs and suppliers.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadStarterTemplates}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Starter CSVs</span>
+                    </button>
+                  </div>
+
+                  {/* Production Clean Slate (Purge Demo Data) */}
+                  <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <ShieldAlert className="w-4 h-4 text-amber-400" />
+                          Initialize Production Clean Slate (Purge Demo Data)
+                        </h4>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-semibold">
+                          Live Office Transition
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Permanently purges all mock RFQs, quotations, POs, deliveries, payments, assets, and quote PDFs. Preserves root Super Admin login.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCleanSlateModal(true)}
+                      className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold cursor-pointer transition-colors shrink-0 shadow-sm"
+                    >
+                      Purge Demo Data
+                    </button>
+                  </div>
+
                   {/* Reset Demo */}
                   <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -875,7 +1044,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                         Factory Baseline Reset
                       </h4>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        Clears all custom records and re-initializes the default standard demonstration dataset.
+                        Clears custom records and re-initializes the default standard demonstration dataset.
                       </p>
                     </div>
                     <button
@@ -966,6 +1135,352 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
               {/* TAB 4: PRIVILEGE MATRIX */}
               {activeTab === 'privileges' && (
                 <UserPrivilegesEditor isSuperAdmin={isSuperAdmin} initialUserId={privilegeTargetUserId} />
+              )}
+
+              {/* TAB 5: ERP INTEGRATION GATEWAY */}
+              {activeTab === 'erp' && (
+                <div className="space-y-5">
+                  {/* ERP Status & System Selection Banner */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-slate-900/80 to-slate-950 border border-cyan-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                        <Cpu className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-white">Enterprise ERP Integration Gateway</h3>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            erpConfig.enabled
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                              : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}>
+                            {erpConfig.enabled ? 'Live Connector Active' : 'Simulation / Standby'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                          Automated two-way bridge connecting ProcureOS with corporate ERP systems (SAP, Oracle, Dynamics 365, Odoo) for Purchase Orders, GRN stock receipts, and 3-way matched AP invoices.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start md:self-auto">
+                      <label className="text-xs text-slate-300 font-medium">Connector State:</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = { ...erpConfig, enabled: !erpConfig.enabled };
+                          setErpConfig(updated);
+                          saveErpConfig(updated);
+                          success(
+                            updated.enabled ? 'ERP Connector Activated' : 'ERP Connector Paused',
+                            updated.enabled ? 'Automated synchronization is now live.' : 'ERP events will be queued locally.'
+                          );
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          erpConfig.enabled
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        <Radio className={`w-3.5 h-3.5 ${erpConfig.enabled ? 'animate-pulse text-white' : 'text-slate-400'}`} />
+                        <span>{erpConfig.enabled ? 'Enabled' : 'Disabled'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ERP Settings Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Endpoint Configuration */}
+                    <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3.5">
+                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Network className="w-4 h-4 text-cyan-400" />
+                        ERP Endpoints & Authentication
+                      </h4>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          Target ERP Architecture
+                        </label>
+                        <select
+                          value={erpConfig.systemType}
+                          onChange={(e) => setErpConfig({ ...erpConfig, systemType: e.target.value as ErpSystemType })}
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                        >
+                          <option value="SAP_S4HANA">SAP S/4HANA & ECC (OData / RFC)</option>
+                          <option value="ORACLE_NETSUITE">Oracle NetSuite & Fusion (SuiteTalk REST)</option>
+                          <option value="MS_DYNAMICS">Microsoft Dynamics 365 Finance & Ops (Dual-Write OData)</option>
+                          <option value="ODOO">Odoo Enterprise (JSON-RPC / REST API)</option>
+                          <option value="CUSTOM_REST">Custom Enterprise REST / Webhook Gateway</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          ERP Base API URL
+                        </label>
+                        <input
+                          type="text"
+                          value={erpConfig.apiBaseUrl}
+                          onChange={(e) => setErpConfig({ ...erpConfig, apiBaseUrl: e.target.value })}
+                          placeholder="https://erp.fitcogroup.com/api/v1"
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            PO Inbound Webhook
+                          </label>
+                          <input
+                            type="text"
+                            value={erpConfig.poWebhookUrl}
+                            onChange={(e) => setErpConfig({ ...erpConfig, poWebhookUrl: e.target.value })}
+                            placeholder="/procurement/purchase-orders"
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono text-[11px]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            AP Invoice Inbound Webhook
+                          </label>
+                          <input
+                            type="text"
+                            value={erpConfig.invoiceWebhookUrl}
+                            onChange={(e) => setErpConfig({ ...erpConfig, invoiceWebhookUrl: e.target.value })}
+                            placeholder="/finance/ap-invoices"
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono text-[11px]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            Auth Method
+                          </label>
+                          <select
+                            value={erpConfig.authType}
+                            onChange={(e) => setErpConfig({ ...erpConfig, authType: e.target.value as any })}
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                          >
+                            <option value="BEARER_TOKEN">Bearer Token (JWT)</option>
+                            <option value="API_KEY">API Key Header</option>
+                            <option value="BASIC_AUTH">HTTP Basic Auth</option>
+                            <option value="NONE">None / IP Whitelist</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            API Secret / Token
+                          </label>
+                          <input
+                            type="password"
+                            value={erpConfig.apiSecret}
+                            onChange={(e) => setErpConfig({ ...erpConfig, apiSecret: e.target.value })}
+                            placeholder="Secret token..."
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono text-[11px]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleSaveErpConfig}
+                          className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm"
+                        >
+                          Save ERP Configuration
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Diagnostics & Automation Rules */}
+                    <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3.5 flex flex-col justify-between">
+                      <div className="space-y-3.5">
+                        <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-amber-400" />
+                          Synchronization Rules & Mapping
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              FITCO Company Code
+                            </label>
+                            <input
+                              type="text"
+                              value={erpConfig.fitcoCompanyCode}
+                              onChange={(e) => setErpConfig({ ...erpConfig, fitcoCompanyCode: e.target.value })}
+                              placeholder="1000"
+                              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              ARABITRA Company Code
+                            </label>
+                            <input
+                              type="text"
+                              value={erpConfig.arabitraCompanyCode}
+                              onChange={(e) => setErpConfig({ ...erpConfig, arabitraCompanyCode: e.target.value })}
+                              placeholder="2000"
+                              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 pt-1">
+                          <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={erpConfig.autoSyncApprovedPos}
+                              onChange={(e) => setErpConfig({ ...erpConfig, autoSyncApprovedPos: e.target.checked })}
+                              className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-cyan-600 focus:ring-0 cursor-pointer"
+                            />
+                            <span>Auto-push PO to ERP upon Final Executive Approval</span>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={erpConfig.autoSyncMatchedInvoices}
+                              onChange={(e) => setErpConfig({ ...erpConfig, autoSyncMatchedInvoices: e.target.checked })}
+                              className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-cyan-600 focus:ring-0 cursor-pointer"
+                            />
+                            <span>Auto-post Invoice to ERP Accounts Payable upon 3-Way Match</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Ping Tester Box */}
+                      <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                            <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                            Connectivity Diagnostic
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleTestPing}
+                            disabled={isTestingPing}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <Play className="w-3 h-3" />
+                            <span>{isTestingPing ? 'Testing...' : 'Test Connection'}</span>
+                          </button>
+                        </div>
+
+                        {pingResult ? (
+                          <div className={`p-2.5 rounded-lg text-[11px] font-mono flex items-start gap-2 ${
+                            pingResult.ok
+                              ? 'bg-emerald-950/40 border border-emerald-800/40 text-emerald-300'
+                              : 'bg-rose-950/40 border border-rose-800/40 text-rose-300'
+                          }`}>
+                            {pingResult.ok ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <div>{pingResult.message}</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Latency: {pingResult.latencyMs}ms</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            Target: {erpConfig.poWebhookUrl || erpConfig.apiBaseUrl || 'No endpoint specified'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Batch Exporters & Live Schema Inspector */}
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-purple-400" />
+                          Enterprise Payload Standards & Manual Batch Exporters
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Inspect actual OAGIS/REST payloads or export transaction files for manual ERP journal posting.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleExportErpPos}
+                          className="px-3 py-1.5 rounded-xl bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-700/50 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Export POs (JSON)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleExportErpInvoices}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-200 border border-emerald-700/50 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
+                          <span>Export Invoices (CSV)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Subtabs for Payload View */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setErpPayloadView('PO')}
+                          className={`px-3 py-1 rounded-lg text-[11px] font-semibold cursor-pointer transition-all ${
+                            erpPayloadView === 'PO'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          Purchase Order Payload (OAGIS JSON)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setErpPayloadView('INVOICE')}
+                          className={`px-3 py-1 rounded-lg text-[11px] font-semibold cursor-pointer transition-all ${
+                            erpPayloadView === 'INVOICE'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          AP Invoice Voucher (3-Way Match JSON)
+                        </button>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-850 overflow-x-auto max-h-64 font-mono text-[11px] text-slate-300 leading-relaxed shadow-inner">
+                        <pre>
+                          {erpPayloadView === 'PO'
+                            ? JSON.stringify(
+                                storedPos.length > 0
+                                  ? formatPurchaseOrderForErp(storedPos[0], erpConfig)
+                                  : { message: 'No Purchase Orders found in database.' },
+                                null,
+                                2
+                              )
+                            : JSON.stringify(
+                                storedPayments.length > 0
+                                  ? formatInvoiceForErp(storedPayments[0], erpConfig)
+                                  : { message: 'No Payment Milestones found in database.' },
+                                null,
+                                2
+                              )}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </>
           )}
@@ -1346,6 +1861,56 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
               >
                 Execute Full Restore
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL: PRODUCTION CLEAN SLATE CONFIRMATION */}
+      {showCleanSlateModal && (
+        <Modal
+          isOpen={showCleanSlateModal}
+          onClose={() => setShowCleanSlateModal(false)}
+          title="Initialize Production Clean Slate (Purge Demo Data)"
+          zIndex={70}
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-700/60 text-amber-200 leading-relaxed space-y-2">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Permanent Data Purge Warning</span>
+              </div>
+              <p>
+                This operation will <strong>permanently purge all demonstration and testing records</strong> from ProcureOS:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1 font-mono text-[11px]">
+                <li>All mock RFQs, tenders, and vendor bids</li>
+                <li>All uploaded quotation PDFs and OCR extractions</li>
+                <li>All purchase orders (POs) and delivery GRNs</li>
+                <li>All payment milestones and invoice entries</li>
+                <li>All sample items and demo vendor listings</li>
+              </ul>
+              <p className="text-emerald-300 pt-1">
+                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (FITCO & ARABITRA), and system settings.
+              </p>
+            </div>
+
+            <p className="text-slate-400 text-[11px]">
+              After initialization, you can import your company's genuine item catalog, vendor records, and invite real employees with corporate email addresses.
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button variant="outline" onClick={() => setShowCleanSlateModal(false)}>
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={handleCleanSlateConfirm}
+                disabled={isCleaningSlate}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {isCleaningSlate ? 'Purging Demo Records...' : 'Confirm & Purge All Demo Data'}
               </button>
             </div>
           </div>

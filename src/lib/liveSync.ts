@@ -6,7 +6,12 @@
 // ============================================================================
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { StoredPdfDoc, getAllStoredPdfDocuments, restoreStoredPdfDocuments } from './pdfStorage';
+import {
+  StoredPdfDoc,
+  getAllStoredPdfDocuments,
+  restoreStoredPdfDocuments,
+  clearAllStoredPdfDocuments,
+} from './pdfStorage';
 
 export interface AuditLogEntry {
   id: string;
@@ -473,3 +478,71 @@ export async function restoreFullBackup(
     return { ok: false, message: `Failed to restore database: ${err?.message || 'Unknown error'}` };
   }
 }
+
+/**
+ * Purges all mock transactions (RFQs, Quotations, POs, Deliveries, Payments, Assets),
+ * clears all stored quote PDFs in IndexedDB, wipes test item & vendor rows,
+ * preserves authenticated Super Admin user, and logs an immutable audit event.
+ */
+export async function initializeCleanProductionSlate(
+  adminUser?: { name: string; role: string; email?: string }
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    // 1. Clear transactional collections
+    localStorage.setItem('procureos_requisitions', JSON.stringify([]));
+    localStorage.setItem('procureos_rfqs', JSON.stringify([]));
+    localStorage.setItem('procureos_quotations', JSON.stringify([]));
+    localStorage.setItem('procureos_purchase_orders', JSON.stringify([]));
+    localStorage.setItem('procureos_deliveries', JSON.stringify([]));
+    localStorage.setItem('procureos_payments', JSON.stringify([]));
+    localStorage.setItem('procureos_assets', JSON.stringify([]));
+
+    // 2. Clear demo items & vendors to clean slate ready for company imports
+    localStorage.setItem('procureos_items', JSON.stringify([]));
+    localStorage.setItem('procureos_vendors', JSON.stringify([]));
+
+    // 3. Clear all stored quote PDF documents from IndexedDB
+    await clearAllStoredPdfDocuments();
+
+    // 4. Update system version
+    localStorage.setItem('procureos_db_version', '2026.11.03.prod_clean');
+
+    // 5. Record system audit event
+    recordAuditLog(
+      'Clean Production Slate Initialized',
+      'System',
+      'PROD-INIT',
+      'All demo data, test RFQs, mock quotations, POs, and quote PDFs purged. Database ready for live corporate master data onboarding.',
+      { name: adminUser?.name || 'Super Admin', role: adminUser?.role || 'Super Admin' }
+    );
+
+    // 6. Broadcast across all tabs and cloud channels
+    liveBus.publish({
+      type: 'FULL_DATABASE_RESTORE',
+      data: {
+        procureos_requisitions: [],
+        procureos_rfqs: [],
+        procureos_quotations: [],
+        procureos_purchase_orders: [],
+        procureos_deliveries: [],
+        procureos_payments: [],
+        procureos_assets: [],
+        procureos_items: [],
+        procureos_vendors: [],
+      },
+      timestamp: Date.now(),
+      actor: adminUser?.name || 'Super Admin',
+    });
+
+    return {
+      ok: true,
+      message: 'Clean production slate initialized successfully. All demo tables and test quotation PDFs have been purged.',
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      message: `Failed to initialize production slate: ${err?.message || 'Unknown error'}`,
+    };
+  }
+}
+

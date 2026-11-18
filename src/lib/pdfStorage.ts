@@ -151,6 +151,23 @@ export async function restoreStoredPdfDocuments(docs: StoredPdfDoc[]): Promise<b
   }
 }
 
+// ── 3e. Clear All Stored PDF Documents (For Production Clean Slate) ─────────
+export async function clearAllStoredPdfDocuments(): Promise<boolean> {
+  try {
+    const db = await openPdfDatabase();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PDF_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(PDF_STORE_NAME);
+      const req = store.clear();
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    });
+  } catch (err) {
+    console.warn('[ProcureOS Document Gateway] Failed to clear IndexedDB PDFs:', err);
+    return false;
+  }
+}
+
 // ── 4. Upload to Private Supabase Storage ───────────────────────────────────
 export async function uploadPdfToCloudStorage(
   docId: string,

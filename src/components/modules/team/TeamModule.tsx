@@ -38,9 +38,11 @@ import {
   getAuditLogs,
   AuditLogEntry,
   EnterpriseBackupPayload,
+  initializeCleanProductionSlate,
 } from '../../../lib/liveSync';
 import { MOCK_ITEMS, MOCK_VENDORS, MOCK_RFQS, MOCK_QUOTATIONS, MOCK_PURCHASE_ORDERS, MOCK_DELIVERIES, MOCK_PAYMENTS, MOCK_ASSETS, MOCK_USERS } from '../../../data/mockData';
 import { INITIAL_CREDENTIAL_STORE } from '../../../lib/credentialStore';
+import { downloadMasterDataStarterTemplates } from '../../../lib/erpIntegration';
 
 export const TeamModule: React.FC = () => {
   const {
@@ -92,6 +94,8 @@ export const TeamModule: React.FC = () => {
   const [restoreFile, setRestoreFile] = useState<EnterpriseBackupPayload | null>(null);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+  const [showCleanSlateModal, setShowCleanSlateModal] = useState(false);
+  const [isCleaningSlate, setIsCleaningSlate] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Audit Logs State
@@ -293,6 +297,32 @@ export const TeamModule: React.FC = () => {
     } catch (err: any) {
       toastError('Reset Failed', err?.message || 'Error writing to storage.');
     }
+  };
+
+  // Clean Production Slate Handler
+  const handleCleanSlateConfirm = async () => {
+    setIsCleaningSlate(true);
+    const result = await initializeCleanProductionSlate({
+      name: currentUser?.name || 'Super Admin',
+      role: activeRole || 'Super Admin',
+      email: currentUser?.email,
+    });
+    setIsCleaningSlate(false);
+    setShowCleanSlateModal(false);
+
+    if (result.ok) {
+      success('Production Slate Initialized', result.message);
+      info('Database Ready', 'All test transactions and quote PDFs purged. System ready for live company data.');
+      refreshAuditLogs();
+      setTimeout(() => window.location.reload(), 600);
+    } else {
+      toastError('Initialization Failed', result.message);
+    }
+  };
+
+  const handleDownloadStarterTemplates = () => {
+    downloadMasterDataStarterTemplates();
+    success('Starter Templates Downloaded', 'Items & Vendors CSV templates saved to your device.');
   };
 
   return (
@@ -782,6 +812,50 @@ export const TeamModule: React.FC = () => {
                     </span>
                   </a>
                 </div>
+              </div>
+
+              {/* Master Data Starter Templates */}
+              <div className="p-5 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                    Production Master Data Starter Templates (CSV)
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Download pre-formatted Items Catalog and Vendor Master CSV templates to populate with real company SKUs and suppliers.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadStarterTemplates}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shrink-0 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Starter CSVs</span>
+                </button>
+              </div>
+
+              {/* Initialize Production Clean Slate */}
+              <div className="p-5 rounded-2xl bg-amber-950/20 border border-amber-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-amber-400" />
+                      Initialize Production Clean Slate (Purge Demo Data)
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-semibold">
+                      Live Office Transition
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Permanently purges all mock RFQs, quotations, POs, deliveries, payments, assets, and quote PDFs. Preserves root Super Admin login.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCleanSlateModal(true)}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shrink-0 cursor-pointer transition-colors shadow-sm"
+                >
+                  Purge Demo Data
+                </button>
               </div>
 
               {/* Factory Reset Section */}
@@ -1283,6 +1357,55 @@ export const TeamModule: React.FC = () => {
               >
                 Execute Full Restore
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL: PRODUCTION CLEAN SLATE CONFIRMATION */}
+      {showCleanSlateModal && (
+        <Modal
+          isOpen={showCleanSlateModal}
+          onClose={() => setShowCleanSlateModal(false)}
+          title="Initialize Production Clean Slate (Purge Demo Data)"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-700/60 text-amber-200 leading-relaxed space-y-2">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Permanent Data Purge Warning</span>
+              </div>
+              <p>
+                This operation will <strong>permanently purge all demonstration and testing records</strong> from ProcureOS:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1 font-mono text-[11px]">
+                <li>All mock RFQs, tenders, and vendor bids</li>
+                <li>All uploaded quotation PDFs and OCR extractions</li>
+                <li>All purchase orders (POs) and delivery GRNs</li>
+                <li>All payment milestones and invoice entries</li>
+                <li>All sample items and demo vendor listings</li>
+              </ul>
+              <p className="text-emerald-300 pt-1">
+                <strong>What remains safe:</strong> Your Super Admin account, permission matrix, entity structures (FITCO & ARABITRA), and system settings.
+              </p>
+            </div>
+
+            <p className="text-slate-400 text-[11px]">
+              After initialization, you can import your company's genuine item catalog, vendor records, and invite real employees with corporate email addresses.
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button variant="outline" onClick={() => setShowCleanSlateModal(false)}>
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={handleCleanSlateConfirm}
+                disabled={isCleaningSlate}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {isCleaningSlate ? 'Purging Demo Records...' : 'Confirm & Purge All Demo Data'}
+              </button>
             </div>
           </div>
         </Modal>
