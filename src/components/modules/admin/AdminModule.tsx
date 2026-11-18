@@ -203,6 +203,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [editDept, setEditDept] = useState('');
   const [editStatus, setEditStatus] = useState<'Active' | 'Suspended' | 'Pending Verification'>('Active');
   const [editPassword, setEditPassword] = useState('');
+  const [editUserError, setEditUserError] = useState('');
 
   // ── Backup, Restore & ERP State ───────────────────────────────────────────
   const [restoreFile, setRestoreFile] = useState<EnterpriseBackupPayload | null>(null);
@@ -277,11 +278,13 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     setEditDept(user.department);
     setEditStatus(user.status);
     setEditPassword('');
+    setEditUserError('');
   };
 
   const handleUpdateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    setEditUserError('');
     setIsSubmittingUser(true);
     const res = await updateUser(
       editingUser.id,
@@ -299,7 +302,9 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     if (res.ok) {
       success('User Updated', `Profile updated for ${editName}.`);
       setEditingUser(null);
+      setEditUserError('');
     } else {
+      setEditUserError(res.error || 'Failed to modify user profile.');
       toastError('Update Failed', res.error || 'Failed to modify user profile.');
     }
   };
@@ -1243,6 +1248,13 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
         maxWidth="md"
       >
         <form onSubmit={handleUpdateUserSubmit} className="space-y-4">
+          {editUserError && (
+            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span>{editUserError}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
             <input

@@ -18,12 +18,15 @@ import {
   Database,
   Users,
   Zap,
+  User,
 } from 'lucide-react';
 import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { AdminControlPanelModal } from '../admin/AdminControlPanelModal';
 import { ModuleId } from '../../types/procurement';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
 
 interface TopbarProps {
   onOpenMobileMenu: () => void;
@@ -38,12 +41,54 @@ export const Topbar: React.FC<TopbarProps> = ({
   onQuickAction,
   onNavigateModule,
 }) => {
-  const { currentUser, activeRole, logout, elevateToSuperAdmin } = useAuth();
-  const { info } = useToast();
+  const { currentUser, activeRole, logout, elevateToSuperAdmin, updateUser } = useAuth();
+  const { info, success, error: toastError } = useToast();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showAdminControlPanel, setShowAdminControlPanel] = useState(false);
+
+  // Edit Profile Modal State
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
+  const [profileDept, setProfileDept] = useState(currentUser?.department || '');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setProfileName(currentUser.name || '');
+      setProfileEmail(currentUser.email || '');
+      setProfileDept(currentUser.department || '');
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setProfileError('');
+    setIsSavingProfile(true);
+    const res = await updateUser(
+      currentUser.id,
+      {
+        name: profileName.trim(),
+        email: profileEmail.trim().toLowerCase(),
+        department: profileDept.trim(),
+      },
+      profilePassword.trim() ? profilePassword.trim() : undefined
+    );
+    setIsSavingProfile(false);
+    if (res.ok) {
+      success('Profile Updated', 'Your profile details have been successfully saved.');
+      setShowEditProfileModal(false);
+      setProfilePassword('');
+    } else {
+      setProfileError(res.error || 'Failed to update profile.');
+      toastError('Update Failed', res.error || 'Failed to modify profile.');
+    }
+  };
 
   const isAdmin =
     activeRole === 'Super Admin' ||
@@ -266,18 +311,39 @@ export const Topbar: React.FC<TopbarProps> = ({
                 </div>
               </div>
 
+              {/* Edit My Profile Button */}
+              <div className="px-2 py-1.5 border-b border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    setProfileError('');
+                    setProfilePassword('');
+                    setShowEditProfileModal(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-200 hover:text-cyan-300 hover:bg-slate-800/60 font-semibold transition-colors cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-cyan-400" />
+                  <span>Edit My Profile</span>
+                </button>
+              </div>
+
               {/* Super Admin Control Panel Link */}
-              {activeRole === 'Super Admin' ? (
+              {isAdmin ? (
                 <div className="px-2 py-1.5 border-b border-slate-800">
                   <button
                     onClick={() => {
                       setShowProfileMenu(false);
-                      setShowAdminControlPanel(true);
+                      if (onNavigateModule) {
+                        onNavigateModule('admin');
+                      } else {
+                        setShowAdminControlPanel(true);
+                      }
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 font-bold transition-colors cursor-pointer"
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-300" />
-                    <span>Admin Control Panel</span>
+                    <span>Admin Command Center</span>
                   </button>
                 </div>
               ) : (
@@ -312,6 +378,78 @@ export const Topbar: React.FC<TopbarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditProfileModal && (
+        <Modal
+          isOpen={showEditProfileModal}
+          onClose={() => setShowEditProfileModal(false)}
+          title="Edit My Profile"
+          maxWidth="md"
+        >
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            {profileError && (
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{profileError}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+              <input
+                type="text"
+                required
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Corporate Email</label>
+              <input
+                type="email"
+                required
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Department</label>
+              <input
+                type="text"
+                value={profileDept}
+                onChange={(e) => setProfileDept(e.target.value)}
+                placeholder="e.g. Executive Administration"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Change Password (leave empty to keep current)</label>
+              <input
+                type="password"
+                value={profilePassword}
+                onChange={(e) => setProfilePassword(e.target.value)}
+                placeholder="Enter new password (min. 8 characters)"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <Button variant="ghost" size="sm" type="button" onClick={() => setShowEditProfileModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" type="submit" disabled={isSavingProfile}>
+                {isSavingProfile ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Super Admin Control Panel Modal */}
       {showAdminControlPanel && (

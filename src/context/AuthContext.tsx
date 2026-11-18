@@ -22,8 +22,10 @@ import {
   addOrUpdateCredential,
   deleteStoredCredential,
   StoredCredential,
+  CREDENTIALS_KEY,
 } from '../lib/credentialStore';
 import { liveBus, recordAuditLog, LiveBusMessage } from '../lib/liveSync';
+import { persistToSupabase } from '../lib/supabaseSync';
 
 // ============================================================================
 // Security Constants
@@ -187,17 +189,13 @@ export function getStoredUsers(): UserProfile[] {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
     if (raw) {
       let parsed: UserProfile[] = JSON.parse(raw);
-      // Ensure both Super Admins exist and maintain Super Admin role
+      // Ensure default super admins exist if not present, without overwriting custom names/departments
       MOCK_USERS.forEach((adminUser) => {
-        const found = parsed.find((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
+        const found = parsed.some(
+          (u) => u.id === adminUser.id || u.email.toLowerCase() === adminUser.email.toLowerCase()
+        );
         if (!found) {
           parsed = [adminUser, ...parsed];
-        } else {
-          parsed = parsed.map((u) =>
-            u.email.toLowerCase() === adminUser.email.toLowerCase()
-              ? { ...u, role: 'Super Admin' as UserRole }
-              : u
-          );
         }
       });
       return parsed;
@@ -216,6 +214,7 @@ export function getStoredUsers(): UserProfile[] {
 export function saveStoredUsers(users: UserProfile[]): void {
   try {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    persistToSupabase(USERS_STORAGE_KEY, users);
   } catch (err) {
     console.error('[ProcureOS] Failed to save users', err);
   }
@@ -395,45 +394,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const users = getStoredUsers();
     let user = users.find((u) => u.email.toLowerCase() === emailNorm || u.id === cred.userId);
-    if (emailNorm === 'muhammed.azhar@arabitra.com') {
-      user = {
-        ...(user || MOCK_USERS[1]),
-        id: 'USR-AZHAR',
-        name: 'Muhammed Azhar',
-        email: 'muhammed.azhar@arabitra.com',
-        role: 'Super Admin',
-        entity: 'GROUP',
-        department: 'Executive Administration',
-        status: 'Active',
-      };
-    } else if (emailNorm === 'admin@procureos.com') {
-      user = {
-        ...(user || MOCK_USERS[0]),
-        id: 'USR-ADMIN',
-        name: 'ProcureOS System Administrator',
-        email: 'admin@procureos.com',
-        role: 'Super Admin',
-        entity: 'GROUP',
-        department: 'Technical Systems & Security',
-        status: 'Active',
-      };
-    }
 
     if (!user) {
-      // Fallback user profile creation if credentials existed but user was missing
-      user = {
-        id: cred.userId,
-        name: cred.email.split('@')[0],
-        email: cred.email,
-        role: 'Super Admin',
-        entity: 'GROUP',
-        department: 'Operations',
-        status: 'Active',
-        twoFactorEnabled: true,
-        lastLogin: 'Just now',
-      };
+      if (emailNorm === 'muhammed.azhar@arabitra.com') {
+        user = MOCK_USERS[1];
+      } else if (emailNorm === 'admin@procureos.com') {
+        user = MOCK_USERS[0];
+      } else {
+        user = {
+          id: cred.userId,
+          name: cred.email.split('@')[0],
+          email: cred.email,
+          role: 'Super Admin',
+          entity: 'GROUP',
+          department: 'Operations',
+          status: 'Active',
+          twoFactorEnabled: true,
+          lastLogin: 'Just now',
+        };
+      }
       saveStoredUsers([...users, user]);
     } else {
+      // Ensure primary admins keep Super Admin role, preserving their customized name and department
+      if (emailNorm === 'muhammed.azhar@arabitra.com' || emailNorm === 'admin@procureos.com') {
+        user = { ...user, role: 'Super Admin' };
+      }
       // Update last login
       const updatedUsers = users.map((u) =>
         u.id === user!.id ? { ...u, lastLogin: 'Just now' } : u
@@ -594,28 +579,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [currentUser]
   );
 
-  // ── Super Admin: Update User ─────────────────────────────────────────────
+  // ── Super Admin & Self Profile: Update User ──────────────────────────────
   const updateUser = useCallback(
     async (
       userId: string,
       updates: Partial<UserProfile>,
       newPassword?: string
     ): Promise<{ ok: boolean; error?: string }> => {
-      if (currentUser?.role !== 'Super Admin') {
-        return { ok: false, error: 'Access denied: Only Super Admin can modify user accounts.' };
+      const isSuperAdmin =
+        currentUser?.role === 'Super Admin' ||
+        currentUser?.email?.toLowerCase() === 'admin@procureos.com' ||
+        currentUser?.email?.toLowerCase() === 'muhammed.azhar@arabitra.com';
+
+      if (!isSuperAdmin && currentUser?.id !== userId) {
+        return { ok: false, error: 'Access denied: You can only modify your own account.' };
       }
 
       const users = getStoredUsers();
       const targetUser = users.find((u) => u.id === userId);
       if (!targetUser) return { ok: false, error: 'Target user not found.' };
 
-      // If email changed, check conflict
-      if (updates.email && updates.email.toLowerCase() !== targetUser.email.toLowerCase()) {
+      // If email changed, check conflict and update credentials
+      const newEmailLower = updates.email?.trim().toLowerCase();
+      if (newEmailLower && newEmailLower !== targetUser.email.toLowerCase()) {
         const conflict = users.some(
-          (u) => u.id !== userId && u.email.toLowerCase() === updates.email!.toLowerCase()
+          (u) => u.id !== userId && u.email.toLowerCase() === newEmailLower
         );
         if (conflict) {
           return { ok: false, error: `Email '${updates.email}' is already taken by another user.` };
+        }
+
+        // If no password change was provided, sync the new email to credentials store
+        if (!newPassword || !newPassword.trim()) {
+          const creds = getStoredCredentials();
+          const credIdx = creds.findIndex(
+            (c) => c.userId === userId || c.email.toLowerCase() === targetUser.email.toLowerCase()
+          );
+          if (credIdx >= 0) {
+            creds[credIdx].email = newEmailLower;
+            localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(creds));
+            persistToSupabase(CREDENTIALS_KEY, creds);
+          }
         }
       }
 
@@ -626,35 +630,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const passHash = await hashPassword(newPassword);
         addOrUpdateCredential({
           userId,
-          email: (updates.email || targetUser.email).toLowerCase(),
+          email: newEmailLower || targetUser.email.toLowerCase(),
           passwordHash: passHash,
           mustChangePassword: false,
         });
       }
 
       const updatedUsers = users.map((u) =>
-        u.id === userId ? { ...u, ...updates } : u
+        u.id === userId ? { ...u, ...updates, ...(newEmailLower ? { email: newEmailLower } : {}) } : u
       );
       saveStoredUsers(updatedUsers);
       setAvailableUsers(updatedUsers);
 
-      if (currentUser.id === userId) {
-        setCurrentUser({ ...currentUser, ...updates });
+      if (currentUser?.id === userId) {
+        const updatedSelf = { ...currentUser, ...updates, ...(newEmailLower ? { email: newEmailLower } : {}) };
+        setCurrentUser(updatedSelf);
       }
 
       recordAuditLog(
         'User Profile Updated',
         'User',
         userId,
-        `Super Admin updated user ${targetUser.name} (${targetUser.email}).`,
-        { name: currentUser.name, role: currentUser.role }
+        `User profile updated for ${targetUser.name} (${targetUser.email}).`,
+        { name: currentUser?.name || 'Super Admin', role: currentUser?.role || 'Super Admin' }
       );
 
       liveBus.publish({
         type: 'USER_SYNC',
         data: updatedUsers,
         timestamp: Date.now(),
-        actor: currentUser.name,
+        actor: currentUser?.name || 'Super Admin',
       });
 
       return { ok: true };
@@ -901,10 +906,8 @@ export const useAuth = (): AuthContextType => {
 // Password Policy Validator
 // ============================================================================
 export function validatePasswordPolicy(password: string): string | null {
-  if (password.length < 10) return 'Password must be at least 10 characters.';
-  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
-  if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter.';
-  if (!/[0-9]/.test(password)) return 'Password must contain at least one digit.';
-  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain at least one special character (!@#$%^&*).';
+  if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (!/[a-zA-Z]/.test(password)) return 'Password must contain at least one letter.';
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number.';
   return null;
 }
