@@ -7,7 +7,14 @@ import React, {
   useMemo,
   ReactNode,
 } from 'react';
-import { UserRole, UserProfile, PermissionMatrix } from '../types/procurement';
+import {
+  UserRole,
+  UserProfile,
+  PermissionMatrix,
+  ModuleId,
+  ROLE_MODULE_ACCESS,
+  ALL_USER_ROLES,
+} from '../types/procurement';
 import { MOCK_USERS } from '../data/mockData';
 import { verifyPassword, generateSessionToken, hashPassword } from '../lib/crypto';
 import {
@@ -51,6 +58,11 @@ interface AuthContextType {
   currentUser: UserProfile | null;
   activeRole: UserRole | null;
   permissions: PermissionMatrix | null;
+  allowedModules: ModuleId[];
+  canAccessModule: (moduleId: ModuleId) => boolean;
+  simulatedRole: UserRole | null;
+  isSimulatingRole: boolean;
+  resetSimulatedRole: () => void;
   mustChangePassword: boolean;
 
   // Actions
@@ -454,6 +466,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // ── Logout ──────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
+    try {
+      sessionStorage.removeItem('procureos_simulated_role');
+    } catch {}
+    setSimulatedRole(null);
     if (currentUser) {
       recordAuditLog(
         'User Signed Out',
@@ -841,29 +857,90 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return true;
   }, []);
 
+  // ── Role Simulation & Module Access Governance ──────────────────────────
+  const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(() => {
+    try {
+      return (sessionStorage.getItem('procureos_simulated_role') as UserRole) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const isSuperAdminAccount = useMemo(() => {
+    return (
+      currentUser?.role === 'Super Admin' ||
+      currentUser?.email?.toLowerCase() === 'admin@procureos.com' ||
+      currentUser?.email?.toLowerCase() === 'muhammed.azhar@arabitra.com'
+    );
+  }, [currentUser]);
+
+  const activeRole: UserRole | null = useMemo(() => {
+    if (!currentUser) return null;
+    if (isSuperAdminAccount && simulatedRole) {
+      return simulatedRole;
+    }
+    return currentUser.role || 'Super Admin';
+  }, [currentUser, isSuperAdminAccount, simulatedRole]);
+
+  const isSimulatingRole = Boolean(
+    isSuperAdminAccount && simulatedRole && simulatedRole !== currentUser?.role
+  );
+
+  const resetSimulatedRole = useCallback(() => {
+    setSimulatedRole(null);
+    try {
+      sessionStorage.removeItem('procureos_simulated_role');
+    } catch {}
+  }, []);
+
+  const setActiveRole = useCallback(
+    (role: UserRole) => {
+      if (!isSuperAdminAccount) {
+        console.warn('[ProcureOS Security Guard] Only Super Admins can simulate other roles.');
+        return;
+      }
+      setSimulatedRole(role);
+      try {
+        sessionStorage.setItem('procureos_simulated_role', role);
+      } catch {}
+      recordAuditLog(
+        'Role Perspective Switched',
+        'Session',
+        currentUser?.id || 'USR-ADMIN',
+        `Super Admin ${currentUser?.name} switched operational view to '${role}'.`,
+        { name: currentUser?.name || 'Super Admin', role }
+      );
+    },
+    [currentUser, isSuperAdminAccount]
+  );
+
+  const allowedModules = useMemo<ModuleId[]>(() => {
+    if (!activeRole) return ['dashboard'];
+    return ROLE_MODULE_ACCESS[activeRole] || ['dashboard'];
+  }, [activeRole]);
+
+  const canAccessModule = useCallback(
+    (moduleId: ModuleId): boolean => {
+      if (!activeRole) return false;
+      return allowedModules.includes(moduleId);
+    },
+    [allowedModules, activeRole]
+  );
+
   // ── Derived values ──────────────────────────────────────────────────────
-  const activeRole = currentUser?.role ?? null;
   const basePermissions = activeRole ? ROLE_PERMISSIONS[activeRole] ?? null : null;
   const permissions: PermissionMatrix | null = useMemo(() => {
     if (!basePermissions) return null;
-    if (currentUser?.customPermissions) {
+    if (!isSimulatingRole && currentUser?.customPermissions) {
       return {
         ...basePermissions,
         ...currentUser.customPermissions,
       };
     }
     return basePermissions;
-  }, [basePermissions, currentUser?.customPermissions]);
+  }, [basePermissions, currentUser?.customPermissions, isSimulatingRole]);
 
   const isAuthenticated = Boolean(session && currentUser);
-
-  // setActiveRole: disabled in production office mode (switching requires actual login with credentials)
-  const setActiveRole = useCallback(
-    (_role: UserRole) => {
-      // Direct impersonation without credentials is intentionally disabled for office security
-    },
-    []
-  );
 
   const securityDisclaimer =
     'Enterprise Security Architecture Note: Authorization is enforced at the API, database Row-Level Security (PostgreSQL RLS), and cryptographically-signed JWT scopes. Client-side role display mirrors server state.';
@@ -876,6 +953,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         currentUser,
         activeRole,
         permissions,
+        allowedModules,
+        canAccessModule,
+        simulatedRole,
+        isSimulatingRole,
+        resetSimulatedRole,
         mustChangePassword,
         login,
         logout,

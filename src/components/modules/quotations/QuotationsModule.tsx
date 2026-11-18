@@ -259,7 +259,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
     if (!permissions.canEditQuotePrice) {
       warning(
         'Commercial Price Edit Restricted',
-        `Role '${activeRole}' does not have commercial pricing authority. Switch role in the profile menu (Super Admin, Procurement Director, Procurement Engineer, Purchasing Specialist or Financial Controller) to edit prices.`
+        `Role '${activeRole}' does not hold commercial pricing authority. Price adjustments require Super Admin, Procurement Director, Procurement Engineer, Purchasing Specialist, or Financial Controller clearance.`
       );
     }
     setEditingPriceBid({ bid, evaluation: selectedEvaluation });

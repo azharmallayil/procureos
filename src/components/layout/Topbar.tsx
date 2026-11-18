@@ -19,12 +19,14 @@ import {
   Users,
   Zap,
   User,
+  Eye,
+  Sliders,
 } from 'lucide-react';
 import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { AdminControlPanelModal } from '../admin/AdminControlPanelModal';
-import { ModuleId } from '../../types/procurement';
+import { ModuleId, UserRole, ALL_USER_ROLES } from '../../types/procurement';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 
@@ -41,12 +43,33 @@ export const Topbar: React.FC<TopbarProps> = ({
   onQuickAction,
   onNavigateModule,
 }) => {
-  const { currentUser, activeRole, logout, elevateToSuperAdmin, updateUser } = useAuth();
+  const {
+    currentUser,
+    activeRole,
+    permissions,
+    canAccessModule,
+    isSimulatingRole,
+    resetSimulatedRole,
+    setActiveRole,
+    logout,
+    updateUser,
+  } = useAuth();
   const { info, success, error: toastError } = useToast();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showAdminControlPanel, setShowAdminControlPanel] = useState(false);
+
+  const isSuperAdmin =
+    currentUser?.role === 'Super Admin' ||
+    currentUser?.email === 'admin@procureos.com' ||
+    currentUser?.email === 'muhammed.azhar@arabitra.com';
+
+  const isAdmin =
+    activeRole === 'Super Admin' ||
+    currentUser?.role === 'Super Admin' ||
+    currentUser?.email === 'admin@procureos.com' ||
+    currentUser?.email === 'muhammed.azhar@arabitra.com';
 
   // Edit Profile Modal State
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -90,12 +113,6 @@ export const Topbar: React.FC<TopbarProps> = ({
     }
   };
 
-  const isAdmin =
-    activeRole === 'Super Admin' ||
-    currentUser?.role === 'Super Admin' ||
-    currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com';
-
   const notifications: any[] = [];
 
   return (
@@ -116,6 +133,27 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right controls: Quick Create, Notifications, Role Switcher */}
       <div className="flex items-center gap-3">
+        {/* Active Role Simulation Indicator (When Super Admin tests a role perspective) */}
+        {isSimulatingRole && (
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/70 border border-amber-500/50 text-amber-300 text-xs font-semibold shadow-sm">
+            <Eye className="w-3.5 h-3.5 text-amber-400" />
+            <span>
+              Previewing: <strong>{activeRole}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                resetSimulatedRole();
+                success('Reset to Super Admin', 'Full administrative authority restored.');
+              }}
+              className="ml-1 text-[11px] text-amber-300 hover:text-white underline font-bold cursor-pointer"
+              title="Return to Super Admin perspective"
+            >
+              ✕ Exit
+            </button>
+          </div>
+        )}
+
         {/* Super Admin Status Badge / Control Panel Trigger */}
         {isAdmin && (
           <button
@@ -134,7 +172,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           </button>
         )}
 
-        {/* Quick Action Dropdown */}
+        {/* Quick Action Dropdown (Filtered by Role Permissions & Module Clearance) */}
         <div className="relative">
           <button
             onClick={() => {
@@ -154,56 +192,66 @@ export const Topbar: React.FC<TopbarProps> = ({
               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">
                 Initiate Procurement
               </div>
-              <button
-                onClick={() => {
-                  onQuickAction('rfq');
-                  setShowNewMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
-              >
-                <FileQuestion className="w-4 h-4 text-cyan-400" />
-                <span>Create New RFQ / Tender</span>
-              </button>
-              <button
-                onClick={() => {
-                  onQuickAction('po');
-                  setShowNewMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
-              >
-                <FileCheck2 className="w-4 h-4 text-emerald-400" />
-                <span>Issue Purchase Order (PO)</span>
-              </button>
-              <button
-                onClick={() => {
-                  onQuickAction('item');
-                  setShowNewMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
-              >
-                <Boxes className="w-4 h-4 text-blue-400" />
-                <span>Catalog New Item / SKU</span>
-              </button>
-              <button
-                onClick={() => {
-                  onQuickAction('quote');
-                  setShowNewMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
-              >
-                <FileSpreadsheet className="w-4 h-4 text-rose-400" />
-                <span>Upload Supplier Quote (PDF)</span>
-              </button>
-              <button
-                onClick={() => {
-                  onQuickAction('delivery');
-                  setShowNewMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
-              >
-                <Truck className="w-4 h-4 text-amber-400" />
-                <span>Log Goods Receipt (GRN)</span>
-              </button>
+              {canAccessModule('rfqs') && permissions?.canCreateRFQ && (
+                <button
+                  onClick={() => {
+                    onQuickAction('rfq');
+                    setShowNewMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <FileQuestion className="w-4 h-4 text-cyan-400" />
+                  <span>Create New RFQ / Tender</span>
+                </button>
+              )}
+              {canAccessModule('purchaseOrders') && (
+                <button
+                  onClick={() => {
+                    onQuickAction('po');
+                    setShowNewMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <FileCheck2 className="w-4 h-4 text-emerald-400" />
+                  <span>Issue Purchase Order (PO)</span>
+                </button>
+              )}
+              {canAccessModule('items') && (
+                <button
+                  onClick={() => {
+                    onQuickAction('item');
+                    setShowNewMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <Boxes className="w-4 h-4 text-blue-400" />
+                  <span>Catalog New Item / SKU</span>
+                </button>
+              )}
+              {canAccessModule('quotations') && (
+                <button
+                  onClick={() => {
+                    onQuickAction('quote');
+                    setShowNewMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-rose-400" />
+                  <span>Upload Supplier Quote (PDF)</span>
+                </button>
+              )}
+              {canAccessModule('deliveries') && permissions?.canReceiveShipment && (
+                <button
+                  onClick={() => {
+                    onQuickAction('delivery');
+                    setShowNewMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <Truck className="w-4 h-4 text-amber-400" />
+                  <span>Log Goods Receipt (GRN)</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -328,8 +376,8 @@ export const Topbar: React.FC<TopbarProps> = ({
                 </button>
               </div>
 
-              {/* Super Admin Control Panel Link */}
-              {isAdmin ? (
+              {/* Super Admin Command Center Link */}
+              {isAdmin && (
                 <div className="px-2 py-1.5 border-b border-slate-800">
                   <button
                     onClick={() => {
@@ -346,18 +394,47 @@ export const Topbar: React.FC<TopbarProps> = ({
                     <span>Admin Command Center</span>
                   </button>
                 </div>
-              ) : (
-                <div className="px-2 py-1.5 border-b border-slate-800">
-                  <button
-                    onClick={async () => {
-                      setShowProfileMenu(false);
-                      await elevateToSuperAdmin();
+              )}
+
+              {/* Role Perspective Switcher (Exclusive to Super Admin) */}
+              {isSuperAdmin && (
+                <div className="px-3 py-2.5 border-b border-slate-800 bg-slate-950/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                      <Sliders className="w-3 h-3 text-amber-400" />
+                      Role Perspective
+                    </span>
+                    {isSimulatingRole && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetSimulatedRole();
+                          success('Reset to Super Admin', 'Full administrative control restored.');
+                        }}
+                        className="text-[10px] text-amber-300 hover:text-white underline font-semibold cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    value={activeRole || 'Super Admin'}
+                    onChange={(e) => {
+                      const newRole = e.target.value as UserRole;
+                      setActiveRole(newRole);
+                      success('Perspective Updated', `Now viewing platform as ${newRole}.`);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 font-bold transition-colors cursor-pointer"
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
                   >
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>⚡ Elevate to Super Admin</span>
-                  </button>
+                    {ALL_USER_ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                    Filter sidebar & modules to experience role clearances
+                  </p>
                 </div>
               )}
 

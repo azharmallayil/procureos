@@ -50,7 +50,7 @@ import { deleteQuotationFiles, clearAllStoredPdfDocuments } from './lib/pdfStora
 import { supabase, isSupabaseConfigured } from './lib/supabaseClient';
 
 const MainApplication: React.FC = () => {
-  const { currentUser, activeRole } = useAuth();
+  const { currentUser, activeRole, canAccessModule, allowedModules } = useAuth();
   const { success, warning } = useToast();
 
   const isAdmin =
@@ -59,15 +59,19 @@ const MainApplication: React.FC = () => {
     currentUser?.email === 'admin@procureos.com' ||
     currentUser?.email === 'muhammed.azhar@arabitra.com';
 
-  // Navigation module and workspace filter are user-scoped session states
+  // Navigation module is strictly governed by Active Role clearance
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
 
   useEffect(() => {
-    if ((activeModule === 'admin' || (activeModule as string) === 'team') && !isAdmin) {
-      setActiveModule('dashboard');
-      warning('Access Restricted', 'The Admin Command Center is reserved exclusively for system administrators.');
+    if (activeRole && !canAccessModule(activeModule)) {
+      const fallback = allowedModules[0] || 'dashboard';
+      setActiveModule(fallback);
+      warning(
+        'Module Restricted',
+        `Role '${activeRole}' does not hold operational clearance for '${activeModule}'. Redirected to ${fallback}.`
+      );
     }
-  }, [activeModule, isAdmin]);
+  }, [activeRole, activeModule, canAccessModule, allowedModules]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -932,7 +936,7 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'items' && (
+            {activeModule === 'items' && canAccessModule('items') && (
               <ItemsModule
                 items={items}
                 onAddItem={handleAddItem}
@@ -941,11 +945,11 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'vendors' && (
+            {activeModule === 'vendors' && canAccessModule('vendors') && (
               <VendorsModule vendors={vendors} onAddVendor={handleAddVendor} />
             )}
 
-            {activeModule === 'requisitions' && (
+            {activeModule === 'requisitions' && canAccessModule('requisitions') && (
               <RequisitionsModule
                 requisitions={requisitions}
                 items={items}
@@ -956,7 +960,7 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'rfqs' && (
+            {activeModule === 'rfqs' && canAccessModule('rfqs') && (
               <RfqsModule
                 rfqs={rfqs}
                 vendors={vendors}
@@ -968,7 +972,7 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'quotations' && (
+            {activeModule === 'quotations' && canAccessModule('quotations') && (
               <QuotationsModule
                 quotations={quotations}
                 selectedRfqId={selectedQuoteRfqId || undefined}
@@ -983,7 +987,7 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'purchaseOrders' && (
+            {activeModule === 'purchaseOrders' && canAccessModule('purchaseOrders') && (
               <PurchaseOrdersModule
                 purchaseOrders={purchaseOrders}
                 onAddPO={handleAddPO}
@@ -997,7 +1001,7 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'deliveries' && (
+            {activeModule === 'deliveries' && canAccessModule('deliveries') && (
               <DeliveriesModule
                 deliveries={deliveries}
                 onMarkInspected={handleMarkInspected}
@@ -1007,18 +1011,18 @@ const MainApplication: React.FC = () => {
               />
             )}
 
-            {activeModule === 'payments' && (
+            {activeModule === 'payments' && canAccessModule('payments') && (
               <PaymentsModule
                 payments={payments}
                 onReleasePayment={handleReleasePayment}
               />
             )}
 
-            {activeModule === 'assets' && (
+            {activeModule === 'assets' && canAccessModule('assets') && (
               <AssetsModule assets={assets} onAddAsset={handleAddAsset} />
             )}
 
-            {(activeModule === 'admin' || activeModule === 'team') && (
+            {(activeModule === 'admin' || activeModule === 'team') && canAccessModule('admin') && (
               <AdminModule
                 items={items}
                 vendors={vendors}

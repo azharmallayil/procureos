@@ -25,6 +25,142 @@ export type UserRole =
   | 'Financial Controller'
   | 'Internal Auditor';
 
+export const ALL_USER_ROLES: UserRole[] = [
+  'Super Admin',
+  'Procurement Director',
+  'Procurement Engineer',
+  'Purchasing Specialist',
+  'Site Receiving Officer',
+  'Financial Controller',
+  'Internal Auditor',
+];
+
+export const ROLE_MODULE_ACCESS: Record<UserRole, ModuleId[]> = {
+  'Super Admin': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+    'admin',
+  ],
+  'Procurement Director': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+  ],
+  'Procurement Engineer': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'assets',
+  ],
+  'Purchasing Specialist': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+  ],
+  'Site Receiving Officer': [
+    'dashboard',
+    'items',
+    'purchaseOrders',
+    'deliveries',
+    'assets',
+  ],
+  'Financial Controller': [
+    'dashboard',
+    'vendors',
+    'quotations',
+    'purchaseOrders',
+    'payments',
+  ],
+  'Internal Auditor': [
+    'dashboard',
+    'items',
+    'vendors',
+    'requisitions',
+    'rfqs',
+    'quotations',
+    'purchaseOrders',
+    'deliveries',
+    'payments',
+    'assets',
+  ],
+};
+
+export const ROLE_DETAILS: Record<
+  UserRole,
+  {
+    title: string;
+    category: string;
+    description: string;
+    badgeVariant: 'amber' | 'cyan' | 'emerald' | 'rose' | 'indigo' | 'purple' | 'slate' | 'blue';
+  }
+> = {
+  'Super Admin': {
+    title: 'Super Admin',
+    category: 'System Governance',
+    description: 'Full unconstrained platform control, telemetry, user management & disaster recovery',
+    badgeVariant: 'amber',
+  },
+  'Procurement Director': {
+    title: 'Procurement Director',
+    category: 'Executive Procurement',
+    description: 'High-value PO sign-offs, commercial vendor governance & tender awards',
+    badgeVariant: 'purple',
+  },
+  'Procurement Engineer': {
+    title: 'Procurement Engineer',
+    category: 'Technical & Tendering',
+    description: 'Requisitioning, RFQ specification, BOQ comparison & item master catalog',
+    badgeVariant: 'cyan',
+  },
+  'Purchasing Specialist': {
+    title: 'Purchasing Specialist',
+    category: 'Commercial Sourcing',
+    description: 'Vendor bidding, commercial quote pricing adjustments & PO issuance',
+    badgeVariant: 'blue',
+  },
+  'Site Receiving Officer': {
+    title: 'Site Receiving Officer',
+    category: 'Logistics & Receiving',
+    description: 'Physical site deliveries, GRN goods inspection & equipment acceptance',
+    badgeVariant: 'emerald',
+  },
+  'Financial Controller': {
+    title: 'Financial Controller',
+    category: 'Finance & Treasury',
+    description: 'PO commercial approval, SARIE bank disbursements & tax invoice validation',
+    badgeVariant: 'indigo',
+  },
+  'Internal Auditor': {
+    title: 'Internal Auditor',
+    category: 'Compliance & Audit',
+    description: 'Read-only audit inspection across all transactions, ledgers & audit logs',
+    badgeVariant: 'slate',
+  },
+};
+
 export interface PermissionMatrix {
   canApprovePO: boolean;
   canApproveHighValuePO: boolean;

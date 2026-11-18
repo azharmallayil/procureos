@@ -47,6 +47,8 @@ import {
   Asset,
   QuotationEvaluation,
   PurchaseRequisition,
+  ALL_USER_ROLES,
+  ROLE_DETAILS,
 } from '../../../types/procurement';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -778,7 +780,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                       </td>
                       <td className="px-4 py-3">
                         <Badge
-                          variant={u.role === 'Super Admin' ? 'amber' : 'cyan'}
+                          variant={ROLE_DETAILS[u.role]?.badgeVariant || 'cyan'}
                           dot
                         >
                           {u.role}

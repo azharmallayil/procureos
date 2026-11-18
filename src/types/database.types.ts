@@ -7,11 +7,13 @@ export type Json =
   | Json[];
 
 export type UserRole =
-  | 'admin'
-  | 'procurement_manager'
-  | 'buyer'
-  | 'approver'
-  | 'viewer';
+  | 'Super Admin'
+  | 'Procurement Director'
+  | 'Procurement Engineer'
+  | 'Purchasing Specialist'
+  | 'Site Receiving Officer'
+  | 'Financial Controller'
+  | 'Internal Auditor';
 
 export interface Database {
   public: {

@@ -374,36 +374,24 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
           </div>
         </div>
       ) : (
-        <div className="p-4 rounded-2xl border border-rose-500/40 bg-gradient-to-r from-rose-950/50 via-slate-900 to-slate-900 text-xs leading-relaxed flex flex-col md:flex-row md:items-center justify-between gap-4 text-rose-200 shadow-xl">
+        <div className="p-4 rounded-2xl border border-slate-700/60 bg-gradient-to-r from-slate-900 via-slate-900 to-[#0b1120] text-xs leading-relaxed flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-300 shadow-xl">
           <div className="flex items-start gap-3.5">
-            <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0 mt-0.5">
+            <div className="p-2.5 rounded-xl bg-slate-800 text-slate-400 border border-slate-700 shrink-0 mt-0.5">
               <LockKeyhole className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-bold text-white text-sm">
-                  Super Admin Authorization Required to Edit Privileges
+                  Privilege Matrix Audit Inspection
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950 text-rose-300 border border-rose-800">
-                  Currently: {currentUser?.role || 'Guest'}
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                  Active Role: {activeRole || 'Authorized User'}
                 </span>
               </div>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                You are viewing the Privilege Matrix in audit mode as <strong>{currentUser?.name || 'Authorized User'}</strong>. Per enterprise security guidelines, individual privilege customization requires <strong>Super Admin</strong> clearance. Click below to activate Super Admin clearance immediately.
+              <p className="text-slate-400 text-xs leading-relaxed">
+                Viewing role permissions and capabilities in read-only audit mode as <strong>{currentUser?.name || 'User'}</strong>. Modifications to security matrices are restricted to <strong>Super Admin</strong> governance in the Admin Command Center.
               </p>
             </div>
-          </div>
-
-          <div className="shrink-0">
-            <button
-              type="button"
-              onClick={handleElevate}
-              disabled={isElevating}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-amber-950/60 cursor-pointer transition-all disabled:opacity-50"
-            >
-              <Zap className="w-4 h-4 text-white" />
-              <span>{isElevating ? 'Elevating Account…' : '⚡ Elevate to Super Admin (1-Click)'}</span>
-            </button>
           </div>
         </div>
       )}
@@ -874,12 +862,12 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
                 <tr>
                   <th className="py-3 px-4 font-semibold min-w-[220px]">Enterprise Capability</th>
                   <th className="py-3 px-3 text-center text-amber-300 font-bold">Super Admin</th>
-                  <th className="py-3 px-3 text-center">Procurement Dir</th>
-                  <th className="py-3 px-3 text-center">Procurement Eng</th>
-                  <th className="py-3 px-3 text-center">Purchasing Spec</th>
-                  <th className="py-3 px-3 text-center">Site Officer</th>
-                  <th className="py-3 px-3 text-center">Finance Dir</th>
-                  <th className="py-3 px-3 text-center">Auditor</th>
+                  <th className="py-3 px-3 text-center">Procurement Director</th>
+                  <th className="py-3 px-3 text-center">Procurement Engineer</th>
+                  <th className="py-3 px-3 text-center">Purchasing Specialist</th>
+                  <th className="py-3 px-3 text-center">Site Receiving Officer</th>
+                  <th className="py-3 px-3 text-center">Financial Controller</th>
+                  <th className="py-3 px-3 text-center">Internal Auditor</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
