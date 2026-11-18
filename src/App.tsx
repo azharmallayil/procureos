@@ -39,11 +39,12 @@ import {
   QuoteLineItemPrice,
   QuotationEvaluation,
   PurchaseRequisition,
+  PaymentMilestone,
 } from './types/procurement';
 import { useLocalStorage } from './lib/useLocalStorage';
 import { recordAuditLog } from './lib/liveSync';
 import { useToast } from './context/ToastContext';
-import { deleteQuotationFiles } from './lib/pdfStorage';
+import { deleteQuotationFiles, clearAllStoredPdfDocuments } from './lib/pdfStorage';
 import { supabase, isSupabaseConfigured } from './lib/supabaseClient';
 
 const MainApplication: React.FC = () => {
@@ -59,47 +60,61 @@ const MainApplication: React.FC = () => {
     'rfq' | 'po' | 'item' | 'delivery' | null
   >(null);
 
-  // ── Persisted application state (survives page reload) ───────────────────
-  const [items, setItems] = useLocalStorage<Item[]>('procureos_items', MOCK_ITEMS);
-  const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', MOCK_VENDORS);
-  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', MOCK_RFQS);
+  // ── Persisted application state (Clean Production Defaults) ─────────────
+  const [items, setItems] = useLocalStorage<Item[]>('procureos_items', []);
+  const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', []);
+  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', []);
   const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', []);
-  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', MOCK_QUOTATIONS);
+  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', []);
   const [selectedQuoteRfqId, setSelectedQuoteRfqId] = useState<string | null>(null);
-  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', MOCK_PURCHASE_ORDERS);
-  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', MOCK_DELIVERIES);
-  const [payments, setPayments] = useLocalStorage('procureos_payments', MOCK_PAYMENTS);
-  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
+  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', []);
+  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', []);
+  const [payments, setPayments] = useLocalStorage<PaymentMilestone[]>('procureos_payments', []);
+  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', []);
 
-  // Auto-migrate cached tables to latest Telematics, AI Safety, LMI & Cold Chain datasets
+  // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const TARGET_DB_VER = '2026.11.03.v3';
-    const needsMigration =
-      currentDbVer !== TARGET_DB_VER ||
-      quotations.length < 4 ||
-      !quotations.some((q) => q.rfqId === 'RFQ-2026-0042') ||
-      items.some((item) => item.sku.startsWith('FIT-MECH')) ||
-      !items.some((item) => item.sku.startsWith('IOT-TEL'));
+    const PROD_LIVE_VER = '2026.11.18.production_live';
 
-    if (needsMigration) {
-      setItems(MOCK_ITEMS);
-      localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
-      setVendors(MOCK_VENDORS);
-      localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
-      setRfqs(MOCK_RFQS);
-      localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
-      setQuotations(MOCK_QUOTATIONS);
-      localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
-      setPurchaseOrders(MOCK_PURCHASE_ORDERS);
-      localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
-      setDeliveries(MOCK_DELIVERIES);
-      localStorage.setItem('procureos_deliveries', JSON.stringify(MOCK_DELIVERIES));
-      setPayments(MOCK_PAYMENTS);
-      localStorage.setItem('procureos_payments', JSON.stringify(MOCK_PAYMENTS));
-      setAssets(MOCK_ASSETS);
-      localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
-      localStorage.setItem('procureos_db_version', TARGET_DB_VER);
+    if (currentDbVer !== PROD_LIVE_VER) {
+      // 1. Purge all mock transactions
+      setRfqs([]);
+      localStorage.setItem('procureos_rfqs', JSON.stringify([]));
+      setQuotations([]);
+      localStorage.setItem('procureos_quotations', JSON.stringify([]));
+      setRequisitions([]);
+      localStorage.setItem('procureos_requisitions', JSON.stringify([]));
+      setPurchaseOrders([]);
+      localStorage.setItem('procureos_purchase_orders', JSON.stringify([]));
+      setDeliveries([]);
+      localStorage.setItem('procureos_deliveries', JSON.stringify([]));
+      setPayments([]);
+      localStorage.setItem('procureos_payments', JSON.stringify([]));
+      setAssets([]);
+      localStorage.setItem('procureos_assets', JSON.stringify([]));
+
+      // 2. Clear demo items & vendors to clean production slate
+      setItems([]);
+      localStorage.setItem('procureos_items', JSON.stringify([]));
+      setVendors([]);
+      localStorage.setItem('procureos_vendors', JSON.stringify([]));
+
+      // 3. Clear all stored quote PDFs in IndexedDB
+      clearAllStoredPdfDocuments().catch(() => {});
+
+      // 4. Mark environment and production version
+      localStorage.setItem('procureos_db_version', PROD_LIVE_VER);
+      localStorage.setItem('procureos_environment', 'production');
+
+      // 5. Immutable audit entry
+      recordAuditLog(
+        'Production Live Stage Initialized',
+        'System',
+        'PROD-CUTOVER',
+        'System transitioned to active live office production. All demonstration transactions purged. Database ready for company operations.',
+        { name: currentUser?.name || 'Super Admin', role: activeRole || 'Super Admin' }
+      );
     }
   }, []);
 
