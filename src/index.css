@@ -4,13 +4,30 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    /* ── BASE THEME TOKENS: DEFAULT DARK ── */
+    --bg-app: #080c15;
+    --bg-sidebar: #090e1a;
+    --bg-topbar: rgba(9, 14, 26, 0.95);
+    --bg-card: #0d1424;
+    --bg-card-subtle: #0f172a;
+    --bg-input: #0b1120;
+    --border-color: #1e293b;
+    --border-subtle: #162032;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.75);
+    --glass-blur: 12px;
+    --glass-border: rgba(51, 65, 85, 0.6);
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #080c15;
-    color: #e2e8f0;
+    background: var(--bg-app);
+    color: var(--text-main);
     overflow-x: hidden;
+    min-height: 100vh;
+    transition: background 0.25s ease, color 0.2s ease;
   }
 
   /* Custom enterprise dark scrollbar */
@@ -30,12 +47,288 @@
   }
 }
 
-/* Glassmorphism and glow utility classes */
+/* ==========================================================================
+   PROCUREOS MULTI-THEME ENGINE
+   1. Default Theme (Signature Industrial Dark & White)
+   2. Glassmorphism Theme (Frosted & Industrial Translucent with low eye effort)
+   3. Clean Theme (Ergonomic & Most Eye Efficient)
+   ========================================================================== */
+
+/* ── 1. DEFAULT THEME: DARK ── */
+[data-theme-style="default"][data-theme-mode="dark"],
+.theme-default.dark {
+  --bg-app: #080c15;
+  --bg-sidebar: #090e1a;
+  --bg-topbar: rgba(9, 14, 26, 0.95);
+  --bg-card: #0d1424;
+  --bg-card-subtle: #0f172a;
+  --bg-input: #0b1120;
+  --border-color: #1e293b;
+  --border-subtle: #162032;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-blur: 12px;
+  --glass-border: rgba(51, 65, 85, 0.6);
+}
+
+/* ── 1. DEFAULT THEME: LIGHT (WHITE) ── */
+[data-theme-style="default"][data-theme-mode="light"],
+.theme-default.light {
+  --bg-app: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.95);
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f8fafc;
+  --bg-input: #ffffff;
+  --border-color: #e2e8f0;
+  --border-subtle: #edf2f7;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --glass-bg: #ffffff;
+  --glass-blur: 0px;
+  --glass-border: #e2e8f0;
+}
+
+/* ── 2. GLASSMORPHISM THEME: DARK ── */
+/* Translucent frosted panels, ambient mesh depth, gentle glow, ultra-low eye strain */
+[data-theme-style="glass"][data-theme-mode="dark"],
+.theme-glass.dark {
+  --bg-app: radial-gradient(ellipse at 15% 10%, rgba(30, 58, 138, 0.32) 0%, transparent 60%),
+            radial-gradient(ellipse at 85% 90%, rgba(14, 116, 144, 0.25) 0%, transparent 55%),
+            #050811;
+  --bg-sidebar: rgba(10, 15, 28, 0.72);
+  --bg-topbar: rgba(10, 15, 28, 0.7);
+  --bg-card: rgba(15, 23, 42, 0.55);
+  --bg-card-subtle: rgba(15, 23, 42, 0.4);
+  --bg-input: rgba(10, 15, 28, 0.6);
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(15, 23, 42, 0.55);
+  --glass-blur: 16px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+/* ── 2. GLASSMORPHISM THEME: LIGHT (WHITE) ── */
+/* Luminous frosted glass, airy ambient depth, soft diffused shadows */
+[data-theme-style="glass"][data-theme-mode="light"],
+.theme-glass.light {
+  --bg-app: radial-gradient(ellipse at 15% 10%, rgba(219, 234, 254, 0.85) 0%, transparent 60%),
+            radial-gradient(ellipse at 85% 90%, rgba(207, 250, 254, 0.85) 0%, transparent 60%),
+            #f8fafc;
+  --bg-sidebar: rgba(255, 255, 255, 0.75);
+  --bg-topbar: rgba(255, 255, 255, 0.75);
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-card-subtle: rgba(248, 250, 252, 0.75);
+  --bg-input: rgba(255, 255, 255, 0.85);
+  --border-color: rgba(255, 255, 255, 0.85);
+  --border-subtle: rgba(226, 232, 240, 0.8);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-blur: 16px;
+  --glass-border: rgba(255, 255, 255, 0.85);
+}
+
+/* ── 3. CLEAN THEME: DARK ── */
+/* Pure neutral dark charcoal (#101216), zero blue LED fatigue, razor-sharp 1px dividers */
+[data-theme-style="clean"][data-theme-mode="dark"],
+.theme-clean.dark {
+  --bg-app: #101216;
+  --bg-sidebar: #14171d;
+  --bg-topbar: #14171d;
+  --bg-card: #181b22;
+  --bg-card-subtle: #1c2029;
+  --bg-input: #12141a;
+  --border-color: #272b35;
+  --border-subtle: #20242e;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --glass-bg: #181b22;
+  --glass-blur: 0px;
+  --glass-border: #272b35;
+
+  --color-slate-950: #14171d;
+  --color-slate-900: #181b22;
+  --color-slate-800: #272b35;
+  --color-slate-700: #374151;
+  --color-slate-600: #4b5563;
+  --color-slate-500: #6b7280;
+  --color-slate-400: #9ca3af;
+  --color-slate-300: #d1d5db;
+  --color-slate-200: #e5e7eb;
+  --color-slate-100: #f9fafb;
+}
+
+/* ── 3. CLEAN THEME: LIGHT (WHITE) ── */
+/* Matte paper-white, zero glare, calibrated contrast for dense data entry */
+[data-theme-style="clean"][data-theme-mode="light"],
+.theme-clean.light {
+  --bg-app: #fcfcfd;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f9fafb;
+  --bg-input: #ffffff;
+  --border-color: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --glass-bg: #ffffff;
+  --glass-blur: 0px;
+  --glass-border: #e5e7eb;
+
+  --color-slate-950: #ffffff;
+  --color-slate-900: #f9fafb;
+  --color-slate-800: #e5e7eb;
+  --color-slate-700: #d1d5db;
+  --color-slate-600: #9ca3af;
+  --color-slate-500: #6b7280;
+  --color-slate-400: #4b5563;
+  --color-slate-300: #374151;
+  --color-slate-200: #1f2937;
+  --color-slate-100: #111827;
+  --color-slate-50: #030712;
+}
+
+/* ==========================================================================
+   GLOBAL LIGHT MODE (WHITE) VARIABLE REMAPPING
+   ========================================================================== */
+[data-theme-mode="light"],
+.light {
+  --color-slate-950: #ffffff;
+  --color-slate-900: #f8fafc;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+
+  /* Remap accent colors to dark vibrant shades for white backgrounds */
+  --color-cyan-950: #e0f2fe;
+  --color-cyan-900: #bae6fd;
+  --color-cyan-800: #7dd3fc;
+  --color-cyan-400: #0891b2;
+  --color-cyan-300: #0e7490;
+
+  --color-amber-950: #fef3c7;
+  --color-amber-900: #fde68a;
+  --color-amber-800: #fcd34d;
+  --color-amber-400: #d97706;
+  --color-amber-300: #b45309;
+
+  --color-emerald-950: #d1fae5;
+  --color-emerald-900: #a7f3d0;
+  --color-emerald-800: #6ee7b7;
+  --color-emerald-400: #059669;
+  --color-emerald-300: #047857;
+
+  --color-rose-950: #ffe4e6;
+  --color-rose-900: #fecdd3;
+  --color-rose-800: #fda4af;
+  --color-rose-400: #e11d48;
+  --color-rose-300: #be123c;
+
+  --color-blue-950: #dbeafe;
+  --color-blue-900: #bfdbfe;
+  --color-blue-400: #2563eb;
+  --color-blue-300: #1d4ed8;
+
+  --color-purple-950: #f3e8ff;
+  --color-purple-900: #e9d5ff;
+  --color-purple-400: #9333ea;
+  --color-purple-300: #7e22ce;
+}
+
+/* Light mode typography comfort */
+[data-theme-mode="light"] .text-white:not([class*="bg-"]):not([class*="from-"]):not([class*="gradient"]):not([class*="badge"]) {
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+[data-theme-mode="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+[data-theme-mode="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================================================
+   THEME STYLES SPECIFIC OVERRIDES
+   ========================================================================== */
+
+/* Glassmorphism theme specific effects */
+[data-theme-style="glass"] aside {
+  background: var(--bg-sidebar) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+[data-theme-style="glass"] header {
+  background: var(--bg-topbar) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+[data-theme-style="glass"] .glass-panel {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-color: var(--glass-border) !important;
+}
+[data-theme-style="glass"][data-theme-mode="dark"] .glass-panel {
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+[data-theme-style="glass"][data-theme-mode="light"] .glass-panel {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+/* Clean theme specific effects (zero blur, zero heavy shadow) */
+[data-theme-style="clean"] aside {
+  background: var(--bg-sidebar) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme-style="clean"] header {
+  background: var(--bg-topbar) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme-style="clean"] .glass-panel {
+  background: var(--glass-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: none !important;
+}
+[data-theme-style="clean"] * {
+  box-shadow: none !important;
+}
+
+/* Base Utility Classes */
+.bg-app {
+  background: var(--bg-app) !important;
+}
+.bg-sidebar {
+  background: var(--bg-sidebar) !important;
+}
+.bg-topbar {
+  background: var(--bg-topbar) !important;
+}
+
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
 }
 
 .glass-panel-hover {

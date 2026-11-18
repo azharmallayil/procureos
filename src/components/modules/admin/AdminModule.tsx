@@ -484,7 +484,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
         <div className="space-y-6">
           {/* Top Live Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-[#0b1120] border-slate-800">
+            <Card className="bg-slate-900/60 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Live Edge Latency</p>
@@ -502,7 +502,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               </div>
             </Card>
 
-            <Card className="bg-[#0b1120] border-slate-800">
+            <Card className="bg-slate-900/60 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Live Ingestion Traffic</p>
@@ -519,7 +519,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               </div>
             </Card>
 
-            <Card className="bg-[#0b1120] border-slate-800">
+            <Card className="bg-slate-900/60 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Client Storage Engine</p>
@@ -536,7 +536,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               </div>
             </Card>
 
-            <Card className="bg-[#0b1120] border-slate-800">
+            <Card className="bg-slate-900/60 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Security State</p>

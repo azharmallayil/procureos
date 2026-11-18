@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CompanyProvider } from './context/CompanyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -886,7 +887,7 @@ const MainApplication: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-app text-slate-100 flex flex-col font-sans transition-colors duration-250">
       <div className="flex-1 flex overflow-hidden">
         {/* Navigation Sidebar */}
         <Sidebar
@@ -1093,7 +1094,9 @@ export const App: React.FC = () => {
     <CompanyProvider>
       <AuthProvider>
         <ToastProvider>
-          <AuthGate />
+          <ThemeProvider>
+            <AuthGate />
+          </ThemeProvider>
         </ToastProvider>
       </AuthProvider>
     </CompanyProvider>

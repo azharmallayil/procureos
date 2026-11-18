@@ -21,12 +21,18 @@ import {
   User,
   Eye,
   Sliders,
+  Sun,
+  Moon,
+  Palette,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { CompanySwitcher } from './CompanySwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useTheme } from '../../context/ThemeContext';
 import { AdminControlPanelModal } from '../admin/AdminControlPanelModal';
-import { ModuleId, UserRole, ALL_USER_ROLES } from '../../types/procurement';
+import { ModuleId, UserRole, ALL_USER_ROLES, ThemeStyle, ThemeMode } from '../../types/procurement';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 
@@ -59,6 +65,15 @@ export const Topbar: React.FC<TopbarProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showAdminControlPanel, setShowAdminControlPanel] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  const {
+    themeStyle,
+    themeMode,
+    setThemeStyle,
+    setThemeMode,
+    toggleThemeMode,
+  } = useTheme();
 
   const isSuperAdmin =
     currentUser?.role === 'Super Admin' ||
@@ -116,7 +131,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   const notifications: any[] = [];
 
   return (
-    <header className="h-16 bg-[#090d16]/95 backdrop-blur-md border-b border-slate-800/90 px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
+    <header className="h-16 bg-topbar backdrop-blur-md border-b border-slate-800/90 px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
       {/* Left: Mobile hamburger & Company selector */}
       <div className="flex items-center gap-3">
         <button
@@ -256,6 +271,213 @@ export const Topbar: React.FC<TopbarProps> = ({
           )}
         </div>
 
+        {/* ── Theme Selector & Atmosphere Menu ── */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setShowThemeMenu(!showThemeMenu);
+              setShowProfileMenu(false);
+              setShowNotifications(false);
+              setShowNewMenu(false);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-700/80 hover:border-slate-600 bg-slate-900/80 text-xs font-semibold text-slate-200 transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
+            title="Change Theme & Workspace Style"
+          >
+            <Palette className="w-4 h-4 text-cyan-400" />
+            <span className="hidden md:inline font-medium capitalize">
+              {themeStyle === 'glass' ? 'Glass' : themeStyle === 'clean' ? 'Clean' : 'Default'}
+            </span>
+            <ChevronDown className="w-3 h-3 opacity-60" />
+          </button>
+
+          {showThemeMenu && (
+            <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-3 z-50 animate-fade-in space-y-3">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div>
+                  <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                    Workspace Theme
+                  </span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Saved to {currentUser?.name?.split(' ')[0] || 'your'} profile
+                  </p>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-cyan-950 text-cyan-400 border border-cyan-800/60">
+                  {themeMode === 'dark' ? 'Dark' : 'White'}
+                </span>
+              </div>
+
+              {/* Mode Toggle Switch (White / Dark button) */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1.5">
+                  White / Dark Appearance
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThemeMode('dark');
+                      success('Dark Mode Active', 'Contrast set to dark mode.');
+                    }}
+                    className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      themeMode === 'dark'
+                        ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Dark Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThemeMode('light');
+                      success('White Mode Active', 'Switched to clean white light mode.');
+                    }}
+                    className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      themeMode === 'light'
+                        ? 'bg-amber-500/20 text-amber-300 shadow-sm border border-amber-500/50'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>White Mode</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Selection Cards */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1.5">
+                  Visual Atmosphere
+                </label>
+                <div className="space-y-1.5">
+                  {/* Default Theme */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThemeStyle('default');
+                      success('Default Theme Applied', 'Industrial high-contrast interface restored.');
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2 ${
+                      themeStyle === 'default'
+                        ? 'bg-cyan-950/40 border-cyan-500/50 shadow-sm'
+                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100">Default Theme</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                          Standard
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                        Current signature high-contrast industrial enterprise palette.
+                      </p>
+                    </div>
+                    {themeStyle === 'default' && (
+                      <Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                    )}
+                  </button>
+
+                  {/* Glassmorphism Theme */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThemeStyle('glass');
+                      success('Glassmorphism Applied', 'Industrial frosted glass with low eye effort active.');
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2 ${
+                      themeStyle === 'glass'
+                        ? 'bg-purple-950/40 border-purple-500/50 shadow-sm'
+                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                          Glassmorphism
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-950 text-purple-300 border border-purple-800/60">
+                          Low Eye Effort
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                        Frosted glass panels, floating translucent depth, less eye effort.
+                      </p>
+                    </div>
+                    {themeStyle === 'glass' && (
+                      <Check className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                    )}
+                  </button>
+
+                  {/* Clean Theme */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThemeStyle('clean');
+                      success('Clean Theme Applied', 'Most clean and eye-efficient theme active.');
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2 ${
+                      themeStyle === 'clean'
+                        ? 'bg-emerald-950/40 border-emerald-500/50 shadow-sm'
+                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100">Clean Theme</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+                          Most Eye Efficient
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                        Zero glare, ergonomic distraction-free surfaces for dense data tables.
+                      </p>
+                    </div>
+                    {themeStyle === 'clean' && (
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Quick White / Dark Button (Direct 1-Click Toggle) ── */}
+        <button
+          type="button"
+          onClick={() => {
+            toggleThemeMode();
+            const nextMode = themeMode === 'dark' ? 'White' : 'Dark';
+            success(`Switched to ${nextMode} Mode`, `Theme appearance updated for ${currentUser?.name || 'user'}.`);
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 ${
+            themeMode === 'light'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:border-amber-400'
+              : 'bg-slate-900/80 text-slate-200 border-slate-700/80 hover:border-slate-600'
+          }`}
+          title={`Switch to ${themeMode === 'dark' ? 'White (Light)' : 'Dark'} Mode`}
+          aria-label={`Switch to ${themeMode === 'dark' ? 'White (Light)' : 'Dark'} Mode`}
+        >
+          {themeMode === 'dark' ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-400 animate-pulse" />
+              <span className="hidden sm:inline">White Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Dark Mode</span>
+            </>
+          )}
+        </button>
+
         {/* Notifications Bell */}
         <div className="relative">
           <button
@@ -263,6 +485,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               setShowNotifications(!showNotifications);
               setShowProfileMenu(false);
               setShowNewMenu(false);
+              setShowThemeMenu(false);
             }}
             className="relative p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-colors"
             aria-label="View notifications"
@@ -317,6 +540,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               setShowProfileMenu(!showProfileMenu);
               setShowNotifications(false);
               setShowNewMenu(false);
+              setShowThemeMenu(false);
             }}
             className="flex items-center gap-2.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all text-left"
           >
@@ -514,6 +738,73 @@ export const Topbar: React.FC<TopbarProps> = ({
                 placeholder="Enter new password (min. 8 characters)"
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
               />
+            </div>
+
+            {/* Workspace Theme Preference */}
+            <div className="pt-3 border-t border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Theme & Visual Atmosphere
+                </label>
+                <button
+                  type="button"
+                  onClick={toggleThemeMode}
+                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                >
+                  {themeMode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-cyan-400" />}
+                  <span>{themeMode === 'dark' ? 'Switch to White Mode' : 'Switch to Dark Mode'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setThemeStyle('default')}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-medium cursor-pointer transition-all ${
+                    themeStyle === 'default'
+                      ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300 shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-slate-100 flex items-center gap-1">
+                    <span>Default</span>
+                    {themeStyle === 'default' && <Check className="w-3 h-3 text-cyan-400" />}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Industrial</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setThemeStyle('glass')}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-medium cursor-pointer transition-all ${
+                    themeStyle === 'glass'
+                      ? 'bg-purple-950/40 border-purple-500 text-purple-300 shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-slate-100 flex items-center gap-1">
+                    <span>Glass</span>
+                    {themeStyle === 'glass' && <Check className="w-3 h-3 text-purple-400" />}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Low Eye Effort</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setThemeStyle('clean')}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-medium cursor-pointer transition-all ${
+                    themeStyle === 'clean'
+                      ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300 shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-slate-100 flex items-center gap-1">
+                    <span>Clean</span>
+                    {themeStyle === 'clean' && <Check className="w-3 h-3 text-emerald-400" />}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Eye Efficient</div>
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">

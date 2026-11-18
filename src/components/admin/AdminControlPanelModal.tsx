@@ -455,12 +455,12 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-[#0b101b] border border-amber-500/30 rounded-2xl w-full max-w-6xl h-[92vh] max-h-[880px] shadow-2xl flex flex-col overflow-hidden relative shadow-amber-950/20 m-auto"
+        className="bg-slate-950 border border-amber-500/30 rounded-2xl w-full max-w-6xl h-[92vh] max-h-[880px] shadow-2xl flex flex-col overflow-hidden relative shadow-amber-950/20 m-auto"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Top Header Bar */}
-        <header className="px-5 py-4 border-b border-slate-800/90 bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-[#0b101b] flex items-center justify-between shrink-0">
+        <header className="px-5 py-4 border-b border-slate-800/90 bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-slate-950 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-0.5 shadow-lg shadow-amber-950/50">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-amber-400 font-bold text-lg">
@@ -599,7 +599,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
         </div>
 
         {/* Modal Main Body */}
-        <main className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 bg-[#0b101b]/70">
+        <main className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 bg-slate-950/70">
           {!isSuperAdmin ? (
             <div className="p-8 rounded-2xl bg-rose-950/20 border border-rose-800/40 text-center space-y-3 my-auto">
               <div className="w-12 h-12 rounded-2xl bg-rose-950 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto">

@@ -175,6 +175,14 @@ export interface PermissionMatrix {
   canDeleteRFQ: boolean;
 }
 
+export type ThemeStyle = 'default' | 'glass' | 'clean';
+export type ThemeMode = 'dark' | 'light';
+
+export interface UserThemeConfig {
+  style: ThemeStyle;
+  mode: ThemeMode;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -187,6 +195,7 @@ export interface UserProfile {
   twoFactorEnabled: boolean;
   lastLogin: string;
   customPermissions?: Partial<PermissionMatrix>;
+  theme?: UserThemeConfig;
 }
 
 export type ItemCategory =

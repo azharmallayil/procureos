@@ -10,8 +10,12 @@ import {
   CheckCircle2,
   LogIn,
   ShieldAlert,
+  Sun,
+  Moon,
+  Palette,
 } from 'lucide-react';
 import { useAuth, validatePasswordPolicy } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +76,7 @@ function PasswordStrengthMeter({ password }: { password: string }) {
 
 export const LoginPage: React.FC = () => {
   const { login, mustChangePassword, changePassword, isAuthenticated } = useAuth();
+  const { themeMode, themeStyle, toggleThemeMode, setThemeStyle } = useTheme();
 
   // ── Login form state
   const [email, setEmail] = useState('');
@@ -171,7 +176,7 @@ export const LoginPage: React.FC = () => {
   // ── Render: Force-change-password screen ─────────────────────────────────
   if (isAuthenticated && mustChangePassword) {
     return (
-      <div className="min-h-screen bg-[#090d16] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-app flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4">
@@ -298,7 +303,29 @@ export const LoginPage: React.FC = () => {
 
   // ── Render: Standard Login ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#090d16] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-app flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Top right theme controls */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <select
+          value={themeStyle}
+          onChange={(e) => setThemeStyle(e.target.value as any)}
+          className="px-2.5 py-1.5 bg-slate-900/80 border border-slate-700/80 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-sm"
+          title="Choose workspace theme"
+        >
+          <option value="default">Default Industrial</option>
+          <option value="glass">Glassmorphism</option>
+          <option value="clean">Clean & Ergonomic</option>
+        </select>
+        <button
+          type="button"
+          onClick={toggleThemeMode}
+          className="p-2 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-300 hover:text-white transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95"
+          title={`Switch to ${themeMode === 'dark' ? 'White' : 'Dark'} Mode`}
+        >
+          {themeMode === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-400" />}
+        </button>
+      </div>
+
       {/* Background glow effects */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-900/10 rounded-full blur-3xl" />

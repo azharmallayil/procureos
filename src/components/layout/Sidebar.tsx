@@ -156,12 +156,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-[#0b1120] border-r border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-sidebar border-r border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
           isCollapsed ? 'w-20' : 'w-64'
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800/90 bg-[#090d16]">
+        <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800/90 bg-topbar">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-11 h-11 rounded-xl bg-slate-900/90 border border-emerald-500/30 p-1.5 flex items-center justify-center shadow-lg shadow-emerald-950/40 shrink-0">
               <img
