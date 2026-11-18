@@ -91,45 +91,61 @@
 }
 
 /* ── 2. GLASSMORPHISM THEME: DARK ── */
-/* Translucent frosted panels, ambient mesh depth, gentle glow, ultra-low eye strain */
+/* Apple macOS Sonoma vibrancy: luminous frosted depth, spectral noise, ambient orbs */
 [data-theme-style="glass"][data-theme-mode="dark"],
 .theme-glass.dark {
-  --bg-app: radial-gradient(ellipse at 15% 10%, rgba(30, 58, 138, 0.32) 0%, transparent 60%),
-            radial-gradient(ellipse at 85% 90%, rgba(14, 116, 144, 0.25) 0%, transparent 55%),
-            #050811;
-  --bg-sidebar: rgba(10, 15, 28, 0.72);
-  --bg-topbar: rgba(10, 15, 28, 0.7);
-  --bg-card: rgba(15, 23, 42, 0.55);
-  --bg-card-subtle: rgba(15, 23, 42, 0.4);
-  --bg-input: rgba(10, 15, 28, 0.6);
+  --bg-app: #09090f;
+  --bg-sidebar: rgba(18, 20, 32, 0.78);
+  --bg-topbar: rgba(14, 16, 26, 0.72);
+  --bg-card: rgba(26, 28, 42, 0.62);
+  --bg-card-subtle: rgba(20, 22, 36, 0.50);
+  --bg-input: rgba(22, 24, 38, 0.70);
   --border-color: rgba(255, 255, 255, 0.09);
   --border-subtle: rgba(255, 255, 255, 0.05);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --glass-bg: rgba(15, 23, 42, 0.55);
-  --glass-blur: 16px;
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f4f6fb;
+  --text-muted: #8fa3c0;
+  /* Glass tokens */
+  --glass-bg: rgba(24, 26, 40, 0.65);
+  --glass-blur: 32px;
+  --glass-saturate: 190%;
+  --glass-brightness: 1.04;
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-highlight: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.50), 0 2px 8px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --glass-shadow-hover: 0 16px 56px rgba(0, 0, 0, 0.60), 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  /* Ambient orb colors */
+  --orb-1: rgba(56, 100, 220, 0.22);
+  --orb-2: rgba(14, 165, 200, 0.16);
+  --orb-3: rgba(130, 60, 220, 0.14);
 }
 
 /* ── 2. GLASSMORPHISM THEME: LIGHT (WHITE) ── */
-/* Luminous frosted glass, airy ambient depth, soft diffused shadows */
+/* Apple iOS/iPadOS frosted glass: milky luminous panels, airy ambient depth */
 [data-theme-style="glass"][data-theme-mode="light"],
 .theme-glass.light {
-  --bg-app: radial-gradient(ellipse at 15% 10%, rgba(219, 234, 254, 0.85) 0%, transparent 60%),
-            radial-gradient(ellipse at 85% 90%, rgba(207, 250, 254, 0.85) 0%, transparent 60%),
-            #f8fafc;
-  --bg-sidebar: rgba(255, 255, 255, 0.75);
-  --bg-topbar: rgba(255, 255, 255, 0.75);
-  --bg-card: rgba(255, 255, 255, 0.72);
-  --bg-card-subtle: rgba(248, 250, 252, 0.75);
-  --bg-input: rgba(255, 255, 255, 0.85);
-  --border-color: rgba(255, 255, 255, 0.85);
-  --border-subtle: rgba(226, 232, 240, 0.8);
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-blur: 16px;
-  --glass-border: rgba(255, 255, 255, 0.85);
+  --bg-app: #eef1f8;
+  --bg-sidebar: rgba(255, 255, 255, 0.72);
+  --bg-topbar: rgba(255, 255, 255, 0.70);
+  --bg-card: rgba(255, 255, 255, 0.70);
+  --bg-card-subtle: rgba(248, 250, 255, 0.75);
+  --bg-input: rgba(255, 255, 255, 0.90);
+  --border-color: rgba(200, 210, 230, 0.70);
+  --border-subtle: rgba(220, 228, 244, 0.65);
+  --text-main: #0d1526;
+  --text-muted: #5a6a84;
+  /* Glass tokens */
+  --glass-bg: rgba(255, 255, 255, 0.68);
+  --glass-blur: 36px;
+  --glass-saturate: 160%;
+  --glass-brightness: 1.02;
+  --glass-border: rgba(255, 255, 255, 0.90);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 8px 40px rgba(60, 80, 140, 0.10), 0 2px 8px rgba(60, 80, 140, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-shadow-hover: 0 16px 56px rgba(60, 80, 140, 0.16), 0 4px 16px rgba(60, 80, 140, 0.10), inset 0 1px 0 rgba(255, 255, 255, 1.0);
+  /* Ambient orb colors */
+  --orb-1: rgba(100, 150, 240, 0.25);
+  --orb-2: rgba(60, 200, 220, 0.20);
+  --orb-3: rgba(180, 120, 240, 0.16);
 }
 
 /* ── 3. CLEAN THEME: DARK ── */
@@ -265,30 +281,216 @@
    THEME STYLES SPECIFIC OVERRIDES
    ========================================================================== */
 
-/* Glassmorphism theme specific effects */
+/* ============================================================
+   APPLE-QUALITY GLASSMORPHISM VIBRANCY SYSTEM
+   Animated ambient mesh + specular highlight + noise grain
+   ============================================================ */
+
+/* ── Animated Ambient Mesh Background ── */
+/* Three softly drifting orbs behind all content, pure CSS */
+[data-theme-style="glass"] #root::before,
+[data-theme-style="glass"] #root::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+[data-theme-style="glass"] #root::before {
+  width: 72vw;
+  height: 72vw;
+  max-width: 900px;
+  max-height: 900px;
+  top: -20%;
+  left: -18%;
+  background: radial-gradient(ellipse, var(--orb-1) 0%, transparent 72%);
+  filter: blur(60px);
+  animation: glass-orb-drift-a 28s ease-in-out infinite alternate;
+}
+
+[data-theme-style="glass"] #root::after {
+  width: 60vw;
+  height: 60vw;
+  max-width: 760px;
+  max-height: 760px;
+  bottom: -18%;
+  right: -14%;
+  background: radial-gradient(ellipse, var(--orb-2) 0%, transparent 68%);
+  filter: blur(70px);
+  animation: glass-orb-drift-b 34s ease-in-out infinite alternate;
+}
+
+/* Third orb via body pseudo */
+[data-theme-style="glass"] body::before {
+  content: '';
+  position: fixed;
+  width: 50vw;
+  height: 50vw;
+  max-width: 640px;
+  max-height: 640px;
+  top: 30%;
+  left: 40%;
+  background: radial-gradient(ellipse, var(--orb-3) 0%, transparent 65%);
+  filter: blur(80px);
+  animation: glass-orb-drift-c 40s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+@keyframes glass-orb-drift-a {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(6vw, 4vh) scale(1.08); }
+  66%  { transform: translate(-3vw, 8vh) scale(0.96); }
+  100% { transform: translate(4vw, -5vh) scale(1.04); }
+}
+@keyframes glass-orb-drift-b {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-5vw, -6vh) scale(1.06); }
+  66%  { transform: translate(4vw, -3vh) scale(0.94); }
+  100% { transform: translate(-3vw, 7vh) scale(1.08); }
+}
+@keyframes glass-orb-drift-c {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-8vw, 5vh) scale(1.10); }
+  100% { transform: translate(6vw, -6vh) scale(0.92); }
+}
+
+/* Reduced motion: freeze orbs */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme-style="glass"] #root::before,
+  [data-theme-style="glass"] #root::after,
+  [data-theme-style="glass"] body::before {
+    animation: none !important;
+  }
+}
+
+/* ── Sidebar & Topbar: Apple-quality vibrancy ── */
 [data-theme-style="glass"] aside {
   background: var(--bg-sidebar) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  border-right: 1px solid var(--glass-border) !important;
+  position: relative;
+  z-index: 10;
 }
+
 [data-theme-style="glass"] header {
   background: var(--bg-topbar) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  position: relative;
+  z-index: 10;
 }
+
+/* Sidebar specular top-edge shimmer */
+[data-theme-style="glass"] aside::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--glass-highlight) 0%, transparent 12%);
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Topbar specular shimmer */
+[data-theme-style="glass"] header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--glass-highlight) 0%, transparent 24%);
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* ── Glass Panel: Apple Vibrancy Core ── */
 [data-theme-style="glass"] .glass-panel {
   background: var(--glass-bg) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-color: var(--glass-border) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s ease !important;
 }
+
+/* Apple-style specular top-edge highlight (the key vibrancy effect) */
+[data-theme-style="glass"] .glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    var(--glass-highlight) 0%,
+    rgba(255, 255, 255, 0.015) 60%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Noise grain texture overlay (simulates Apple vibrancy material) */
+[data-theme-style="glass"] .glass-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* SVG feTurbulence noise grain at ~3% opacity */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: overlay;
+}
+
+/* Glass panel children must sit above pseudo-elements */
+[data-theme-style="glass"] .glass-panel > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Hover: elevated depth shadow */
+[data-theme-style="glass"] .glass-panel-hover:hover {
+  box-shadow: var(--glass-shadow-hover) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+/* Dark mode specific enhancements */
 [data-theme-style="glass"][data-theme-mode="dark"] .glass-panel {
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--glass-shadow) !important;
 }
+
+/* Light mode specific enhancements */
 [data-theme-style="glass"][data-theme-mode="light"] .glass-panel {
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--glass-shadow) !important;
+}
+
+/* ── Scrollbar: frosted glass style ── */
+[data-theme-style="glass"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-theme-style="glass"][data-theme-mode="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 9999px;
+}
+[data-theme-style="glass"][data-theme-mode="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(100, 120, 180, 0.18);
+  border-radius: 9999px;
+}
+[data-theme-style="glass"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.30);
 }
 
 /* Clean theme specific effects (zero blur, zero heavy shadow) */
@@ -324,6 +526,22 @@
   background: var(--bg-topbar) !important;
 }
 
+/* Glass theme: main layout sits above ambient orbs */
+[data-theme-style="glass"] .bg-app {
+  position: relative;
+  z-index: 1;
+  /* Transparent so orbs behind #root are visible */
+  background: transparent !important;
+}
+
+/* Glass dark background color on html/body itself */
+[data-theme-style="glass"][data-theme-mode="dark"] body {
+  background: #09090f !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] body {
+  background: #eef1f8 !important;
+}
+
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
@@ -332,11 +550,10 @@
 }
 
 .glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-panel-hover:hover {
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.08), 0 8px 10px -6px rgba(6, 182, 212, 0.04);
+  border-color: rgba(6, 182, 212, 0.38) !important;
 }
 
 .glow-cyan {
