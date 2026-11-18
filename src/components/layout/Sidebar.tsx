@@ -251,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Footer Role Indicator & Simulation Status */}
-        <div className="p-3 border-t border-slate-800/90 bg-[#090d16]">
+        <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-sidebar)]">
           {!isCollapsed ? (
             <div className="space-y-2">
               {isSimulatingRole && (
@@ -274,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </p>
                 </div>
               )}
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
                     isSimulatingRole

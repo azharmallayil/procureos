@@ -34,11 +34,11 @@ export const Button: React.FC<ButtonProps> = ({
     primary:
       'bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 text-white hover:from-cyan-500 hover:to-emerald-500 shadow-lg shadow-cyan-950/40 border border-cyan-400/30',
     secondary:
-      'bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700/80 shadow-sm',
+      'bg-[var(--bg-card-subtle)] text-[var(--text-main)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm',
     outline:
-      'border border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800/60 hover:border-slate-600',
+      'border border-[var(--border-color)] bg-transparent text-[var(--text-main)] hover:bg-[var(--bg-card-subtle)] hover:border-[var(--border-subtle)]',
     ghost:
-      'bg-transparent text-slate-300 hover:bg-slate-800/60 hover:text-white',
+      'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-card-subtle)] hover:text-[var(--text-main)]',
     danger:
       'bg-rose-900/40 border border-rose-500/40 text-rose-300 hover:bg-rose-800/50 hover:text-rose-100',
   };
