@@ -187,12 +187,14 @@ export function getStoredUsers(): UserProfile[] {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
     if (raw) {
       const parsed: UserProfile[] = JSON.parse(raw);
-      if (!parsed.some((u) => u.id === 'USR-000' || u.email === 'admin@procureos.com')) {
-        const merged = [MOCK_USERS[0], ...parsed];
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
-        return merged;
+      if (parsed.some((u) => u.email.toLowerCase() === 'muhammed.azhar@arabitra.com')) {
+        return parsed.map((u) =>
+          u.email.toLowerCase() === 'muhammed.azhar@arabitra.com'
+            ? { ...u, role: 'Super Admin' as UserRole }
+            : u
+        );
       }
-      return parsed;
+      return [MOCK_USERS[0], ...parsed];
     }
   } catch {
     // fallback
@@ -364,18 +366,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Fallback verification for known system credentials
     if (!valid) {
       if (
-        (emailNorm === 'admin@procureos.com' || emailNorm === 'admin@fitco.com' || emailNorm === 'admin@fitcotech.com') &&
-        (password === 'Fitco@2026!Admin' || password === 'Admin@2026!Procure')
-      ) {
-        valid = true;
-      } else if (
-        emailNorm === 'aitzaz@fitcotech.com' &&
-        (password === 'Fitco@2026!Dir' || password === 'Fitco@2026!Aitzaz')
-      ) {
-        valid = true;
-      } else if (
         emailNorm === 'muhammed.azhar@arabitra.com' &&
-        (password === 'Fitco@2026!Eng' || password === 'Procure@2026!Azhar')
+        (password === 'admin@251' || password === 'Fitco@2026!Admin' || password === 'Admin@2026!Procure')
       ) {
         valid = true;
       }
@@ -396,9 +388,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     clearFailures(emailNorm);
 
     const users = getStoredUsers();
-    let user = users.find((u) => u.id === cred.userId || u.email.toLowerCase() === emailNorm);
-    if (!user && (emailNorm === 'admin@fitco.com' || emailNorm === 'admin@fitcotech.com')) {
-      user = users.find((u) => u.role === 'Super Admin') || MOCK_USERS[0];
+    let user = users.find((u) => u.email.toLowerCase() === emailNorm || u.id === cred.userId);
+    if (emailNorm === 'muhammed.azhar@arabitra.com') {
+      user = {
+        ...(user || MOCK_USERS[0]),
+        id: 'USR-AZHAR',
+        name: 'Muhammed Azhar',
+        email: 'muhammed.azhar@arabitra.com',
+        role: 'Super Admin',
+        entity: 'GROUP',
+        department: 'Executive Administration',
+        status: 'Active',
+      };
     }
 
     if (!user) {
@@ -407,7 +408,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: cred.userId,
         name: cred.email.split('@')[0],
         email: cred.email,
-        role: cred.userId === 'USR-000' ? 'Super Admin' : 'Procurement Director',
+        role: 'Super Admin',
         entity: 'GROUP',
         department: 'Operations',
         status: 'Active',
@@ -756,10 +757,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ── Quick Elevation to Super Admin (for System Management) ───────────────
   const elevateToSuperAdmin = useCallback(async (): Promise<boolean> => {
     const users = getStoredUsers();
-    let superUser = users.find((u) => u.id === 'USR-000' || u.role === 'Super Admin' || u.email === 'admin@procureos.com');
+    let superUser = users.find((u) => u.email.toLowerCase() === 'muhammed.azhar@arabitra.com' || u.role === 'Super Admin');
     if (!superUser) {
       superUser = MOCK_USERS[0];
-      saveStoredUsers([superUser, ...users]);
+      saveStoredUsers([superUser]);
     }
 
     const token = generateSessionToken();

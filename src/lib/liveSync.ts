@@ -504,16 +504,32 @@ export async function initializeCleanProductionSlate(
     // 3. Clear all stored quote PDF documents from IndexedDB
     await clearAllStoredPdfDocuments();
 
-    // 4. Update system version
-    localStorage.setItem('procureos_db_version', '2026.11.03.prod_clean');
+    // 4. Reset user list to sole Super Admin: Muhammed Azhar
+    localStorage.setItem('procureos_users', JSON.stringify([
+      {
+        id: 'USR-AZHAR',
+        name: 'Muhammed Azhar',
+        email: 'muhammed.azhar@arabitra.com',
+        role: 'Super Admin',
+        entity: 'GROUP',
+        department: 'Executive Administration',
+        status: 'Active',
+        twoFactorEnabled: true,
+        lastLogin: 'Just now',
+      }
+    ]));
 
-    // 5. Record system audit event
+    // 5. Update system version
+    localStorage.setItem('procureos_db_version', '2026.11.18.prod_pure');
+    localStorage.setItem('procureos_environment', 'production');
+
+    // 6. Record system audit event
     recordAuditLog(
       'Clean Production Slate Initialized',
       'System',
       'PROD-INIT',
-      'All demo data, test RFQs, mock quotations, POs, and quote PDFs purged. Database ready for live corporate master data onboarding.',
-      { name: adminUser?.name || 'Super Admin', role: adminUser?.role || 'Super Admin' }
+      'All demo data, test RFQs, mock quotations, POs, and quote PDFs purged. Sole Super Admin: Muhammed Azhar.',
+      { name: 'Muhammed Azhar', role: 'Super Admin' }
     );
 
     // 6. Broadcast across all tabs and cloud channels

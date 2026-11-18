@@ -75,7 +75,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.18.production_live';
+    const PROD_LIVE_VER = '2026.11.18.prod_pure';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -100,20 +100,35 @@ const MainApplication: React.FC = () => {
       setVendors([]);
       localStorage.setItem('procureos_vendors', JSON.stringify([]));
 
-      // 3. Clear all stored quote PDFs in IndexedDB
+      // 3. Reset users & credentials to sole Super Admin: Muhammed Azhar
+      localStorage.setItem('procureos_users', JSON.stringify([
+        {
+          id: 'USR-AZHAR',
+          name: 'Muhammed Azhar',
+          email: 'muhammed.azhar@arabitra.com',
+          role: 'Super Admin',
+          entity: 'GROUP',
+          department: 'Executive Administration',
+          status: 'Active',
+          twoFactorEnabled: true,
+          lastLogin: 'Just now',
+        }
+      ]));
+
+      // 4. Clear all stored quote PDFs in IndexedDB
       clearAllStoredPdfDocuments().catch(() => {});
 
-      // 4. Mark environment and production version
+      // 5. Mark environment and production version
       localStorage.setItem('procureos_db_version', PROD_LIVE_VER);
       localStorage.setItem('procureos_environment', 'production');
 
-      // 5. Immutable audit entry
+      // 6. Immutable audit entry
       recordAuditLog(
         'Production Live Stage Initialized',
         'System',
         'PROD-CUTOVER',
-        'System transitioned to active live office production. All demonstration transactions purged. Database ready for company operations.',
-        { name: currentUser?.name || 'Super Admin', role: activeRole || 'Super Admin' }
+        'System transitioned to active live office production. Sole Super Admin: Muhammed Azhar (muhammed.azhar@arabitra.com).',
+        { name: 'Muhammed Azhar', role: 'Super Admin' }
       );
     }
   }, []);
