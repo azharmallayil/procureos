@@ -166,27 +166,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800/90 bg-topbar">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-11 h-11 rounded-xl bg-slate-900/90 border border-amber-500/30 p-1.5 flex items-center justify-center shadow-lg shadow-amber-950/40 shrink-0">
-              <img
-                src="/arabitra-icon.png"
-                alt="Arabitra Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            {!isCollapsed && (
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-base tracking-tight text-amber-200">
-                    Arabitra
-                  </span>
-                  <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                    ProcureOS
-                  </span>
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            {!isCollapsed ? (
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-10 px-2 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-sm shrink-0">
+                  <img
+                    src="/arabitra-logo.png"
+                    alt="Arabitra"
+                    className="h-7 w-auto object-contain"
+                  />
                 </div>
-                <p className="text-[11px] font-semibold text-emerald-400/90 truncate tracking-wide">
-                  Powered by Fitco
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 tracking-wider">
+                      ProcureOS
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400/90 truncate tracking-wide mt-0.5">
+                    Powered by Fitco
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 p-1.5 flex items-center justify-center shadow-sm shrink-0 mx-auto">
+                <img
+                  src="/arabitra-icon.png"
+                  alt="Arabitra Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
             )}
           </div>

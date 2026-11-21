@@ -350,7 +350,7 @@ export const LoginPage: React.FC = () => {
               Enterprise
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">Fleet & Industrial Procurement Operations • Powered by Fitco</p>
+          <p className="text-xs text-slate-400 mt-1">Fleet & Telematics Procurement Operations • Powered by Fitco</p>
         </div>
 
         {/* Login Card */}

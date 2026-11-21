@@ -541,9 +541,30 @@
   color: var(--text-main) !important;
 }
 
-/* ── Sidebar logo container ── */
-[data-theme-mode="light"] .shadow-emerald-950\/40 {
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12) !important;
+/* ── Sidebar logo container & Brand Header ── */
+[data-theme-mode="light"] .shadow-emerald-950\/40,
+[data-theme-mode="light"] .shadow-amber-950\/40,
+[data-theme-mode="light"] .shadow-amber-950\/30 {
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.12) !important;
+}
+
+/* ── Enterprise Footer light mode ── */
+[data-theme-mode="light"] footer {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+[data-theme-mode="light"] footer span {
+  color: var(--text-muted) !important;
+}
+[data-theme-mode="light"] footer .text-slate-200 {
+  color: var(--text-main) !important;
+}
+[data-theme-mode="light"] footer .text-emerald-400 {
+  color: #059669 !important;
+}
+[data-theme-mode="light"] footer .text-cyan-400 {
+  color: #0284c7 !important;
 }
 
 /* ── Empty state / loading state text ── */

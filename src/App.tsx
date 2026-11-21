@@ -1129,7 +1129,7 @@ const MainApplication: React.FC = () => {
           </main>
 
           {/* Enterprise Footer */}
-          <footer className="border-t border-slate-800/80 bg-[#090d16] px-6 py-4 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <footer className="border-t border-slate-800/80 bg-slate-950/70 px-6 py-4 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 transition-colors">
             <div className="flex items-center gap-2.5">
               <img
                 src="/arabitra-icon.png"

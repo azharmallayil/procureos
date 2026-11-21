@@ -40,9 +40,9 @@ const ERP_CONFIG_KEY = 'procureos_erp_config';
 export const DEFAULT_ERP_CONFIG: ErpConfig = {
   systemType: 'SAP_S4HANA',
   enabled: false,
-  apiBaseUrl: 'https://erp.fitcogroup.com/api/v1',
-  poWebhookUrl: 'https://erp.fitcogroup.com/api/v1/procurement/purchase-orders',
-  invoiceWebhookUrl: 'https://erp.fitcogroup.com/api/v1/finance/ap-invoices',
+  apiBaseUrl: 'https://erp.arabitra.com/api/v1',
+  poWebhookUrl: 'https://erp.arabitra.com/api/v1/procurement/purchase-orders',
+  invoiceWebhookUrl: 'https://erp.arabitra.com/api/v1/finance/ap-invoices',
   authType: 'BEARER_TOKEN',
   apiSecret: 'procureos_live_secret_token_2026',
   fitcoCompanyCode: '1000',

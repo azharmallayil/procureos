@@ -1220,7 +1220,7 @@ export const AdminControlPanelModal: React.FC<AdminControlPanelModalProps> = ({
                           type="text"
                           value={erpConfig.apiBaseUrl}
                           onChange={(e) => setErpConfig({ ...erpConfig, apiBaseUrl: e.target.value })}
-                          placeholder="https://erp.fitcogroup.com/api/v1"
+                          placeholder="https://erp.arabitra.com/api/v1"
                           className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
                         />
                       </div>
