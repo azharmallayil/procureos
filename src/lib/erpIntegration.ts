@@ -316,12 +316,14 @@ export function downloadErpInvoiceBatchCsv(payments: PaymentMilestone[]): void {
 // ── 5. Master Data Starter Templates (Items & Vendors) ───────────────────────
 
 export function downloadMasterDataStarterTemplates(): void {
-  // 1. Items Template CSV
+  // 1. Items Template CSV (Telematics Catalog Format)
   const itemsCsv = [
     'SKU,Name,Category,Description,UnitOfMeasure,StandardCostSAR,ReorderPoint,MinimumStock',
-    'SAMPLE-SKU-001,High Accuracy GPS Sensor,Hardware,Industrial grade multi-constellation GNSS sensor,Units,450.00,50,20',
-    'SAMPLE-SKU-002,CAN-Bus OBD Harness,Cables,Shielded multi-vehicle communication cable harness,Meters,35.00,200,50',
-    'SAMPLE-SKU-003,Solar Telematics Battery,Power,Rechargeable LiFePO4 battery pack for remote asset tracking,Units,180.00,100,30',
+    'ARB-GPS-FMC920,Teltonika FMC920,GPS Trackers & Asset Gateways,compact 4G LTE Cat 1 GPS tracker with 2G fallback and Bluetooth,Units,92.00,300,100',
+    'ARB-CAN-FMB140-ALL,Teltonika FMB140 All Can,CAN Bus & Vehicle Interfaces,compact 2G GPS vehicle tracker with built-in CAN processor,Units,624.00,50,20',
+    'ARB-CAM-ME40-02,Howen Hero-ME40-02,Video Telematics & AI Dashcams,commercial vehicle AI dashcam for driver safety & video surveillance,Units,990.00,25,10',
+    'ARB-SNS-FUEL-1000,Mielta Fantom BLE Fuel Level Sensor 1000mm,Sensors,Probes & IoT Monitoring,wireless capacitive fuel level sensor 1000mm,Units,355.00,30,10',
+    'ARB-SFT-PWAS-ML214,PWAS (BST ML214),Driver Safety & Alarm Systems,Pedestrian Warning and Alarm System for heavy industrial equipment,Units,950.00,15,5',
   ].join('\n');
 
   const itemsBlob = new Blob([itemsCsv], { type: 'text/csv;charset=utf-8;' });

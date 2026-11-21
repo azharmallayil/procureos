@@ -53,7 +53,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
     name: '',
     crNumber: '',
     vatNumber: '',
-    category: 'Mechanical & Piping' as ItemCategory,
+    category: 'GPS Trackers & Asset Gateways' as ItemCategory,
     tier: 'Tier 1' as 'Tier 1' | 'Tier 2' | 'Tier 3',
     entityScope: 'Arabitra Approved' as 'Arabitra Approved' | 'Joint / Group' | 'FITCO Approved',
     contactPerson: '',
@@ -61,6 +61,8 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
     contactPhone: '',
     city: 'Riyadh',
   });
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   const pendingCount = vendors.filter(
     (v) => matchesCompany(v.entityScope) && (v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval')
@@ -78,13 +80,14 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
       vendorTab === 'ALL' ||
       (vendorTab === 'APPROVED' && isApproved) ||
       (vendorTab === 'PENDING' && isPending);
+    const matchesCategory = selectedCategory === 'ALL' || v.category === selectedCategory;
     const matchesQuery =
       v.name.toLowerCase().includes(search.toLowerCase()) ||
       v.crNumber.includes(search) ||
       v.vatNumber.includes(search) ||
       v.city.toLowerCase().includes(search.toLowerCase()) ||
       v.category.toLowerCase().includes(search.toLowerCase());
-    return matchesScope && matchesTab && matchesQuery;
+    return matchesScope && matchesTab && matchesCategory && matchesQuery;
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -128,7 +131,7 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
       name: '',
       crNumber: '',
       vatNumber: '',
-      category: 'Mechanical & Piping',
+      category: 'GPS Trackers & Asset Gateways',
       tier: 'Tier 1',
       entityScope: 'Arabitra Approved',
       contactPerson: '',
@@ -231,12 +234,32 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search by vendor name, CR number, VAT ID or city..."
-            className="w-full sm:w-96"
-          />
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search by vendor name, CR number, VAT ID or city..."
+              className="w-full sm:w-80"
+            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full sm:w-auto px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500"
+            >
+              <option value="ALL">All Categories</option>
+              <option value="GPS Trackers & Asset Gateways">GPS Trackers & Asset Gateways</option>
+              <option value="Video Telematics & AI Dashcams">Video Telematics & AI Dashcams</option>
+              <option value="CAN Bus & Vehicle Interfaces">CAN Bus & Vehicle Interfaces</option>
+              <option value="Sensors, Probes & IoT Monitoring">Sensors, Probes & IoT Monitoring</option>
+              <option value="Driver Safety & Alarm Systems">Driver Safety & Alarm Systems</option>
+              <option value="Driver Identification & RFID">Driver Identification & RFID</option>
+              <option value="Industrial Routers & Switches">Industrial Routers & Switches</option>
+              <option value="In-Vehicle Displays & Infotainment">In-Vehicle Displays & Infotainment</option>
+              <option value="Satellite IoT & Connectivity">Satellite IoT & Connectivity</option>
+              <option value="Cables, Wiring & Mounting Hardware">Cables, Wiring & Mounting Hardware</option>
+              <option value="Cloud Subscriptions & Software">Cloud Subscriptions & Software</option>
+            </select>
+          </div>
           <div className="text-xs text-slate-400">
             Showing <span className="font-semibold text-slate-200">{filteredVendors.length}</span> suppliers
           </div>
@@ -508,7 +531,27 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Primary Category</label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value as ItemCategory })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+              >
+                <option value="GPS Trackers & Asset Gateways">GPS Trackers & Asset Gateways</option>
+                <option value="Video Telematics & AI Dashcams">Video Telematics & AI Dashcams</option>
+                <option value="CAN Bus & Vehicle Interfaces">CAN Bus & Vehicle Interfaces</option>
+                <option value="Sensors, Probes & IoT Monitoring">Sensors, Probes & IoT Monitoring</option>
+                <option value="Driver Safety & Alarm Systems">Driver Safety & Alarm Systems</option>
+                <option value="Driver Identification & RFID">Driver Identification & RFID</option>
+                <option value="Industrial Routers & Switches">Industrial Routers & Switches</option>
+                <option value="In-Vehicle Displays & Infotainment">In-Vehicle Displays & Infotainment</option>
+                <option value="Satellite IoT & Connectivity">Satellite IoT & Connectivity</option>
+                <option value="Cables, Wiring & Mounting Hardware">Cables, Wiring & Mounting Hardware</option>
+                <option value="Cloud Subscriptions & Software">Cloud Subscriptions & Software</option>
+              </select>
+            </div>
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">Entity Scope</label>
               <select

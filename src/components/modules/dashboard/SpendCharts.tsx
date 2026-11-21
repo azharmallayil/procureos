@@ -79,10 +79,11 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
     const entries = Object.entries(categoryTotals);
     if (entries.length === 0) {
       return [
-        { name: 'Direct Materials & Equipment', value: 0, color: '#06b6d4' },
-        { name: 'Electrical & Instrumentation', value: 0, color: '#10b981' },
-        { name: 'Mechanical & Piping', value: 0, color: '#3b82f6' },
-        { name: 'Site Services & Consumables', value: 0, color: '#f59e0b' },
+        { name: 'GPS Trackers & Asset Gateways', value: 0, color: '#06b6d4' },
+        { name: 'Video Telematics & AI Dashcams', value: 0, color: '#10b981' },
+        { name: 'CAN Bus & Vehicle Interfaces', value: 0, color: '#3b82f6' },
+        { name: 'Sensors, Probes & IoT Monitoring', value: 0, color: '#f59e0b' },
+        { name: 'Driver Safety & Alarm Systems', value: 0, color: '#ef4444' },
       ];
     }
 

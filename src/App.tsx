@@ -82,8 +82,8 @@ const MainApplication: React.FC = () => {
   >(null);
 
   // ── Persisted application state (Clean Production Defaults) ─────────────
-  const [items, setItems] = useLocalStorage<Item[]>('procureos_items', []);
-  const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', []);
+  const [items, setItems] = useLocalStorage<Item[]>('procureos_items', MOCK_ITEMS);
+  const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', MOCK_VENDORS);
   const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', []);
   const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', []);
   const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', []);
@@ -96,7 +96,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.18.admin_console';
+    const PROD_LIVE_VER = '2026.11.21.telematics_master_data';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -115,11 +115,11 @@ const MainApplication: React.FC = () => {
       setAssets([]);
       localStorage.setItem('procureos_assets', JSON.stringify([]));
 
-      // 2. Clear demo items & vendors to clean production slate
-      setItems([]);
-      localStorage.setItem('procureos_items', JSON.stringify([]));
-      setVendors([]);
-      localStorage.setItem('procureos_vendors', JSON.stringify([]));
+      // 2. Initialize official telematics items & verified vendors from starter templates
+      setItems(MOCK_ITEMS);
+      localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
+      setVendors(MOCK_VENDORS);
+      localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
 
       // 3. Reset users & credentials to Super Admins
       localStorage.setItem('procureos_users', JSON.stringify(MOCK_USERS));
@@ -133,10 +133,10 @@ const MainApplication: React.FC = () => {
 
       // 6. Immutable audit entry
       recordAuditLog(
-        'Admin Console Initialized',
+        'Telematics Master Data Seeded',
         'System',
-        'ADMIN-SETUP',
-        'System administrative module activated for admin@procureos.com and muhammed.azhar@arabitra.com.',
+        'TELEMATICS-CATALOG',
+        'Seeded 63 official telematics items and 8 verified suppliers from starter templates.',
         { name: 'System Admin', role: 'Super Admin' }
       );
     }

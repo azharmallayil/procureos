@@ -428,12 +428,17 @@ export interface UserProfile {
 }
 
 export type ItemCategory =
-  | 'Heavy Equipment & Spares'
-  | 'Mechanical & Piping'
-  | 'Electrical & Instrumentation'
-  | 'Civil & Structural'
-  | 'Safety & PPE'
-  | 'IT & Automation';
+  | 'GPS Trackers & Asset Gateways'
+  | 'Video Telematics & AI Dashcams'
+  | 'CAN Bus & Vehicle Interfaces'
+  | 'Sensors, Probes & IoT Monitoring'
+  | 'Driver Safety & Alarm Systems'
+  | 'Driver Identification & RFID'
+  | 'Industrial Routers & Switches'
+  | 'In-Vehicle Displays & Infotainment'
+  | 'Satellite IoT & Connectivity'
+  | 'Cables, Wiring & Mounting Hardware'
+  | 'Cloud Subscriptions & Software';
 
 export interface Item {
   id: string;

@@ -43,7 +43,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     sku: '',
     name: '',
     description: '',
-    category: 'Mechanical & Piping' as ItemCategory,
+    category: 'GPS Trackers & Asset Gateways' as ItemCategory,
     uom: 'EA',
     unitPriceSAR: '',
     stockLevel: '',
@@ -54,12 +54,17 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
 
   const categories = [
     'ALL',
-    'Heavy Equipment & Spares',
-    'Mechanical & Piping',
-    'Electrical & Instrumentation',
-    'Civil & Structural',
-    'Safety & PPE',
-    'IT & Automation',
+    'GPS Trackers & Asset Gateways',
+    'Video Telematics & AI Dashcams',
+    'CAN Bus & Vehicle Interfaces',
+    'Sensors, Probes & IoT Monitoring',
+    'Driver Safety & Alarm Systems',
+    'Driver Identification & RFID',
+    'Industrial Routers & Switches',
+    'In-Vehicle Displays & Infotainment',
+    'Satellite IoT & Connectivity',
+    'Cables, Wiring & Mounting Hardware',
+    'Cloud Subscriptions & Software',
   ];
 
   const pendingCount = items.filter(
@@ -126,7 +131,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       sku: '',
       name: '',
       description: '',
-      category: 'Mechanical & Piping',
+      category: 'GPS Trackers & Asset Gateways',
       uom: 'EA',
       unitPriceSAR: '',
       stockLevel: '',

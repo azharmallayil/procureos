@@ -33,6 +33,7 @@ import {
   QuotationComparisonItem,
   QuoteLineItemPrice,
   ItemMatchStatus,
+  ItemCategory,
   Vendor,
   RFQ,
 } from '../../../types/procurement';
@@ -103,7 +104,7 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
   const [showQuickAddVendor, setShowQuickAddVendor] = useState(false);
   const [newVendorForm, setNewVendorForm] = useState({
     name: '',
-    category: 'Telematics & IoT Hardware',
+    category: 'GPS Trackers & Asset Gateways' as ItemCategory,
     entityScope: 'Arabitra Approved' as 'Joint / Group' | 'FITCO Approved' | 'Arabitra Approved',
     crNumber: '',
     vatNumber: '',
