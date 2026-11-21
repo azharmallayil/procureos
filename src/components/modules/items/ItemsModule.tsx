@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { Plus, Boxes, Filter, AlertTriangle, ArrowUpDown, Download, CheckCircle2, XCircle, Clock, ShieldCheck } from 'lucide-react';
-import { Item, ItemCategory, EntityId, isHeadRole } from '../../../types/procurement';
+import {
+  Boxes,
+  Filter,
+  Plus,
+  Edit3,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShieldCheck,
+  Download,
+  Search,
+  AlertTriangle,
+  Info,
+  Check,
+  RotateCcw,
+} from 'lucide-react';
+import { Item, ItemCategory, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../common/Button';
-import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
@@ -13,43 +27,122 @@ import { EmptyState } from '../../common/EmptyState';
 interface ItemsModuleProps {
   items: Item[];
   onAddItem: (newItem: Item) => void;
+  onUpdateItem?: (updatedItem: Item) => void;
   onApproveItem?: (itemId: string) => void;
   onRejectItem?: (itemId: string, reason?: string) => void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
 
+export function getStockStatus(stockLevel: number, reorderPoint: number): {
+  color: 'red' | 'orange' | 'green';
+  label: string;
+  badgeClass: string;
+  textClass: string;
+  dotClass: string;
+  subtext: string;
+} {
+  const stock = Number(stockLevel) || 0;
+  const reorder = Number(reorderPoint) || 0;
+
+  // Red: Low stock
+  if (stock <= reorder) {
+    return {
+      color: 'red',
+      label: 'Low Stock',
+      badgeClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/40',
+      textClass: 'text-rose-600 dark:text-rose-400',
+      dotClass: 'bg-rose-500',
+      subtext: 'Reorder critical',
+    };
+  }
+
+  // Orange: Reorder buffer / Moderate stock
+  const bufferThreshold = Math.max(reorder * 1.5, reorder + 10);
+  if (stock <= bufferThreshold) {
+    return {
+      color: 'orange',
+      label: 'Reorder Buffer',
+      badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/40',
+      textClass: 'text-amber-600 dark:text-amber-400',
+      dotClass: 'bg-amber-500',
+      subtext: 'Approaching threshold',
+    };
+  }
+
+  // Green: Healthy stock
+  return {
+    color: 'green',
+    label: 'Good Stock',
+    badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
+    dotClass: 'bg-emerald-500',
+    subtext: 'Healthy inventory',
+  };
+}
+
 export const ItemsModule: React.FC<ItemsModuleProps> = ({
   items,
   onAddItem,
+  onUpdateItem,
   onApproveItem,
   onRejectItem,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
-  const { activeCompany, matchesCompany } = useCompany();
+  const { matchesCompany } = useCompany();
   const { currentUser, activeRole, permissions } = useAuth();
   const { success, warning } = useToast();
 
-  const isHead = isHeadRole(activeRole) || permissions?.canApproveItem || activeRole === 'Super Admin';
+  const isHead =
+    isHeadRole(activeRole) ||
+    permissions?.canApproveItem ||
+    activeRole === 'Super Admin' ||
+    activeRole === 'Department Head (HOD)' ||
+    activeRole === 'Managing Director / CEO' ||
+    activeRole === 'General Manager (GM)' ||
+    activeRole === 'Procurement Director';
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [approvalTab, setApprovalTab] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
-  const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
 
-  // Form State
-  const [formData, setFormData] = useState({
+  // Primary navigation tabs: 'PENDING' (Items Pending Approval) & 'APPROVED' (Approved Items)
+  const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED'>('PENDING');
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(openCreateModal);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+
+  // Edit form state
+  const [editFormData, setEditFormData] = useState<{
+    name: string;
+    sku: string;
+    category: ItemCategory;
+    uom: string;
+    description: string;
+    stockLevel: string;
+    reorderPoint: string;
+    location: string;
+  }>({
+    name: '',
+    sku: '',
+    category: 'GPS Trackers & Asset Gateways',
+    uom: 'EA',
+    description: '',
+    stockLevel: '0',
+    reorderPoint: '5',
+    location: 'Riyadh Central IoT Depot',
+  });
+
+  // Create form state
+  const [newFormData, setNewFormData] = useState({
     sku: '',
     name: '',
     description: '',
     category: 'GPS Trackers & Asset Gateways' as ItemCategory,
     uom: 'EA',
-    unitPriceSAR: '',
     stockLevel: '',
     reorderPoint: '',
-    entity: 'ARABITRA' as EntityId | 'SHARED',
-    location: '',
+    location: 'Riyadh Central IoT Depot',
   });
 
   const categories = [
@@ -67,91 +160,166 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     'Cloud Subscriptions & Software',
   ];
 
-  const pendingCount = items.filter(
+  // Counts based on approvalStatus
+  const pendingItems = items.filter(
     (i) => matchesCompany(i.entity) && (i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval')
-  ).length;
+  );
+  const approvedItems = items.filter(
+    (i) => matchesCompany(i.entity) && i.approvalStatus === 'Approved' && i.status !== 'Pending Head Approval'
+  );
 
-  const approvedCount = items.filter(
-    (i) => matchesCompany(i.entity) && i.approvalStatus !== 'Pending Head Approval' && i.status !== 'Pending Head Approval' && i.approvalStatus !== 'Rejected'
-  ).length;
+  const pendingCount = pendingItems.length;
+  const approvedCount = approvedItems.length;
 
+  // Filter items by Tab, Category, and Search
   const filteredItems = items.filter((item) => {
     const matchesScope = matchesCompany(item.entity);
-    const matchesCat = selectedCategory === 'ALL' || item.category === selectedCategory;
-    const isPending = item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
-    const isApproved = !isPending && item.approvalStatus !== 'Rejected';
-    const matchesTab =
-      approvalTab === 'ALL' ||
-      (approvalTab === 'APPROVED' && isApproved) ||
-      (approvalTab === 'PENDING' && isPending);
-    const matchesQuery =
-      item.sku.toLowerCase().includes(search.toLowerCase()) ||
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.description.toLowerCase().includes(search.toLowerCase());
-    return matchesScope && matchesCat && matchesTab && matchesQuery;
+    const isItemPending = item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
+    const isItemApproved = item.approvalStatus === 'Approved' && item.status !== 'Pending Head Approval';
+
+    // Tab filter: 'PENDING' vs 'APPROVED'
+    if (activeTab === 'PENDING' && !isItemPending) return false;
+    if (activeTab === 'APPROVED' && !isItemApproved) return false;
+
+    // Category filter
+    if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
+
+    // Search query
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchSku = item.sku.toLowerCase().includes(q);
+      const matchName = item.name.toLowerCase().includes(q);
+      const matchDesc = item.description?.toLowerCase().includes(q);
+      const matchCat = item.category?.toLowerCase().includes(q);
+      if (!matchSku && !matchName && !matchDesc && !matchCat) return false;
+    }
+
+    return matchesScope;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Open Edit Modal
+  const handleOpenEdit = (item: Item) => {
+    setEditingItem(item);
+    setEditFormData({
+      name: item.name,
+      sku: item.sku,
+      category: item.category,
+      uom: item.uom || 'EA',
+      description: item.description || '',
+      stockLevel: item.stockLevel.toString(),
+      reorderPoint: item.reorderPoint.toString(),
+      location: item.location || 'Riyadh Central IoT Depot',
+    });
+  };
+
+  // Submit Edit Form
+  const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.sku || !formData.name || !formData.unitPriceSAR) return;
+    if (!editingItem) return;
+
+    const newStock = parseInt(editFormData.stockLevel) || 0;
+    const newReorder = parseInt(editFormData.reorderPoint) || 5;
+
+    const updated: Item = {
+      ...editingItem,
+      name: editFormData.name,
+      sku: editFormData.sku.toUpperCase(),
+      category: editFormData.category,
+      uom: editFormData.uom.toUpperCase(),
+      description: editFormData.description,
+      stockLevel: newStock,
+      reorderPoint: newReorder,
+      location: editFormData.location,
+      status: 'Pending Head Approval',
+      approvalStatus: 'Pending Head Approval',
+      approvedBy: undefined,
+      approvedAt: undefined,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    if (onUpdateItem) {
+      onUpdateItem(updated);
+    } else {
+      // Fallback
+      onAddItem(updated);
+    }
+
+    success(
+      'Changes Submitted for Head Approval',
+      `${updated.sku} was updated. Status moved to Items Pending Approval for Head clearance.`
+    );
+    setEditingItem(null);
+  };
+
+  // Submit New Item Form
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFormData.sku || !newFormData.name) return;
+
+    const stock = parseInt(newFormData.stockLevel) || 0;
+    const reorder = parseInt(newFormData.reorderPoint) || 5;
 
     const newItem: Item = {
-      id: `ITM-${Date.now().toString().slice(-4)}`,
-      sku: formData.sku.toUpperCase(),
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      uom: formData.uom,
-      stockLevel: parseInt(formData.stockLevel) || 0,
-      reorderPoint: parseInt(formData.reorderPoint) || 5,
-      unitPriceSAR: parseFloat(formData.unitPriceSAR) || 0,
-      entity: formData.entity,
+      id: `ITM-TEL-${Date.now().toString().slice(-4)}`,
+      sku: newFormData.sku.toUpperCase(),
+      name: newFormData.name,
+      description: newFormData.description,
+      category: newFormData.category,
+      uom: newFormData.uom || 'EA',
+      stockLevel: stock,
+      reorderPoint: reorder,
+      unitPriceSAR: 0,
+      entity: 'ARABITRA',
       primaryVendorId: 'VND-001',
-      location: formData.location || 'Central Depot',
-      status: isHead ? (parseInt(formData.stockLevel) <= 2 ? 'Critical' : 'In Stock') : 'Pending Head Approval',
-      approvalStatus: isHead ? 'Approved' : 'Pending Head Approval',
-      approvedBy: isHead ? (currentUser?.name || 'Department Head') : undefined,
-      approvedAt: isHead ? new Date().toISOString() : undefined,
-      requestedBy: currentUser?.name || 'Staff User',
-      leadTimeDays: 20,
+      location: newFormData.location || 'Riyadh Central IoT Depot',
+      status: 'Pending Head Approval',
+      approvalStatus: 'Pending Head Approval',
+      requestedBy: currentUser?.name || 'Telematics Specialist',
+      leadTimeDays: 7,
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
     onAddItem(newItem);
-    if (isHead) {
-      success('Item Approved & Cataloged', `${newItem.sku} authorized directly by Head into Master Catalog.`);
-    } else {
-      success('Submitted for Head Approval', `${newItem.sku} queued for Department Head sign-off before entering inventory.`);
-    }
-    setIsModalOpen(false);
+    success(
+      'Item Submitted for Head Approval',
+      `${newItem.sku} has been added to Items Pending Approval awaiting Department Head sign-off.`
+    );
+    setIsCreateModalOpen(false);
     if (onCloseCreateModal) onCloseCreateModal();
 
-    // Reset Form
-    setFormData({
+    // Reset create form
+    setNewFormData({
       sku: '',
       name: '',
       description: '',
       category: 'GPS Trackers & Asset Gateways',
       uom: 'EA',
-      unitPriceSAR: '',
       stockLevel: '',
       reorderPoint: '',
-      entity: 'ARABITRA',
-      location: '',
+      location: 'Riyadh Central IoT Depot',
     });
   };
+
+  // Preview stock status for the edit modal
+  const editStockPreview = getStockStatus(
+    parseInt(editFormData.stockLevel) || 0,
+    parseInt(editFormData.reorderPoint) || 0
+  );
 
   return (
     <div className="space-y-6">
       {/* Module Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-            <Boxes className="w-6 h-6 text-cyan-400" />
-            Items & Material Master Data
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Boxes className="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
+            Items & Catalogue Master
           </h1>
-          <p className="text-xs md:text-sm text-slate-400 mt-0.5">
-            Standardized catalog, SKUs, inventory thresholds, and pricing. <span className="text-amber-400 font-medium">All new items require prior Department Head sign-off.</span>
+          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+            Fleet IoT, telematics sensors, AI dashcams, and hardware inventory.{' '}
+            <span className="text-amber-600 dark:text-amber-400 font-semibold">
+              All items & edits require Department Head authorization.
+            </span>
           </p>
         </div>
 
@@ -160,7 +328,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             variant="outline"
             size="sm"
             icon={<Download className="w-3.5 h-3.5" />}
-            onClick={() => success('Catalog Exported', 'Downloaded item master dataset (.csv)')}
+            onClick={() => success('Catalog Exported', 'Downloaded item catalogue dataset (.csv)')}
           >
             Export
           </Button>
@@ -168,95 +336,122 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             variant="primary"
             size="sm"
             icon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsCreateModalOpen(true)}
           >
             Add New Item
           </Button>
         </div>
       </div>
 
-      {/* Pending Head Approval Banner */}
-      {pendingCount > 0 && (
-        <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
+      {/* Primary Status Function Tabs: Approved Items & Items Pending Approval */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-900/40 dark:bg-slate-900/70 border border-slate-800">
+        <div className="flex items-center gap-2">
+          {/* Items Pending Approval Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('PENDING')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'PENDING'
+                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/50 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <Clock className="w-4 h-4 text-amber-500" />
+            <span>Items Pending Approval</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'PENDING'
+                  ? 'bg-amber-500 text-slate-950'
+                  : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+              }`}
+            >
+              {pendingCount}
+            </span>
+          </button>
+
+          {/* Approved Items Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('APPROVED')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'APPROVED'
+                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/50 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <span>Approved Items</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'APPROVED'
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+              }`}
+            >
+              {approvedCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Stock Level Color Guide */}
+        <div className="flex items-center gap-3 px-3 py-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+          <span className="font-semibold text-slate-500 dark:text-slate-400 hidden lg:inline">Stock Status:</span>
+          <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block animate-pulse" />
+            Red (Low Stock)
+          </span>
+          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+            Orange (Buffer)
+          </span>
+          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+            Green (Good Stock)
+          </span>
+        </div>
+      </div>
+
+      {/* Pending Items Guidance Notice */}
+      {activeTab === 'PENDING' && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-900/60 border border-amber-500/50 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 shrink-0">
               <Clock className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-amber-200">
-                {pendingCount} Item{pendingCount > 1 ? 's' : ''} Awaiting Prior Head Approval
+              <h4 className="text-sm font-bold text-amber-800 dark:text-amber-200">
+                {pendingCount} Items Awaiting Department Head Approval
               </h4>
-              <p className="text-xs text-amber-300/80">
+              <p className="text-xs text-amber-700 dark:text-amber-300/80 mt-0.5">
                 {isHead
-                  ? 'As Department Head / Super Admin, you hold authorization authority to sign off these additions.'
-                  : 'Items have been submitted to Department Head for review and commercial qualification.'}
+                  ? 'As authorized Department Head / Executive, you can review specifications, edit reorder thresholds, and grant sign-off.'
+                  : 'Items and recent edits are placed on hold. A department head can authorize them into the approved catalogue.'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setApprovalTab('PENDING')}
-            className="text-xs font-bold text-amber-300 hover:text-white px-3 py-1.5 rounded-lg bg-amber-900/50 border border-amber-500/40 transition-colors shrink-0"
-          >
-            Review Pending ({pendingCount})
-          </button>
         </div>
       )}
 
-      {/* Approval Status Tabs & Search Filter */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setApprovalTab('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              approvalTab === 'ALL'
-                ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            All Items ({items.filter((i) => matchesCompany(i.entity)).length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setApprovalTab('APPROVED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-              approvalTab === 'APPROVED'
-                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Head Approved Catalog ({approvedCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setApprovalTab('PENDING')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-              approvalTab === 'PENDING'
-                ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            Pending Head Approval ({pendingCount})
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+      {/* Search Bar & Category Filter */}
+      <div className="space-y-3 bg-slate-900/40 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search by SKU, item name or specification..."
+            placeholder="Search by SKU, item name or technical specification..."
             className="w-full md:w-96"
           />
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-            <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+              Category:
+            </span>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[220px]"
             >
               {categories.map((c) => {
                 const count =
@@ -265,134 +460,200 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                     : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
                 return (
                   <option key={c} value={c}>
-                    {c === 'ALL' ? `All Commodity Categories (${count})` : `${c} (${count})`}
+                    {c === 'ALL' ? `All Categories (${count})` : `${c} (${count})`}
                   </option>
                 );
               })}
             </select>
           </div>
         </div>
+
+        {/* Quick Category Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
+          {categories.map((c) => {
+            const isSelected = selectedCategory === c;
+            const count =
+              c === 'ALL'
+                ? (activeTab === 'PENDING' ? pendingCount : approvedCount)
+                : items.filter(
+                    (i) =>
+                      matchesCompany(i.entity) &&
+                      i.category === c &&
+                      (activeTab === 'PENDING'
+                        ? i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval'
+                        : i.approvalStatus === 'Approved')
+                  ).length;
+
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setSelectedCategory(c)}
+                className={`px-3 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/50 shadow-sm'
+                    : 'bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800/80'
+                }`}
+              >
+                <span>{c === 'ALL' ? 'All' : c}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isSelected ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {selectedCategory !== 'ALL' && (
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('ALL')}
+              className="text-[11px] font-bold text-rose-500 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Items Table */}
       {filteredItems.length === 0 ? (
         <EmptyState
-          title="No items found in catalog"
-          description="Adjust your search terms, select a different category, or create a new inventory SKU."
+          title={
+            activeTab === 'PENDING'
+              ? 'No items pending head approval'
+              : 'No approved items found'
+          }
+          description="Adjust your search query, switch categories, or add/edit a catalog item."
           actionLabel="Add New Item"
-          onAction={() => setIsModalOpen(true)}
+          onAction={() => setIsCreateModalOpen(true)}
         />
       ) : (
-        <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
+        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-md">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-950 text-slate-400 text-[11px] border-b border-slate-800">
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">SKU & Code</th>
+                  <th className="py-3.5 px-4 font-semibold w-44">SKU & Code</th>
                   <th className="py-3.5 px-4 font-semibold">Item Specification</th>
-                  <th className="py-3.5 px-4 font-semibold">Category</th>
-                  <th className="py-3.5 px-4 font-semibold">Entity</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Standard Price</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Stock Level</th>
-                  <th className="py-3.5 px-4 font-semibold">Head Clearance</th>
-                  <th className="py-3.5 px-4 font-semibold">Actions / Decision</th>
+                  <th className="py-3.5 px-4 font-semibold w-56">Category</th>
+                  <th className="py-3.5 px-4 font-semibold text-right w-48">Stock Level</th>
+                  <th className="py-3.5 px-4 font-semibold text-right w-36">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
                 {filteredItems.map((item) => {
-                  const isItemPending = item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
-                  const isItemRejected = item.approvalStatus === 'Rejected';
+                  const isItemPending =
+                    item.approvalStatus === 'Pending Head Approval' || item.status === 'Pending Head Approval';
+                  const stockStatus = getStockStatus(item.stockLevel, item.reorderPoint);
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
-                        {item.sku}
+                    <tr
+                      key={item.id}
+                      className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                      onClick={() => handleOpenEdit(item)}
+                    >
+                      {/* 1. SKU & Code */}
+                      <td className="py-3.5 px-4 whitespace-nowrap align-top">
+                        <div className="font-mono font-bold text-cyan-400 text-xs">
+                          {item.sku}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {item.id}
+                        </div>
+                        {isItemPending && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded mt-1.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            Pending Sign-off
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 min-w-[240px]">
-                        <div className="font-semibold text-slate-100">{item.name}</div>
-                        <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+
+                      {/* 2. Item Specification: Fully Readable Title and Technical Specifications */}
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                          {item.name}
+                        </div>
+                        <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed max-w-2xl font-normal">
                           {item.description}
                         </div>
-                        {item.requestedBy && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            Created by: <span className="text-slate-300 font-medium">{item.requestedBy}</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                        {item.category}
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <Badge
-                          variant={item.entity === 'SHARED' ? 'purple' : 'amber'}
-                        >
-                          {item.entity === 'SHARED' ? 'Shared' : 'Arabitra'}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-100 whitespace-nowrap">
-                        SAR {item.unitPriceSAR.toLocaleString()} / {item.uom}
-                      </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="font-mono font-bold text-slate-200">
-                          {item.stockLevel.toLocaleString()} {item.uom}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          Reorder at {item.reorderPoint} {item.uom}
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
+                          <span>
+                            UOM: <strong className="text-slate-700 dark:text-slate-300">{item.uom}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Depot: <strong className="text-slate-700 dark:text-slate-300">{item.location}</strong>
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {isItemPending ? (
-                          <Badge variant="amber" dot className="font-semibold">
-                            Pending Head Approval
-                          </Badge>
-                        ) : isItemRejected ? (
-                          <Badge variant="rose" dot className="font-semibold">
-                            Rejected by Head
-                          </Badge>
-                        ) : (
-                          <div className="space-y-0.5">
-                            <Badge variant="emerald" dot className="font-semibold">
-                              Head Approved
-                            </Badge>
-                            {item.approvedBy && (
-                              <p className="text-[9px] text-slate-400 truncate max-w-[120px]">
-                                by {item.approvedBy}
-                              </p>
-                            )}
-                          </div>
-                        )}
+
+                      {/* 3. Category */}
+                      <td className="py-3.5 px-4 whitespace-nowrap align-top">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700/60 inline-block">
+                          {item.category}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {isItemPending && isHead && onApproveItem && onRejectItem ? (
-                          <div className="flex items-center gap-1.5">
+
+                      {/* 4. Stock Level: White Text Removed, Red / Orange / Green Color-Coded */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap align-top">
+                        <div className="flex items-center justify-end gap-2">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${stockStatus.dotClass} shrink-0 ${
+                              stockStatus.color === 'red' ? 'animate-pulse' : ''
+                            }`}
+                          />
+                          <span className={`font-mono font-bold text-sm ${stockStatus.textClass}`}>
+                            {item.stockLevel.toLocaleString()} {item.uom}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                          Reorder at{' '}
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {item.reorderPoint}
+                          </span>{' '}
+                          {item.uom}
+                        </div>
+                        <div className="mt-1">
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full inline-block ${stockStatus.badgeClass}`}
+                          >
+                            {stockStatus.label}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 5. Action: Edit & Head Approval */}
+                      <td
+                        className="py-3.5 px-4 text-right whitespace-nowrap align-top"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(item)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Edit specifications, stock or reorder point"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Edit</span>
+                          </button>
+
+                          {/* Head Approval Direct Sign-off */}
+                          {isItemPending && isHead && onApproveItem && (
                             <button
                               type="button"
                               onClick={() => onApproveItem(item.id)}
-                              className="px-2 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
                               title="Sign off item into master catalog"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Approve
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Approve</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => onRejectItem(item.id, 'Returned by Department Head')}
-                              className="px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                              title="Reject item addition"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Reject
-                            </button>
-                          </div>
-                        ) : isItemPending ? (
-                          <span className="text-[10px] text-amber-300 italic">
-                            Awaiting Head Sign-off
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">
-                            {item.location}
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -403,73 +664,264 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
         </div>
       )}
 
+      {/* Item Specification & Edit Modal (All details can be edited, reorder point updates stock color, edits require approval) */}
+      {editingItem && (
+        <Modal
+          isOpen={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          title={`Item Specification: ${editingItem.sku}`}
+          subtitle="View full engineering specifications and edit inventory parameters"
+          maxWidth="2xl"
+        >
+          <form onSubmit={handleSaveEdit} className="space-y-4">
+            {/* Department Head Warning Notice */}
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 dark:text-amber-200">
+                <strong>Governance Rule:</strong> Any edits made to item specifications, stock
+                counts, or reorder thresholds will automatically place this item into{' '}
+                <strong className="underline">Items Pending Approval</strong> for Department Head
+                sign-off.
+              </div>
+            </div>
+
+            {/* Readability Box: Full Technical Specifications */}
+            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                  Technical Specification Dossier
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Arabitra Telematics Catalog
+                </span>
+              </div>
+              <p className="text-sm text-slate-200 font-medium leading-relaxed">
+                {editFormData.description || editingItem.description}
+              </p>
+            </div>
+
+            {/* Form Fields for Editing */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Item Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-semibold focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  SKU Code *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.sku}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, sku: e.target.value.toUpperCase() })
+                  }
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-cyan-300 font-mono font-bold focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Telematics Category
+                </label>
+                <select
+                  value={editFormData.category}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, category: e.target.value as ItemCategory })
+                  }
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:border-cyan-500 focus:outline-none cursor-pointer"
+                >
+                  {categories.filter((c) => c !== 'ALL').map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Unit of Measure (UOM)
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.uom}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, uom: e.target.value.toUpperCase() })
+                  }
+                  placeholder="EA, SET, LOT"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Detailed Technical Specification Edit */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Edit Technical Specification & Protocols
+              </label>
+              <textarea
+                rows={3}
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 leading-relaxed focus:border-cyan-500 focus:outline-none"
+                placeholder="Enter exact hardware parameters, frequency bands, interfaces, sensors..."
+              />
+            </div>
+
+            {/* Stock Level & Reorder Point with Live Stock Color Preview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Current Stock Level
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editFormData.stockLevel}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, stockLevel: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono font-bold focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Reorder Threshold (Point)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editFormData.reorderPoint}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, reorderPoint: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono font-bold focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Depot / Yard Location
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.location}
+                  onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Live Stock Color Status Preview */}
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-400 font-medium">
+                Calculated Stock Indicator Preview:
+              </span>
+              <div className="flex items-center gap-2">
+                <span className={`w-3 h-3 rounded-full ${editStockPreview.dotClass} animate-pulse`} />
+                <span className={`text-xs font-bold ${editStockPreview.textClass}`}>
+                  {editStockPreview.label}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${editStockPreview.badgeClass}`}>
+                  {editStockPreview.subtext}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+              {/* Direct Head Approve Button if user is Head */}
+              {isHead && onApproveItem && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-emerald-400 border-emerald-500/40 hover:bg-emerald-950/50"
+                  icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                  onClick={() => {
+                    onApproveItem(editingItem.id);
+                    setEditingItem(null);
+                  }}
+                >
+                  Authorize & Approve Item
+                </Button>
+              )}
+
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingItem(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  icon={<Check className="w-4 h-4" />}
+                >
+                  Save & Submit for Head Approval
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       {/* Add New Item Modal */}
       <Modal
-        isOpen={isModalOpen}
+        isOpen={isCreateModalOpen}
         onClose={() => {
-          setIsModalOpen(false);
+          setIsCreateModalOpen(false);
           if (onCloseCreateModal) onCloseCreateModal();
         }}
         title="Add New Catalog Item"
-        subtitle="Register standard procurement item for Arabitra ERP (Powered by Fitco)"
+        subtitle="Register new hardware for Arabitra Catalogue (Requires Head Clearance)"
         maxWidth="xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">SKU Code *</label>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                SKU Code *
+              </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. ARB-VAL-9021"
-                value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
+                placeholder="e.g. ARB-GPS-FMB920"
+                value={newFormData.sku}
+                onChange={(e) =>
+                  setNewFormData({ ...newFormData, sku: e.target.value.toUpperCase() })
+                }
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-cyan-300 font-mono font-bold focus:border-cyan-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Assign Entity *</label>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Category *
+              </label>
               <select
-                value={formData.entity}
-                onChange={(e) => setFormData({ ...formData, entity: e.target.value as any })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:border-cyan-500 focus:outline-none"
-              >
-                <option value="ARABITRA">Arabitra Enterprise</option>
-                <option value="SHARED">Shared Group Item</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Item Title *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. API 600 Cast Steel Gate Valve 8-inch"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Technical Specification</label>
-            <textarea
-              rows={2}
-              placeholder="Detailed engineering standard, flange rating, grade, etc."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                value={newFormData.category}
+                onChange={(e) =>
+                  setNewFormData({ ...newFormData, category: e.target.value as ItemCategory })
+                }
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:border-cyan-500 focus:outline-none cursor-pointer"
               >
                 {categories.filter((c) => c !== 'ALL').map((c) => (
                   <option key={c} value={c}>
@@ -478,60 +930,89 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Unit of Measure (UOM)</label>
-              <input
-                type="text"
-                placeholder="EA / MT / M / SET"
-                value={formData.uom}
-                onChange={(e) => setFormData({ ...formData, uom: e.target.value.toUpperCase() })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Standard Price (SAR) *</label>
-              <input
-                type="number"
-                required
-                placeholder="e.g. 25000"
-                value={formData.unitPriceSAR}
-                onChange={(e) => setFormData({ ...formData, unitPriceSAR: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Item Title *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Teltonika FMB920 Compact Tracker"
+              value={newFormData.name}
+              onChange={(e) => setNewFormData({ ...newFormData, name: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-semibold focus:border-cyan-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Technical Specification
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Detailed engineering specifications, GSM/GNSS bands, interfaces, IP rating..."
+              value={newFormData.description}
+              onChange={(e) => setNewFormData({ ...newFormData, description: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 leading-relaxed focus:border-cyan-500 focus:outline-none"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Current Stock</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={formData.stockLevel}
-                onChange={(e) => setFormData({ ...formData, stockLevel: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Reorder Point</label>
-              <input
-                type="number"
-                placeholder="5"
-                value={formData.reorderPoint}
-                onChange={(e) => setFormData({ ...formData, reorderPoint: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Depot / Yard Location</label>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Unit of Measure (UOM)
+              </label>
               <input
                 type="text"
-                placeholder="e.g. Dammam Yard Bay 3"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+                placeholder="EA / SET / LOT"
+                value={newFormData.uom}
+                onChange={(e) =>
+                  setNewFormData({ ...newFormData, uom: e.target.value.toUpperCase() })
+                }
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Initial Stock
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={newFormData.stockLevel}
+                onChange={(e) => setNewFormData({ ...newFormData, stockLevel: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono font-bold focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Reorder Point
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="5"
+                value={newFormData.reorderPoint}
+                onChange={(e) => setNewFormData({ ...newFormData, reorderPoint: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono font-bold focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Storage Depot Location
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Riyadh Central IoT Depot Bay-1"
+              value={newFormData.location}
+              onChange={(e) => setNewFormData({ ...newFormData, location: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -540,14 +1021,14 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
               variant="outline"
               size="sm"
               onClick={() => {
-                setIsModalOpen(false);
+                setIsCreateModalOpen(false);
                 if (onCloseCreateModal) onCloseCreateModal();
               }}
             >
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm">
-              Save to Catalog
+              Submit for Head Approval
             </Button>
           </div>
         </form>

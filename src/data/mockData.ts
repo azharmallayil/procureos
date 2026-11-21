@@ -253,12 +253,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-002",
@@ -273,12 +272,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-003",
@@ -293,12 +291,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-004",
@@ -313,12 +310,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-005",
@@ -333,12 +329,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-006",
@@ -353,12 +348,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-007",
@@ -373,12 +367,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-008",
@@ -393,12 +386,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-009",
@@ -413,12 +405,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Secure Vault A-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-010",
@@ -433,12 +424,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-011",
@@ -453,12 +443,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-012",
@@ -473,12 +462,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Sensor Storage B-3",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-013",
@@ -493,12 +481,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-014",
@@ -513,12 +500,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-015",
@@ -533,12 +519,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-016",
@@ -553,12 +538,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-017",
@@ -573,12 +557,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-018",
@@ -593,12 +576,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Transit Electronics Depot",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-019",
@@ -613,12 +595,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-020",
@@ -633,12 +614,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Storage Safe A-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-021",
@@ -653,12 +633,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Heavy Safety Equipment Yard",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-022",
@@ -673,12 +652,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-023",
@@ -693,12 +671,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-024",
@@ -713,12 +690,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-025",
@@ -733,12 +709,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Sensor Storage B-3",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-026",
@@ -753,12 +728,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Hardware Shelf C-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-027",
@@ -773,12 +747,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-028",
@@ -793,12 +766,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Pneumatics & Calibration Bay",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-029",
@@ -813,12 +785,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Pneumatics & Calibration Bay",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-030",
@@ -833,12 +804,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-031",
@@ -853,12 +823,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-032",
@@ -873,12 +842,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-033",
@@ -893,12 +861,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-034",
@@ -913,12 +880,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-035",
@@ -933,12 +899,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-036",
@@ -953,12 +918,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Wiring & Cable Yard Area-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-037",
@@ -973,12 +937,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-007",
     "location": "Riyadh Hardware Shelf C-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-038",
@@ -993,12 +956,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-007",
     "location": "Riyadh Hardware Shelf C-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-039",
@@ -1013,12 +975,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-040",
@@ -1033,12 +994,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Mechanical Hardware Bin D-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-041",
@@ -1053,12 +1013,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-042",
@@ -1073,12 +1032,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-043",
@@ -1093,12 +1051,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Wiring & Cable Yard Area-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-044",
@@ -1113,12 +1070,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Transit Electronics Depot",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-045",
@@ -1133,12 +1089,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-046",
@@ -1153,12 +1108,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Network Equipment Rack N-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-047",
@@ -1173,12 +1127,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-048",
@@ -1193,12 +1146,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-049",
@@ -1213,12 +1165,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-050",
@@ -1233,12 +1184,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-051",
@@ -1253,12 +1203,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-052",
@@ -1273,12 +1222,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-053",
@@ -1293,12 +1241,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Riyadh Sensor Storage B-3",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-054",
@@ -1313,12 +1260,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Video Telematics Lab Bay-2",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-055",
@@ -1333,12 +1279,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Wiring & Cable Yard Area-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-056",
@@ -1353,12 +1298,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Wiring & Cable Yard Area-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-057",
@@ -1373,12 +1317,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Transit Electronics Depot",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-058",
@@ -1393,12 +1336,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Riyadh Storage Safe A-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-059",
@@ -1413,12 +1355,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
     "location": "Cloud Licensing Portal",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-060",
@@ -1433,12 +1374,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Riyadh Central IoT Depot Bay-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-061",
@@ -1453,12 +1393,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Network Equipment Rack N-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-062",
@@ -1473,12 +1412,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Network Equipment Rack N-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-063",
@@ -1493,12 +1431,11 @@ export const MOCK_ITEMS: Item[] = [
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
     "location": "Network Equipment Rack N-1",
-    "status": "In Stock",
-    "approvalStatus": "Approved",
-    "approvedBy": "Muhammed Azhar (Super Admin)",
-    "approvedAt": "2026-11-01",
+    "status": "Pending Head Approval",
+    "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20"
+    "updatedAt": "2026-11-20",
+    "requestedBy": "Telematics Operations Specialist"
   }
 ];
 

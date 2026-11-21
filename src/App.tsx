@@ -96,7 +96,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.21.telematics_master_data';
+    const PROD_LIVE_VER = '2026.11.22.pending_head_approval';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -172,6 +172,34 @@ const MainApplication: React.FC = () => {
       name: currentUser?.name,
       role: activeRole || 'User',
     });
+  };
+
+  const handleUpdateItem = (updatedItem: Item) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === updatedItem.id
+          ? {
+              ...updatedItem,
+              status: 'Pending Head Approval',
+              approvalStatus: 'Pending Head Approval',
+              approvedBy: undefined,
+              approvedAt: undefined,
+              updatedAt: new Date().toISOString().split('T')[0],
+            }
+          : item
+      )
+    );
+    recordAuditLog(
+      'Item Updated',
+      'Item',
+      updatedItem.id,
+      `Updated inventory SKU ${updatedItem.sku}: ${updatedItem.name} (Queued for Head Approval)`,
+      {
+        name: currentUser?.name,
+        role: activeRole || 'User',
+      }
+    );
+    success('Item Updated & Queued', `${updatedItem.sku} changes saved and submitted for Department Head sign-off.`);
   };
 
   const handleApproveItem = (itemId: string) => {
@@ -1024,6 +1052,7 @@ const MainApplication: React.FC = () => {
               <ItemsModule
                 items={items}
                 onAddItem={handleAddItem}
+                onUpdateItem={handleUpdateItem}
                 onApproveItem={handleApproveItem}
                 onRejectItem={handleRejectItem}
                 openCreateModal={quickCreateModal === 'item'}
