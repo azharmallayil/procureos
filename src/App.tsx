@@ -1051,6 +1051,8 @@ const MainApplication: React.FC = () => {
                 deliveries={deliveries}
                 vendors={vendors}
                 items={items}
+                requisitions={requisitions}
+                payments={payments}
                 onNavigateModule={setActiveModule}
                 onApprovePO={handleApprovePO}
                 onRejectPO={handleRejectPO}
@@ -1110,6 +1112,7 @@ const MainApplication: React.FC = () => {
                 onSelectRfqId={setSelectedQuoteRfqId}
                 rfqs={rfqs}
                 vendors={vendors}
+                onBackToRfqs={() => setActiveModule('rfqs')}
                 onAwardBid={handleAwardBid}
                 onQuoteUploaded={handleQuoteUploaded}
                 onAddVendor={handleAddVendor}

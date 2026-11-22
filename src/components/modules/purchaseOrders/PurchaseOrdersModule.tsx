@@ -363,7 +363,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
               <tbody className="divide-y divide-slate-800/80">
                 {filteredPOs.map((po) => (
                   <tr key={po.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
+                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap" title={po.poNumber}>
                       {po.poNumber}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
@@ -371,10 +371,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                         Arabitra
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]">
+                    <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px] max-w-[240px] truncate" title={po.vendorName}>
                       {po.vendorName}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap max-w-[180px] truncate" title={po.projectSite}>
                       {po.projectSite}
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">

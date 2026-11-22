@@ -220,10 +220,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
                           Arabitra
                         </Badge>
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]" title={pay.vendorName}>
+                      <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px] max-w-[240px] truncate" title={pay.vendorName}>
                         {pay.vendorName}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 min-w-[220px]" title={pay.milestoneDescription}>
+                      <td className="py-3.5 px-4 text-slate-300 min-w-[220px] max-w-[280px] truncate" title={pay.milestoneDescription}>
                         {pay.milestoneDescription}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap text-sm">
@@ -312,17 +312,17 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
             {/* Payment Details */}
             <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2 font-mono">
               <div className="flex justify-between">
-                <span className="text-slate-400">Disbursement Amount:</span>
+                <span className="text-slate-300">Disbursement Amount:</span>
                 <span className="text-emerald-400 font-bold text-sm">
                   SAR {selectedPayment.amountSAR.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Payment Channel:</span>
+                <span className="text-slate-300">Payment Channel:</span>
                 <span className="text-slate-200">{selectedPayment.paymentMethod}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Linked Purchase Order:</span>
+                <span className="text-slate-300">Linked Purchase Order:</span>
                 <span className="text-cyan-300">{selectedPayment.poNumber}</span>
               </div>
             </div>

@@ -11,6 +11,7 @@ interface ModalProps {
   footer?: ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
   zIndex?: number;
+  isDirty?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,11 +23,22 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   maxWidth = 'lg',
   zIndex = 9999,
+  isDirty = false,
 }) => {
+  const handleRequestClose = () => {
+    if (isDirty) {
+      if (typeof window !== 'undefined' && window.confirm('You have unsaved changes. Discard your modifications and close?')) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleRequestClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -37,7 +49,7 @@ export const Modal: React.FC<ModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isDirty, onClose]);
 
   if (!isOpen) return null;
 
@@ -60,7 +72,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity animate-fade-in"
-        onClick={onClose}
+        onClick={handleRequestClose}
       />
 
       {/* Modal Dialog Content */}
@@ -75,7 +87,7 @@ export const Modal: React.FC<ModalProps> = ({
             {subtitle && <p className="text-xs text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
           </div>
           <button
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded-lg hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
             aria-label="Close dialog"
           >

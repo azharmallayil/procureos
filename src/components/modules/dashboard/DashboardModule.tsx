@@ -8,6 +8,7 @@ import {
   Building2,
   Clock,
   ArrowRight,
+  Activity,
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { SpendCharts } from './SpendCharts';
@@ -24,6 +25,8 @@ import {
   ModuleId,
   Vendor,
   Item,
+  PurchaseRequisition,
+  PaymentMilestone,
 } from '../../../types/procurement';
 
 interface DashboardModuleProps {
@@ -32,6 +35,8 @@ interface DashboardModuleProps {
   deliveries: Delivery[];
   vendors?: Vendor[];
   items?: Item[];
+  requisitions?: PurchaseRequisition[];
+  payments?: PaymentMilestone[];
   onNavigateModule: (module: ModuleId) => void;
   onApprovePO: (poId: string) => void;
   onRejectPO: (poId: string) => void;
@@ -44,6 +49,8 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   deliveries,
   vendors = [],
   items = [],
+  requisitions = [],
+  payments = [],
   onNavigateModule,
   onApprovePO,
   onRejectPO,
@@ -56,8 +63,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const filteredPOs = purchaseOrders.filter((p) => matchesCompany(p.entity));
   const filteredDeliveries = deliveries.filter((d) => matchesCompany(d.entity));
   const filteredVendors = vendors.filter((v) => matchesCompany(v.entityScope));
+  const filteredPRs = requisitions.filter((r) => matchesCompany(r.entity));
+  const filteredPayments = payments.filter((p) => matchesCompany(p.entity));
 
-  // Compute live KPI metrics
+  // Compute live KPI metrics (DB-01)
   const totalSpendSAR = filteredPOs.reduce((acc, curr) => acc + curr.grandTotalSAR, 0);
   const formattedSpend =
     totalSpendSAR >= 1000000
@@ -68,17 +77,49 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
 
   const activeRfqsCount = filteredRfqs.filter((r) => r.status === 'Open' || r.status === 'Under Evaluation').length;
   const pendingApprovalsCount = filteredPOs.filter((p) => p.status === 'Pending Approval').length;
+  const pendingPRsCount = filteredPRs.filter((p) => p.status === 'Pending Approval').length;
   const pendingItemsCount = items.filter(
     (i) => matchesCompany(i.entity) && (i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval')
   ).length;
   const pendingVendorsCount = filteredVendors.filter(
     (v) => v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval'
   ).length;
-  const totalPendingActionCount = pendingApprovalsCount + pendingItemsCount + pendingVendorsCount;
+  const totalPendingActionCount = pendingApprovalsCount + pendingPRsCount + pendingItemsCount + pendingVendorsCount;
 
   const openPosCount = filteredPOs.filter((p) => p.status !== 'Closed' && p.status !== 'Cancelled').length;
   const overdueCount = filteredDeliveries.filter((d) => d.isOverdue || d.status === 'Delayed').length;
   const activeVendorsCount = filteredVendors.filter((v) => v.status === 'Approved' || v.status === 'Preferred').length;
+
+  // DB-02: Computed Live Activity Events
+  const recentActivities = [
+    ...filteredPOs.slice(0, 3).map((po) => ({
+      id: `act-${po.id}`,
+      module: 'purchaseOrders' as ModuleId,
+      title: `PO ${po.poNumber} — ${po.status}`,
+      desc: `${po.vendorName} · SAR ${po.grandTotalSAR.toLocaleString()}`,
+      time: po.issueDate || 'Recent',
+      badge: po.status,
+      variant: po.status === 'Approved' ? 'emerald' : po.status === 'Pending Approval' ? 'amber' : 'cyan',
+    })),
+    ...filteredPRs.slice(0, 2).map((pr) => ({
+      id: `act-${pr.id}`,
+      module: 'requisitions' as ModuleId,
+      title: `Requisition ${pr.prNumber}`,
+      desc: `${pr.title} · Requested by ${pr.requestedBy}`,
+      time: pr.requiredDate || 'Recent',
+      badge: pr.status,
+      variant: pr.status === 'Approved' ? 'emerald' : 'amber',
+    })),
+    ...filteredDeliveries.slice(0, 2).map((del) => ({
+      id: `act-${del.id}`,
+      module: 'deliveries' as ModuleId,
+      title: `Shipment ${del.trackingNumber}`,
+      desc: `${del.vendorName} · ${del.destinationSite}`,
+      time: del.expectedDate || 'Recent',
+      badge: del.status,
+      variant: del.status === 'Delayed' ? 'rose' : del.status === 'In Transit' ? 'cyan' : 'emerald',
+    })),
+  ].slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -119,7 +160,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           value={`${totalPendingActionCount}`}
           change={totalPendingActionCount > 0 ? `${totalPendingActionCount} Pending Approval` : 'All Cleared'}
           isPositive={totalPendingActionCount === 0}
-          subtitle={`${pendingApprovalsCount} PO · ${pendingItemsCount} Item · ${pendingVendorsCount} Vendor`}
+          subtitle={`${pendingApprovalsCount} PO · ${pendingPRsCount} PR · ${pendingItemsCount} Item · ${pendingVendorsCount} Vendor`}
           icon={<CheckSquare className="w-5 h-5" />}
           accentColor="amber"
           alert={totalPendingActionCount > 0}
@@ -167,6 +208,15 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             icon={<CheckSquare className="w-5 h-5 text-amber-400" />}
             headerAction={
               <div className="flex items-center gap-1.5 flex-wrap">
+                {pendingPRsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateModule('requisitions')}
+                    className="px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-[10px] text-amber-300 font-bold hover:text-white cursor-pointer"
+                  >
+                    {pendingPRsCount} PRs
+                  </button>
+                )}
                 {pendingItemsCount > 0 && (
                   <button
                     type="button"
@@ -304,6 +354,40 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               deliveries={filteredDeliveries}
               onMarkInspected={onMarkInspected}
             />
+          </Card>
+        </div>
+
+        {/* DB-02: Real-time Operational Activity Stream */}
+        <div className="lg:col-span-12">
+          <Card
+            title="Real-Time Supply Chain Activity Ledger"
+            subtitle="Live event trail of purchase orders, requisitions, goods receipts, and vendor verifications"
+            icon={<Activity className="w-5 h-5 text-cyan-400" />}
+          >
+            <div className="divide-y divide-slate-800/80">
+              {recentActivities.map((act) => (
+                <div key={act.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-100">{act.title}</span>
+                      <Badge variant={act.variant as any} className="text-[10px]">{act.badge}</Badge>
+                    </div>
+                    <p className="text-slate-400 text-[11px] truncate">{act.desc}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-mono text-slate-500">{act.time}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onNavigateModule(act.module)}
+                      className="text-[11px] py-1 px-2.5"
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         </div>
       </div>

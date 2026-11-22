@@ -58,6 +58,7 @@ interface QuotationsModuleProps {
   onSelectRfqId?: (rfqId: string) => void;
   rfqs?: RFQ[];
   vendors?: Vendor[];
+  onBackToRfqs?: () => void;
   onAwardBid: (quoteEvaluationId: string, vendorId: string, autoSubmitForApproval?: boolean) => void;
   onQuoteUploaded?: (rfqId: string, newSubmission: QuotationComparisonItem) => void;
   onAddVendor?: (vendor: Vendor) => void;
@@ -76,6 +77,7 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
   onSelectRfqId,
   rfqs = [],
   vendors = [],
+  onBackToRfqs,
   onAwardBid,
   onQuoteUploaded,
   onAddVendor,
@@ -366,6 +368,17 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {onBackToRfqs && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBackToRfqs}
+              className="text-xs text-slate-300 hover:text-white border-slate-700"
+            >
+              ← Back to RFQs
+            </Button>
+          )}
+
           {/* Permission Status Indicator */}
           {permissions.canEditQuotePrice ? (
             <span

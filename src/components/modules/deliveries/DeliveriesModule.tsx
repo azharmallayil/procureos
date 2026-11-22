@@ -226,10 +226,10 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                       del.isOverdue ? 'bg-rose-950/10' : ''
                     }`}
                   >
-                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
+                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap" title={del.trackingNumber}>
                       {del.trackingNumber}
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">
+                    <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap" title={del.poNumber}>
                       {del.poNumber}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
@@ -237,14 +237,14 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                         Arabitra
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-100">{del.vendorName}</div>
-                      <div className="text-[11px] text-slate-400">{del.carrier}</div>
+                    <td className="py-3.5 px-4" title={`${del.vendorName} (${del.carrier})`}>
+                      <div className="font-semibold text-slate-100 truncate max-w-[200px]">{del.vendorName}</div>
+                      <div className="text-[11px] text-slate-400 truncate max-w-[200px]">{del.carrier}</div>
                     </td>
-                    <td className="py-3.5 px-4 min-w-[180px]">
+                    <td className="py-3.5 px-4 min-w-[180px]" title={del.destinationSite}>
                       <div className="flex items-center gap-1.5 text-slate-200">
                         <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span className="truncate">{del.destinationSite}</span>
+                        <span className="truncate max-w-[200px]">{del.destinationSite}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap font-mono">

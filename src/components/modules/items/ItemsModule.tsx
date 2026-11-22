@@ -551,10 +551,10 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
 
                       {/* 2. Item Specification: Fully Readable Title and Technical Specifications */}
                       <td className="py-3.5 px-4 align-top">
-                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={item.name}>
                           {item.name}
                         </div>
-                        <div className="text-xs text-slate-800 dark:text-slate-200 mt-1.5 leading-relaxed max-w-2xl font-normal bg-slate-100/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+                        <div className="text-xs text-slate-800 dark:text-slate-200 mt-1.5 leading-relaxed max-w-2xl font-normal bg-slate-100/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm" title={item.description}>
                           {item.description}
                         </div>
                         <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
@@ -570,7 +570,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
 
                       {/* 3. Category */}
                       <td className="py-3.5 px-4 whitespace-nowrap align-top">
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700/60 inline-block">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700/60 inline-block" title={item.category}>
                           {item.category}
                         </span>
                       </td>
@@ -955,7 +955,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                Initial Stock
+                Initial Stock Level (units)
               </label>
               <input
                 type="number"
@@ -968,7 +968,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                Reorder Point
+                Reorder Trigger Point (units)
               </label>
               <input
                 type="number"

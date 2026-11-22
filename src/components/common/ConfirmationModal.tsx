@@ -91,7 +91,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} zIndex={zIndex}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} zIndex={zIndex} maxWidth="md">
       <div className="space-y-4 text-xs">
         {/* Banner with icon and description */}
         <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${getHeaderBg()}`}>
