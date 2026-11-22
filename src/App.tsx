@@ -96,7 +96,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.22.enterprise_governance_khobar';
+    const PROD_LIVE_VER = '2026.11.22.enterprise_khobar_v3';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -116,8 +116,13 @@ const MainApplication: React.FC = () => {
       localStorage.setItem('procureos_assets', JSON.stringify([]));
 
       // 2. Initialize official telematics items & verified vendors from starter templates
-      setItems(MOCK_ITEMS);
-      localStorage.setItem('procureos_items', JSON.stringify(MOCK_ITEMS));
+      // Enforce Arabitra Head Office Store Khobar across all item depots
+      const khobarItems = MOCK_ITEMS.map((item) => ({
+        ...item,
+        location: 'Arabitra Head Office Store Khobar',
+      }));
+      setItems(khobarItems);
+      localStorage.setItem('procureos_items', JSON.stringify(khobarItems));
       setVendors(MOCK_VENDORS);
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
 

@@ -390,7 +390,7 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
             <input
               type="text"
               required
-              placeholder="e.g. Shedgum Gas Plant High-Pressure Control Valves Package"
+              placeholder="e.g. Arabitra Central Store IoT & Telematics Package"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
@@ -403,7 +403,7 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
               <input
                 type="text"
                 required
-                placeholder="e.g. Shedgum Ph-2 Decarbonization"
+                placeholder="e.g. Arabitra Head Office Store Khobar Facility"
                 value={form.projectName}
                 onChange={(e) => setForm({ ...form, projectName: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"

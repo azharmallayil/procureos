@@ -70,7 +70,7 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   const [form, setForm] = useState({
     vendorName: 'Al-Tamimi Industrial Flow Systems Co.',
     entity: 'ARABITRA' as EntityId,
-    projectSite: 'Shedgum Gas Compression Station 3',
+    projectSite: 'Arabitra Head Office Store Khobar',
     expectedDeliveryDate: '2026-11-20',
     totalAmountSAR: '',
     paymentTerms: '30% Advance, 70% Post-Delivery & MTC Verification',

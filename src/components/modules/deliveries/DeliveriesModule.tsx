@@ -56,7 +56,7 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
     poNumber: 'PO-ARB-26-0491',
     vendorName: 'Al-Tamimi Industrial Flow Systems Co.',
     entity: 'ARABITRA' as EntityId,
-    destinationSite: 'Shedgum Gas Compression Station 3',
+    destinationSite: 'Arabitra Head Office Store Khobar',
     carrier: 'Hala Supply Chain Services',
     driverName: 'Mustafa Kamel',
     driverContact: '+966 55 981 7261',

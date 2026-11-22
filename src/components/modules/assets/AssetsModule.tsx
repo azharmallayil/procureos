@@ -113,7 +113,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
     serialNumber: '',
     category: 'Heavy Plant & Machinery',
     entity: 'ARABITRA' as EntityId,
-    assignedProject: 'Shedgum Plant Decarbonization Ph-2',
+    assignedProject: 'Arabitra Khobar Central Operations',
     custodian: 'Eng. Khalid Al-Shehri',
     acquisitionCostSAR: '',
     location: 'Arabitra Head Office Store Khobar',
