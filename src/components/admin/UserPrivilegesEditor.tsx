@@ -40,11 +40,25 @@ export interface PermissionDefinition {
 
 export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   {
+    key: 'canCreatePR',
+    name: 'Raise Purchase Requisitions (Demand Creation)',
+    category: 'Purchasing & RFQs',
+    description: 'Create and submit internal material, tool, or service purchase requisitions for sign-off.',
+    riskLevel: 'LOW',
+  },
+  {
     key: 'canCreateRFQ',
     name: 'Issue RFQ & Competitive Tenders',
     category: 'Purchasing & RFQs',
     description: 'Draft, publish, and transmit RFQs and BOQs to qualified suppliers.',
     riskLevel: 'MEDIUM',
+  },
+  {
+    key: 'canIssuePO',
+    name: 'Generate & Issue Purchase Orders',
+    category: 'Purchasing & RFQs',
+    description: 'Draft, link tenders, and issue legally binding purchase orders to suppliers.',
+    riskLevel: 'HIGH',
   },
   {
     key: 'canEditQuotePrice',
@@ -117,6 +131,13 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     riskLevel: 'CRITICAL',
   },
   {
+    key: 'canReleaseFinalPayment',
+    name: 'Final Executive Treasury Wire Sign-off',
+    category: 'Approvals & Financial',
+    description: 'Final irreversible authorization to transmit SARIE funds. Strictly segregated from quote price editing (SOD).',
+    riskLevel: 'CRITICAL',
+  },
+  {
     key: 'canReceiveShipment',
     name: 'Site Material Acceptance (GRN Sign-off)',
     category: 'Inventory & Logistics',
@@ -155,7 +176,7 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
     updateUserPermissions,
     elevateToSuperAdmin,
   } = useAuth();
-  const { success, error: toastError, info } = useToast();
+  const { success, error: toastError, info, warning } = useToast();
 
   const isSuperAdmin =
     propIsSuperAdmin ?? (activeRole === 'Super Admin' || currentUser?.role === 'Super Admin');
@@ -280,6 +301,18 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
           nextValue ? 'Privilege Granted' : 'Privilege Revoked',
           `${targetUser.name}: '${key}' is now ${nextValue ? 'ENABLED' : 'DISABLED'}. Saved live.`
         );
+
+        // PS-01: Segregation of Duties (SOD) check alert
+        if (
+          nextValue &&
+          ((key === 'canReleaseFinalPayment' && newEffective.canEditQuotePrice) ||
+           (key === 'canEditQuotePrice' && newEffective.canReleaseFinalPayment))
+        ) {
+          warning(
+            'Segregation of Duties (SOD) Violation',
+            `User '${targetUser.name}' holds commercial quote pricing and treasury wire release permissions simultaneously. This violates ISO/ZATCA financial segregation guidelines.`
+          );
+        }
       } else {
         toastError('Update Failed', result.error || 'Could not update privilege.');
       }
@@ -327,12 +360,15 @@ export const UserPrivilegesEditor: React.FC<UserPrivilegesEditorProps> = ({
       canCreateRFQ: value,
       canAwardBid: value,
       canReleasePayment: value,
+      canReleaseFinalPayment: value,
       canAuditLogs: value,
       canManageVendors: value,
       canReceiveShipment: value,
       canEditQuotePrice: value,
       canDeleteQuotation: value,
       canDeleteRFQ: value,
+      canCreatePR: value,
+      canIssuePO: value,
     };
 
     const result = await updateUserPermissions(selectedUser.id, updated);

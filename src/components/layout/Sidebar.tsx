@@ -223,12 +223,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={isCollapsed ? item.label : undefined}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all group relative cursor-pointer ${
                   isActive
-                    ? 'bg-cyan-950/70 text-cyan-200 border border-cyan-500/40 shadow-sm shadow-cyan-950'
+                    ? 'bg-cyan-950/90 text-cyan-100 font-bold border-l-4 border-l-cyan-400 border border-cyan-500/50 shadow-md shadow-cyan-950/60'
                     : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
                 <div
-                  className={`transition-colors shrink-0 ${
+                  className={`transition-colors shrink-0 flex items-center justify-center w-5 h-5 ${
                     isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 >

@@ -396,12 +396,15 @@ export interface PermissionMatrix {
   canCreateRFQ: boolean;
   canAwardBid: boolean;
   canReleasePayment: boolean;
+  canReleaseFinalPayment: boolean; // PS-01: separate final treasury release from general payment
   canAuditLogs: boolean;
   canManageVendors: boolean;
   canReceiveShipment: boolean;
   canEditQuotePrice: boolean;
   canDeleteQuotation: boolean;
   canDeleteRFQ: boolean;
+  canCreatePR: boolean;   // PS-02: guard PR creation
+  canIssuePO: boolean;    // PS-02: guard PO creation
 }
 
 export type ThemeStyle = 'default' | 'glass' | 'clean';

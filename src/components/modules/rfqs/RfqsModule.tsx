@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ArrowRight,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { RFQ, EntityId, Vendor } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
@@ -53,6 +54,19 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
     (vendor.status === 'Approved' || vendor.status === 'Preferred') &&
     (vendor.entityScope === 'Joint / Group' || vendor.entityScope === 'Arabitra Approved')
   ).slice(0, 4).map((vendor) => vendor.id));
+
+  // RF-01: Multi-Person Tender Evaluation Committee state
+  const AVAILABLE_COMMITTEE_MEMBERS = [
+    { id: 'CM-01', role: 'Lead Technical Evaluator', name: 'Eng. Khalid Al-Shehri (Project Engineer)' },
+    { id: 'CM-02', role: 'Commercial Lead', name: 'Mustafa Kamel (Purchasing Specialist)' },
+    { id: 'CM-03', role: 'Committee Chairperson', name: 'Eng. Tareq Al-Ghamdi (Procurement Director)' },
+    { id: 'CM-04', role: 'QHSE Compliance Auditor', name: 'Dr. Yasser Mansour (QHSE Manager)' },
+  ];
+  const [selectedCommittee, setSelectedCommittee] = useState<string[]>([
+    'Eng. Khalid Al-Shehri (Project Engineer)',
+    'Mustafa Kamel (Purchasing Specialist)',
+    'Eng. Tareq Al-Ghamdi (Procurement Director)',
+  ]);
 
   // Form State
   const [form, setForm] = useState({
@@ -443,6 +457,38 @@ export const RfqsModule: React.FC<RfqsModuleProps> = ({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* RF-01: Multi-Person Tender Evaluation Committee Selection */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-slate-300 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                Tender Evaluation Committee Panel (Multi-Member) *
+              </span>
+              <span className="text-[10px] text-cyan-300 font-semibold">{selectedCommittee.length} appointed</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {AVAILABLE_COMMITTEE_MEMBERS.map((member) => (
+                <label key={member.id} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedCommittee.includes(member.name)}
+                    onChange={(e) => setSelectedCommittee((current) =>
+                      e.target.checked ? [...current, member.name] : current.filter((m) => m !== member.name)
+                    )}
+                    className="accent-cyan-500"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-slate-200">{member.name}</span>
+                    <span className="block text-[10px] text-cyan-400 font-medium">{member.role}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Multi-evaluator sign-off required: All appointed committee members must independently score technical and commercial submissions prior to final award.
+            </p>
           </div>
 
           {/* Line Items Builder */}

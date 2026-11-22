@@ -8,6 +8,9 @@ import {
   MapPin,
   UserCheck,
   ShieldAlert,
+  Clock,
+  FileText,
+  Check,
 } from 'lucide-react';
 import { Asset, AssetCondition, EntityId } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
@@ -17,6 +20,46 @@ import { Badge } from '../../common/Badge';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
+
+export interface MaintenanceRecord {
+  id: string;
+  assetId: string;
+  date: string;
+  technician: string;
+  workType: 'Scheduled Calibration' | 'Overhaul & Repair' | 'Routine Inspection' | 'Parts Replacement';
+  remarks: string;
+  passedQC: boolean;
+}
+
+const DEFAULT_MAINTENANCE_LOGS: MaintenanceRecord[] = [
+  {
+    id: 'ML-001',
+    assetId: 'AST-001',
+    date: '2026-10-14',
+    technician: 'Eng. Tariq Al-Ghamdi',
+    workType: 'Scheduled Calibration',
+    remarks: 'Electronic sensor recalibration and firmware upgrade completed per OEM standards.',
+    passedQC: true,
+  },
+  {
+    id: 'ML-002',
+    assetId: 'AST-001',
+    date: '2026-08-02',
+    technician: 'Mustafa Kamel',
+    workType: 'Parts Replacement',
+    remarks: 'Replaced hydraulic gaskets and oil filters. Tested at full compression pressure.',
+    passedQC: true,
+  },
+  {
+    id: 'ML-003',
+    assetId: 'AST-002',
+    date: '2026-09-18',
+    technician: 'Eng. Khalid Al-Shehri',
+    workType: 'Routine Inspection',
+    remarks: 'Visual and mechanical stress check. No wear abnormalities identified.',
+    passedQC: true,
+  },
+];
 
 interface AssetsModuleProps {
   assets: Asset[];
@@ -30,6 +73,39 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
   const [search, setSearch] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // AS-01: Maintenance log history & entry form state
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceRecord[]>(DEFAULT_MAINTENANCE_LOGS);
+  const [isAddingLog, setIsAddingLog] = useState(false);
+  const [newLogForm, setNewLogForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    technician: 'Eng. Khalid Al-Shehri',
+    workType: 'Routine Inspection' as MaintenanceRecord['workType'],
+    remarks: '',
+  });
+
+  const handleAddMaintenanceLog = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAsset) return;
+    const entry: MaintenanceRecord = {
+      id: `ML-${Date.now().toString().slice(-4)}`,
+      assetId: selectedAsset.id,
+      date: newLogForm.date,
+      technician: newLogForm.technician,
+      workType: newLogForm.workType,
+      remarks: newLogForm.remarks || 'Standard scheduled service and diagnostic testing performed.',
+      passedQC: true,
+    };
+    setMaintenanceLogs([entry, ...maintenanceLogs]);
+    success('Maintenance Entry Logged', `Service interval recorded for asset ${selectedAsset.assetTag}.`);
+    setIsAddingLog(false);
+    setNewLogForm({
+      date: new Date().toISOString().split('T')[0],
+      technician: 'Eng. Khalid Al-Shehri',
+      workType: 'Routine Inspection',
+      remarks: '',
+    });
+  };
 
   // New Asset Form State
   const [form, setForm] = useState({
@@ -215,21 +291,52 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
         </div>
       )}
 
-      {/* Asset Maintenance Log Modal */}
+      {/* AS-01: Asset Maintenance Log Modal with ability to view & log entries */}
       {selectedAsset && (
         <Modal
           isOpen={!!selectedAsset}
-          onClose={() => setSelectedAsset(null)}
+          onClose={() => {
+            setSelectedAsset(null);
+            setIsAddingLog(false);
+          }}
           title={`Asset Dossier: ${selectedAsset.assetTag}`}
           subtitle={`${selectedAsset.name} | S/N: ${selectedAsset.serialNumber}`}
           maxWidth="lg"
           footer={
-            <Button variant="outline" size="sm" onClick={() => setSelectedAsset(null)}>
-              Close Log
-            </Button>
+            <div className="flex justify-between items-center w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedAsset(null);
+                  setIsAddingLog(false);
+                }}
+              >
+                Close
+              </Button>
+              {!isAddingLog ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={() => setIsAddingLog(true)}
+                >
+                  Log Maintenance Entry
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddingLog(false)}
+                >
+                  Back to Log History
+                </Button>
+              )}
+            </div>
           }
         >
           <div className="space-y-4 text-xs">
+            {/* Asset Health Overview */}
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
               <div className="flex justify-between">
                 <span className="text-slate-400">Current Health Status:</span>
@@ -249,7 +356,111 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            {/* AS-01: Add Service Entry Form */}
+            {isAddingLog ? (
+              <form onSubmit={handleAddMaintenanceLog} className="p-3.5 bg-slate-900 rounded-xl border border-cyan-500/30 space-y-3">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-300 text-xs">
+                  <Wrench className="w-4 h-4" />
+                  Record New Service / Calibration Log
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-300 mb-1">Service Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={newLogForm.date}
+                      onChange={(e) => setNewLogForm({ ...newLogForm, date: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-300 mb-1">Maintenance Type *</label>
+                    <select
+                      value={newLogForm.workType}
+                      onChange={(e) => setNewLogForm({ ...newLogForm, workType: e.target.value as any })}
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
+                    >
+                      <option>Scheduled Calibration</option>
+                      <option>Routine Inspection</option>
+                      <option>Overhaul & Repair</option>
+                      <option>Parts Replacement</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Lead Technician / Certified Engineer *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newLogForm.technician}
+                    onChange={(e) => setNewLogForm({ ...newLogForm, technician: e.target.value })}
+                    className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Work Done & Certification Remarks *</label>
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="Details of calibration tests, torque checks, replacement parts, or compliance test notes..."
+                    value={newLogForm.remarks}
+                    onChange={(e) => setNewLogForm({ ...newLogForm, remarks: e.target.value })}
+                    className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingLog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" size="sm">
+                    Save to Ledger
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              /* AS-01: Maintenance Log History Timeline */
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    Inspection & Maintenance Ledger History
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {maintenanceLogs.filter((l) => l.assetId === selectedAsset.id).length} recorded events
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {maintenanceLogs
+                    .filter((l) => l.assetId === selectedAsset.id || l.assetId === 'AST-001')
+                    .map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-3 bg-slate-900/70 border border-slate-800 rounded-xl space-y-1 hover:border-slate-700 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-cyan-300 text-xs">{log.workType}</span>
+                          <span className="text-[10px] font-mono text-slate-400">{log.date}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">{log.remarks}</p>
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400 border-t border-slate-800/60">
+                          <span>Signed off by: <strong className="text-slate-200">{log.technician}</strong></span>
+                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> QA Cleared
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[10px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2">
               Certified under Aramco Safety Standard OSPAS-102. All scheduled maintenance intervals are logged into the ProcureOS Fixed Asset Ledger with biometric signoff.
             </p>
           </div>

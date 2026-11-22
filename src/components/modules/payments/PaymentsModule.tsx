@@ -9,6 +9,9 @@ import {
   DollarSign,
   ShieldCheck,
   Send,
+  AlertTriangle,
+  Info,
+  Lock,
 } from 'lucide-react';
 import { PaymentMilestone, PaymentStatus } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
@@ -38,6 +41,19 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedPayment, setSelectedPayment] = useState<PaymentMilestone | null>(null);
   const [confirmReleasePayment, setConfirmReleasePayment] = useState<PaymentMilestone | null>(null);
+  // PY-01: Invoice registration form state
+  const [isRegisterInvoiceOpen, setIsRegisterInvoiceOpen] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState({
+    invoiceNumber: '',
+    poNumber: '',
+    vendorName: '',
+    milestoneDescription: '',
+    amountSAR: '',
+    dueDate: '',
+    paymentMethod: 'SARIE Bank Transfer',
+  });
+  // PY-02: 3-way match checkbox
+  const [threeWayConfirmed, setThreeWayConfirmed] = useState(false);
 
   const filteredPayments = payments.filter((pay) => {
     const matchesScope = matchesCompany(pay.entity);
@@ -49,6 +65,17 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
     return matchesScope && matchesStatus && matchesQuery;
   });
 
+  // WF-01c: Only allow Disburse when status is Processing or Scheduled
+  const canDisburse = (pay: PaymentMilestone) =>
+    pay.status === 'Processing' || pay.status === 'Scheduled';
+
+  const getDisburseBlockReason = (pay: PaymentMilestone): string | null => {
+    if (pay.status === 'Hold') return 'Invoice is on Hold — resolve the hold flag before disbursement.';
+    if (pay.status === 'Pending Approval') return 'Invoice is Pending Approval — await Head authorization first.';
+    if (pay.status === 'Paid') return null; // shows Settled label instead
+    return null;
+  };
+
   const handleRelease = (pay: PaymentMilestone) => {
     if (!permissions.canReleasePayment) {
       warning(
@@ -57,6 +84,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
       );
       return;
     }
+    setThreeWayConfirmed(false);
     setConfirmReleasePayment(pay);
   };
 
@@ -68,6 +96,17 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
     );
     setSelectedPayment(null);
     setConfirmReleasePayment(null);
+  };
+
+  // PY-01: Register new invoice
+  const handleRegisterInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    success(
+      'Invoice Registered',
+      `${invoiceForm.invoiceNumber} registered and routed for Department Head approval before disbursement.`
+    );
+    setIsRegisterInvoiceOpen(false);
+    setInvoiceForm({ invoiceNumber: '', poNumber: '', vendorName: '', milestoneDescription: '', amountSAR: '', dueDate: '', paymentMethod: 'SARIE Bank Transfer' });
   };
 
   const totalOutstandingSAR = filteredPayments
@@ -88,11 +127,22 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl">
-          <span className="text-[11px] text-slate-400">Total Pending Settlement:</span>
-          <span className="font-mono font-bold text-amber-400 text-sm">
-            SAR {totalOutstandingSAR.toLocaleString()}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl">
+            <span className="text-[11px] text-slate-400">Total Pending Settlement:</span>
+            <span className="font-mono font-bold text-amber-400 text-sm">
+              SAR {totalOutstandingSAR.toLocaleString()}
+            </span>
+          </div>
+          {/* PY-01: Register Invoice button */}
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => setIsRegisterInvoiceOpen(true)}
+          >
+            Register Invoice
+          </Button>
         </div>
       </div>
 
@@ -106,7 +156,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
         />
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {['ALL', 'Paid', 'Processing', 'Pending Approval', 'Hold'].map((s) => {
+          {['ALL', 'Paid', 'Processing', 'Approved', 'Pending Approval', 'Hold'].map((s) => {
             const count =
               s === 'ALL'
                 ? payments.filter((p) => matchesCompany(p.entity)).length
@@ -135,7 +185,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
       {filteredPayments.length === 0 ? (
         <EmptyState
           title="No payment records found"
-          description="Adjust your search query or status filter."
+          description="Adjust your search query or status filter, or register a new invoice."
         />
       ) : (
         <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
@@ -155,89 +205,103 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {filteredPayments.map((pay) => (
-                  <tr key={pay.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
-                      {pay.invoiceNumber}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">
-                      {pay.poNumber}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge variant="amber">
-                        Arabitra
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]">
-                      {pay.vendorName}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 min-w-[220px]">
-                      {pay.milestoneDescription}
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap text-sm">
-                      SAR {pay.amountSAR.toLocaleString()}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-300">
-                      {pay.dueDate}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <Badge
-                        variant={
-                          pay.status === 'Paid'
-                            ? 'emerald'
-                            : pay.status === 'Processing'
-                            ? 'cyan'
-                            : pay.status === 'Hold'
-                            ? 'rose'
-                            : 'amber'
-                        }
-                        dot
-                      >
-                        {pay.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      {pay.status !== 'Paid' ? (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon={<Send className="w-3 h-3" />}
-                          onClick={() => setSelectedPayment(pay)}
-                          className="text-xs py-1 px-2.5"
+                {filteredPayments.map((pay) => {
+                  const blockReason = getDisburseBlockReason(pay);
+                  return (
+                    <tr key={pay.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
+                        {pay.invoiceNumber}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">
+                        {pay.poNumber}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <Badge variant="amber">
+                          Arabitra
+                        </Badge>
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px]" title={pay.vendorName}>
+                        {pay.vendorName}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-300 min-w-[220px]" title={pay.milestoneDescription}>
+                        {pay.milestoneDescription}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap text-sm">
+                        SAR {pay.amountSAR.toLocaleString()}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-300">
+                        {pay.dueDate}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            pay.status === 'Paid'
+                              ? 'emerald'
+                              : pay.status === 'Processing' || pay.status === 'Scheduled'
+                              ? 'cyan'
+                              : pay.status === 'Hold' || pay.status === 'Disputed'
+                              ? 'rose'
+                              : 'amber'
+                          }
+                          dot
                         >
-                          Disburse
-                        </Button>
-                      ) : (
-                        <span className="text-[11px] font-mono text-emerald-400">
-                          {pay.bankReference || 'Settled'}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                          {pay.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        {pay.status === 'Paid' ? (
+                          <span className="text-[11px] font-mono text-emerald-400">
+                            {pay.bankReference || 'Settled'}
+                          </span>
+                        ) : canDisburse(pay) ? (
+                          /* WF-01c: Only active when Processing or Approved */
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Send className="w-3 h-3" />}
+                            onClick={() => setSelectedPayment(pay)}
+                            className="text-xs py-1 px-2.5"
+                          >
+                            Disburse
+                          </Button>
+                        ) : (
+                          /* WF-01c: Blocked — show disabled button with tooltip reason */
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/40 text-slate-500 text-xs font-medium cursor-not-allowed"
+                            title={blockReason || 'Cannot disburse at this stage'}
+                          >
+                            <Lock className="w-3 h-3" />
+                            Blocked
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Release Payment Modal */}
+      {/* PY-02: Release Payment Modal — with 3-way match check */}
       {selectedPayment && (
         <Modal
           isOpen={!!selectedPayment}
-          onClose={() => setSelectedPayment(null)}
-          title="Authorize Treasury Disbursement"
+          onClose={() => { setSelectedPayment(null); setThreeWayConfirmed(false); }}
+          title="Two-Tier Authorization — Treasury Release"
           subtitle={`Invoice: ${selectedPayment.invoiceNumber} | Vendor: ${selectedPayment.vendorName}`}
-          maxWidth="md"
+          maxWidth="lg"
           footer={
             <>
-              <Button variant="outline" size="sm" onClick={() => setSelectedPayment(null)}>
+              <Button variant="outline" size="sm" onClick={() => { setSelectedPayment(null); setThreeWayConfirmed(false); }}>
                 Cancel
               </Button>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => handleRelease(selectedPayment)}
+                className={!threeWayConfirmed ? 'opacity-40 cursor-not-allowed' : ''}
               >
                 Sign & Release SAR {selectedPayment.amountSAR.toLocaleString()}
               </Button>
@@ -245,6 +309,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
           }
         >
           <div className="space-y-4 text-xs">
+            {/* Payment Details */}
             <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2 font-mono">
               <div className="flex justify-between">
                 <span className="text-slate-400">Disbursement Amount:</span>
@@ -262,15 +327,53 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold">Two-Tier Treasury Sign-Off</p>
-                <p className="text-[11px] text-emerald-300/80 mt-0.5">
-                  Confirming this transaction executes the automated SARIE interbank batch transmission and archives invoice compliance against Saudi ZATCA standards.
-                </p>
+            {/* PY-02: Three-Way Match Check Panel */}
+            <div className="p-3.5 bg-slate-900 rounded-xl border border-slate-700 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Info className="w-4 h-4 text-cyan-400" />
+                <span className="font-semibold text-slate-200 text-xs">Three-Way Match Verification</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-300">Purchase Order Status</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-300">Goods Receipt Note (GRN)</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Received
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800">
+                  <span className="text-slate-300">Invoice Verification</span>
+                  <span className={`font-semibold flex items-center gap-1 ${
+                    selectedPayment.status === 'Processing' || selectedPayment.status === 'Scheduled'
+                      ? 'text-emerald-400'
+                      : 'text-rose-400'
+                  }`}>
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* PY-02: Mandatory Confirmation Checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30">
+              <input
+                type="checkbox"
+                checked={threeWayConfirmed}
+                onChange={(e) => setThreeWayConfirmed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-emerald-500 cursor-pointer shrink-0"
+              />
+              <div>
+                <p className="font-semibold text-emerald-300">I confirm all three-way match criteria are satisfied</p>
+                <p className="text-[11px] text-emerald-300/70 mt-0.5">
+                  Confirming executes the SARIE interbank batch transmission and archives invoice compliance against Saudi ZATCA standards. This action is irreversible.
+                </p>
+              </div>
+            </label>
           </div>
         </Modal>
       )}
@@ -295,6 +398,113 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
           ]}
         />
       )}
+
+      {/* PY-01: Register Invoice Modal */}
+      <Modal
+        isOpen={isRegisterInvoiceOpen}
+        onClose={() => setIsRegisterInvoiceOpen(false)}
+        title="Register Vendor Invoice"
+        subtitle="Link invoice to a Purchase Order — routes for Head approval before disbursement"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleRegisterInvoice} className="space-y-4 text-xs">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium text-slate-300 mb-1">Invoice Number *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. INV-2026-0491"
+                value={invoiceForm.invoiceNumber}
+                onChange={(e) => setInvoiceForm({ ...invoiceForm, invoiceNumber: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-slate-300 mb-1">Linked PO Number *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. PO-ARB-26-0491"
+                value={invoiceForm.poNumber}
+                onChange={(e) => setInvoiceForm({ ...invoiceForm, poNumber: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium text-slate-300 mb-1">Vendor / Supplier *</label>
+            <input
+              type="text"
+              required
+              value={invoiceForm.vendorName}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, vendorName: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+          <div>
+            <label className="block font-medium text-slate-300 mb-1">Milestone / Scope Description *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. 30% Advance — GPS Tracker Batch Delivery"
+              value={invoiceForm.milestoneDescription}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, milestoneDescription: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium text-slate-300 mb-1">Amount (SAR) *</label>
+              <input
+                type="number"
+                required
+                placeholder="Excluding VAT"
+                value={invoiceForm.amountSAR}
+                onChange={(e) => setInvoiceForm({ ...invoiceForm, amountSAR: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-slate-300 mb-1">Due Date *</label>
+              <input
+                type="date"
+                required
+                value={invoiceForm.dueDate}
+                onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium text-slate-300 mb-1">Payment Method</label>
+            <select
+              value={invoiceForm.paymentMethod}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, paymentMethod: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+            >
+              <option>SARIE Bank Transfer</option>
+              <option>Letter of Credit (LC)</option>
+              <option>Bank Cheque</option>
+              <option>Wire Transfer (SWIFT)</option>
+            </select>
+          </div>
+          <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-300">
+              Registered invoices will be set to <strong>Pending Approval</strong> and must receive Department Head authorization before the Disburse action becomes available.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsRegisterInvoiceOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm">
+              Register & Submit for Approval
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

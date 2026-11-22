@@ -148,7 +148,20 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
             <span className="text-amber-400 font-medium">All requisitions require prior Department Head sign-off.</span>
           </p>
         </div>
-        <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>Create Requisition</Button>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<Plus className="w-4 h-4" />}
+          onClick={() => {
+            if (!permissions?.canCreatePR) {
+              warning('Authorization Required', `Role '${activeRole}' does not hold clearance to raise Purchase Requisitions.`);
+              return;
+            }
+            setIsModalOpen(true);
+          }}
+        >
+          Create Requisition
+        </Button>
       </div>
 
       {/* Governance Status Navigation Tabs */}
@@ -217,7 +230,18 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState title="No purchase requisitions found" description="Create an internal purchase request to begin the procurement workflow." actionLabel="Create Requisition" onAction={() => setIsModalOpen(true)} />
+        <EmptyState
+          title="No purchase requisitions found"
+          description="Create an internal purchase request to begin the procurement workflow."
+          actionLabel="Create Requisition"
+          onAction={() => {
+            if (!permissions?.canCreatePR) {
+              warning('Authorization Required', `Role '${activeRole}' does not hold clearance to raise Purchase Requisitions.`);
+              return;
+            }
+            setIsModalOpen(true);
+          }}
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((pr) => (

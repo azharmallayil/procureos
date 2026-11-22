@@ -642,9 +642,17 @@ export const QuotationsModule: React.FC<QuotationsModuleProps> = ({
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {sub.recommended ? (
-                          <Badge variant="emerald" dot>
-                            Recommended
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="emerald" dot>
+                              Recommended
+                            </Badge>
+                            <span
+                              className="text-slate-400 hover:text-cyan-400 cursor-help transition-colors"
+                              title="Recommendation criteria: Ranked highest by evaluation algorithm for meeting 100% technical specifications, lowest evaluated cost, and required delivery timeline. Subject to final Committee sign-off."
+                            >
+                              <HelpCircle className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
                         ) : sub.status === 'Rejected' ? (
                           <Badge variant="rose">Rejected</Badge>
                         ) : (

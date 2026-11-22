@@ -554,7 +554,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                         <div className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                           {item.name}
                         </div>
-                        <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed max-w-2xl font-normal">
+                        <div className="text-xs text-slate-800 dark:text-slate-200 mt-1.5 leading-relaxed max-w-2xl font-normal bg-slate-100/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
                           {item.description}
                         </div>
                         <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500">
@@ -663,17 +663,18 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
               </div>
             </div>
 
-            {/* Readability Box: Full Technical Specifications */}
-            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+            {/* RL-04: Readability Box: Full Technical Specifications with High Contrast */}
+            <div className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   Technical Specification Dossier
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/40 font-semibold">
                   Arabitra Telematics Catalog
                 </span>
               </div>
-              <p className="text-sm text-slate-200 font-medium leading-relaxed">
+              <p className="text-xs md:text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line bg-slate-950 p-3.5 rounded-lg border border-slate-800">
                 {editFormData.description || editingItem.description}
               </p>
             </div>
@@ -778,7 +779,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Reorder Threshold (Point)
+                  Reorder Trigger Point (units)
                 </label>
                 <input
                   type="number"

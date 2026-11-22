@@ -45,6 +45,11 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(openCreateModal);
   const [confirmInspectDelivery, setConfirmInspectDelivery] = useState<Delivery | null>(null);
+  // DL-01: Partial acceptance & rejection inspection states
+  const [inspectionDecision, setInspectionDecision] = useState<'Full' | 'Partial' | 'Reject'>('Full');
+  const [partialAcceptedQty, setPartialAcceptedQty] = useState('85');
+  const [partialShortageQty, setPartialShortageQty] = useState('15');
+  const [inspectionRemarks, setInspectionRemarks] = useState('');
 
   // Form State
   const [form, setForm] = useState({
@@ -77,12 +82,27 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
       );
       return;
     }
+    setInspectionDecision('Full');
+    setInspectionRemarks('');
     setConfirmInspectDelivery(del);
   };
 
   const executeInspect = (del: Delivery) => {
-    onMarkInspected(del.id);
-    success('Goods Receipt Note (GRN) Verified', `${del.trackingNumber} inspected and cleared.`);
+    if (inspectionDecision === 'Full') {
+      onMarkInspected(del.id);
+      success('Goods Receipt Note (GRN) Verified', `${del.trackingNumber} 100% inspected, accepted, and cleared into Arabitra inventory.`);
+    } else if (inspectionDecision === 'Partial') {
+      onMarkInspected(del.id);
+      warning(
+        'Partial GRN Issued with Shortage',
+        `${del.trackingNumber}: ${partialAcceptedQty}% accepted, ${partialShortageQty}% back-ordered/damaged. Discrepancy logged for vendor reconciliation.`
+      );
+    } else {
+      warning(
+        'Shipment Rejected — Return to Vendor',
+        `${del.trackingNumber} failed site QA/QC inspection. Consignment rejected and carrier Return to Vendor (RTV) initiated.`
+      );
+    }
     setSelectedDelivery(null);
     setConfirmInspectDelivery(null);
   };
@@ -272,7 +292,10 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                         >
                           Dossier
                         </button>
-                        {del.qcInspectionStatus === 'Pending Inspection' && (
+                        {/* WF-01a: Pass QC only when physically received (not In Transit or Delayed) */}
+                        {del.qcInspectionStatus === 'Pending Inspection' &&
+                         del.status !== 'In Transit' &&
+                         del.status !== 'Delayed' && (
                           <Button
                             variant="primary"
                             size="sm"
@@ -281,6 +304,16 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                           >
                             Pass QC
                           </Button>
+                        )}
+                        {/* WF-01a: Show blocked indicator when in transit but inspection pending */}
+                        {del.qcInspectionStatus === 'Pending Inspection' &&
+                         (del.status === 'In Transit' || del.status === 'Delayed') && (
+                          <span
+                            className="text-[10px] text-slate-500 italic px-2"
+                            title="QC inspection is only available after the consignment has physically arrived at the site. Status must be Inspected & Accepted or Delivered."
+                          >
+                            Awaiting Arrival
+                          </span>
                         )}
                       </div>
                     </td>
@@ -305,7 +338,10 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
               <Button variant="outline" size="sm" onClick={() => setSelectedDelivery(null)}>
                 Close
               </Button>
-              {selectedDelivery.qcInspectionStatus === 'Pending Inspection' && (
+              {/* WF-01a: QC button in dossier also gated on transit status */}
+              {selectedDelivery.qcInspectionStatus === 'Pending Inspection' &&
+               selectedDelivery.status !== 'In Transit' &&
+               selectedDelivery.status !== 'Delayed' && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -313,6 +349,12 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                 >
                   Confirm QC Acceptance & File GRN
                 </Button>
+              )}
+              {selectedDelivery.qcInspectionStatus === 'Pending Inspection' &&
+               (selectedDelivery.status === 'In Transit' || selectedDelivery.status === 'Delayed') && (
+                <span className="text-xs text-amber-400 italic flex items-center gap-1.5">
+                  ⚠ QC available only after physical arrival at site
+                </span>
               )}
             </div>
           }
@@ -458,25 +500,187 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
         </form>
       </Modal>
 
-      {/* Confirmation Modal: Mark Inspected (GRN) */}
+      {/* DL-01: QA/QC Inspection & Goods Receipt Decision Modal (Full / Partial / Reject) */}
       {confirmInspectDelivery && (
-        <ConfirmationModal
+        <Modal
           isOpen={Boolean(confirmInspectDelivery)}
           onClose={() => setConfirmInspectDelivery(null)}
-          onConfirm={() => executeInspect(confirmInspectDelivery)}
-          title="Accept Delivery & Issue GRN"
-          description={`Are you sure you want to verify and accept shipment ${confirmInspectDelivery.trackingNumber}? This generates the Goods Receipt Note (GRN) and authorizes the warehouse receipt.`}
-          confirmText="Yes, Issue GRN & Accept"
-          cancelText="Cancel"
-          intent="success"
-          details={[
-            { label: 'Tracking #', value: confirmInspectDelivery.trackingNumber },
-            { label: 'PO Reference', value: confirmInspectDelivery.poNumber },
-            { label: 'Supplier', value: confirmInspectDelivery.vendorName },
-            { label: 'Destination Site', value: confirmInspectDelivery.destinationSite },
-            { label: 'Carrier', value: confirmInspectDelivery.carrier },
-          ]}
-        />
+          title="QA/QC Site Inspection & Goods Receipt (GRN)"
+          subtitle={`Waybill: ${confirmInspectDelivery.trackingNumber} | PO: ${confirmInspectDelivery.poNumber}`}
+          maxWidth="lg"
+          footer={
+            <div className="flex justify-between items-center w-full">
+              <Button variant="outline" size="sm" onClick={() => setConfirmInspectDelivery(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant={inspectionDecision === 'Reject' ? 'danger' : 'primary'}
+                size="sm"
+                onClick={() => executeInspect(confirmInspectDelivery)}
+              >
+                {inspectionDecision === 'Full' && 'Issue Clean GRN & Accept (100%)'}
+                {inspectionDecision === 'Partial' && 'Issue Partial GRN with Discrepancy'}
+                {inspectionDecision === 'Reject' && 'Confirm Rejection & Return to Vendor'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {/* Shipment Summary */}
+            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <div>
+                <span className="text-slate-400 block text-[10px]">Vendor Consignor</span>
+                <span className="font-semibold text-slate-100">{confirmInspectDelivery.vendorName}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Destination Site</span>
+                <span className="font-semibold text-cyan-300">{confirmInspectDelivery.destinationSite}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Logistics Carrier</span>
+                <span className="text-slate-200">{confirmInspectDelivery.carrier}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Driver Contact</span>
+                <span className="text-slate-200">{confirmInspectDelivery.driverName || 'Designated Driver'} ({confirmInspectDelivery.driverContact || 'N/A'})</span>
+              </div>
+            </div>
+
+            {/* DL-01: Inspection Decision Selector */}
+            <div className="space-y-2">
+              <label className="block font-bold text-slate-200 text-xs">
+                Receiving Decision & Material Acceptance Status *
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInspectionDecision('Full')}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    inspectionDecision === 'Full'
+                      ? 'bg-emerald-950/50 border-emerald-500/60 text-emerald-300 ring-1 ring-emerald-500/30'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${inspectionDecision === 'Full' ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                    Full Acceptance
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    100% clean receipt, zero damage
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInspectionDecision('Partial')}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    inspectionDecision === 'Partial'
+                      ? 'bg-amber-950/50 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${inspectionDecision === 'Partial' ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                    Partial Accept
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Short shipment / transit damage
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInspectionDecision('Reject')}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    inspectionDecision === 'Reject'
+                      ? 'bg-rose-950/50 border-rose-500/60 text-rose-300 ring-1 ring-rose-500/30'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold text-xs flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${inspectionDecision === 'Reject' ? 'bg-rose-400' : 'bg-slate-600'}`} />
+                    Reject Consignment
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Non-compliant / wrong item
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Decision Specific Inputs */}
+            {inspectionDecision === 'Partial' && (
+              <div className="p-3 bg-amber-950/20 border border-amber-500/40 rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-amber-300 font-semibold text-xs">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  Partial Delivery Discrepancy Details
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                      Accepted Quantity (%) *
+                    </label>
+                    <input
+                      type="number"
+                      value={partialAcceptedQty}
+                      onChange={(e) => setPartialAcceptedQty(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-emerald-300 font-mono font-bold focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                      Shortage / Damaged Qty (%) *
+                    </label>
+                    <input
+                      type="number"
+                      value={partialShortageQty}
+                      onChange={(e) => setPartialShortageQty(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-rose-300 font-mono font-bold focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    Discrepancy Notes & Back-Order Terms
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Describe shortage, packaging damage, or reason for back-ordering remaining batch..."
+                    value={inspectionRemarks}
+                    onChange={(e) => setInspectionRemarks(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {inspectionDecision === 'Reject' && (
+              <div className="p-3 bg-rose-950/20 border border-rose-500/40 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-rose-300 font-semibold text-xs">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  Mandatory Rejection & Non-Conformance Reason *
+                </div>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Specify QA/QC failure: e.g. items do not match PO technical specifications, broken seal, incorrect part number..."
+                  value={inspectionRemarks}
+                  onChange={(e) => setInspectionRemarks(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-rose-700 rounded-lg text-xs text-rose-200 focus:outline-none"
+                />
+              </div>
+            )}
+
+            {inspectionDecision === 'Full' && (
+              <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl flex items-start gap-2.5 text-emerald-300">
+                <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                <p className="text-[11px] leading-relaxed">
+                  Confirming full acceptance certifies that all consignment items match the PO line items, specifications, and manufacturer test certificates (MTC) in accordance with Aramco quality standards.
+                </p>
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -16,7 +16,7 @@ import {
   ArrowRight,
   FileText,
 } from 'lucide-react';
-import { PurchaseOrder, POStatus, EntityId, isHeadRole } from '../../../types/procurement';
+import { PurchaseOrder, POStatus, EntityId, isHeadRole, UserRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -63,8 +63,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   // Confirmation Modals State
   const [confirmApprovalPO, setConfirmApprovalPO] = useState<PurchaseOrder | null>(null);
   const [confirmRejectPO, setConfirmRejectPO] = useState<PurchaseOrder | null>(null);
+  // WF-01b: Receive confirmation modal
+  const [confirmReceivePO, setConfirmReceivePO] = useState<PurchaseOrder | null>(null);
 
-  // New PO Form State
+  // WF-01b / WF-02 / WF-03: PO form with justification type + PR/RFQ link
   const [form, setForm] = useState({
     vendorName: 'Al-Tamimi Industrial Flow Systems Co.',
     entity: 'ARABITRA' as EntityId,
@@ -72,6 +74,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
     expectedDeliveryDate: '2026-11-20',
     totalAmountSAR: '',
     paymentTerms: '30% Advance, 70% Post-Delivery & MTC Verification',
+    justificationType: 'linked' as 'linked' | 'emergency',
+    linkedPRNumber: '',
+    linkedRFQNumber: '',
+    emergencyJustification: '',
   });
 
   const filteredPOs = purchaseOrders.filter((po) => {
@@ -161,22 +167,44 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
   };
 
   const handleReceive = (po: PurchaseOrder) => {
+    // WF-01b: Stage to confirmation modal rather than direct status change
+    setConfirmReceivePO(po);
+  };
+
+  const executeReceive = (po: PurchaseOrder) => {
     if (onUpdatePOStatus) {
       onUpdatePOStatus(po.id, 'Received');
     }
-    success('Consignment Received & Staged', `Materials for ${po.poNumber} delivered. Site acceptance queued.`);
+    success('Consignment Received & Staged', `Materials for ${po.poNumber} delivered to Arabitra Head Office Store Khobar. QC inspection queued in Deliveries.`);
     if (selectedPO?.id === po.id) {
       setSelectedPO({ ...po, status: 'Received' });
     }
+    setConfirmReceivePO(null);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.totalAmountSAR) return;
 
+    // WF-02 / WF-03: Validate justification type requirements
+    if (form.justificationType === 'linked') {
+      if (!form.linkedPRNumber.trim() || !form.linkedRFQNumber.trim()) {
+        warning('Linked References Required', 'Please provide both a linked PR number and RFQ/Tender reference before issuing this PO.');
+        return;
+      }
+    } else {
+      if (!form.emergencyJustification.trim() || form.emergencyJustification.trim().length < 30) {
+        warning('Justification Required', 'Emergency Direct PO requires a written justification of at least 30 characters.');
+        return;
+      }
+    }
+
     const netAmount = parseFloat(form.totalAmountSAR) || 0;
     const vatAmount = netAmount * 0.15;
     const grandTotal = netAmount + vatAmount;
+
+    // Emergency DPO escalates to Department Head; Linked PO routes to Procurement Director
+    const approver: UserRole = form.justificationType === 'emergency' ? 'Department Head (HOD)' : 'Procurement Director';
 
     const newPO: PurchaseOrder = {
       id: `PO-${Date.now().toString().slice(-4)}`,
@@ -193,13 +221,15 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
       status: 'Pending Approval',
       paymentTerms: form.paymentTerms,
       approvalStage: 'Purchasing',
-      currentApproverRole: 'Procurement Director',
+      currentApproverRole: approver,
       paymentStatus: 'Unpaid',
       lineItems: [
         {
           id: 'POL-AUTO-1',
           sku: 'ITM-AUTO-01',
-          description: 'Package line items per approved tender specification',
+          description: form.justificationType === 'emergency'
+            ? `[EMERGENCY DPO] ${form.emergencyJustification}`
+            : `Linked PR: ${form.linkedPRNumber} | RFQ/Tender: ${form.linkedRFQNumber} — Package line items per approved tender specification`,
           quantity: 1,
           uom: 'LOT',
           unitPriceSAR: netAmount,
@@ -209,7 +239,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
     };
 
     onAddPO(newPO);
-    success('Purchase Order Generated', `${newPO.poNumber} drafted and submitted for authorization.`);
+    success(
+      'Purchase Order Generated',
+      `${newPO.poNumber} drafted and routed to ${approver} for authorization.`
+    );
     setIsCreateModalOpen(false);
     if (onCloseCreateModal) onCloseCreateModal();
   };
@@ -250,7 +283,13 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
           variant="primary"
           size="sm"
           icon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            if (!permissions.canIssuePO) {
+              warning('Authorization Required', `Role '${activeRole}' does not hold operational authority to issue Purchase Orders.`);
+              return;
+            }
+            setIsCreateModalOpen(true);
+          }}
         >
           Issue Purchase Order
         </Button>
@@ -297,7 +336,13 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
           title="No purchase orders found"
           description="Adjust your search criteria or create a new purchase order."
           actionLabel="Issue Purchase Order"
-          onAction={() => setIsCreateModalOpen(true)}
+          onAction={() => {
+            if (!permissions.canIssuePO) {
+              warning('Authorization Required', `Role '${activeRole}' does not hold operational authority to issue Purchase Orders.`);
+              return;
+            }
+            setIsCreateModalOpen(true);
+          }}
         />
       ) : (
         <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
@@ -789,6 +834,95 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
         maxWidth="xl"
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
+          {/* WF-02 & WF-03: Justification Type Switcher */}
+          <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
+            <label className="block font-bold text-slate-200">
+              Procurement Governance & Requisition Linkage *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, justificationType: 'linked' })}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  form.justificationType === 'linked'
+                    ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div className="font-bold text-xs flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${form.justificationType === 'linked' ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+                  Linked to Approved PR + RFQ
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Standard workflow with prior demand & tender approval
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, justificationType: 'emergency' })}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  form.justificationType === 'emergency'
+                    ? 'bg-amber-950/40 border-amber-500/50 text-amber-300'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div className="font-bold text-xs flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${form.justificationType === 'emergency' ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                  Emergency Direct PO (DPO)
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Escalates to Department Head for prior sign-off
+                </div>
+              </button>
+            </div>
+
+            {form.justificationType === 'linked' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    Linked Purchase Requisition (PR) # *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. PR-ARB-26-001"
+                    value={form.linkedPRNumber}
+                    onChange={(e) => setForm({ ...form, linkedPRNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-cyan-300 font-mono focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    Linked RFQ / Tender Reference # *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. RFQ-ARB-26-081"
+                    value={form.linkedRFQNumber}
+                    onChange={(e) => setForm({ ...form, linkedRFQNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-cyan-300 font-mono focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2">
+                <label className="block text-[11px] font-medium text-amber-300 mb-1">
+                  Emergency Justification (Minimum 30 characters) *
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="State the operational urgency, client mandate, or critical site requirement that necessitates bypassing the standard RFQ process..."
+                  value={form.emergencyJustification}
+                  onChange={(e) => setForm({ ...form, emergencyJustification: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 border border-amber-600/50 rounded-lg text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-medium text-slate-300 mb-1">Company Entity *</label>
@@ -911,6 +1045,27 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
             { label: 'PO Number', value: confirmRejectPO.poNumber },
             { label: 'Supplier', value: confirmRejectPO.vendorName },
             { label: 'Total Value', value: `SAR ${confirmRejectPO.grandTotalSAR.toLocaleString()}` },
+          ]}
+        />
+      )}
+
+      {/* WF-01b Confirmation Modal: Receive Consignment & Queue QC */}
+      {confirmReceivePO && (
+        <ConfirmationModal
+          isOpen={Boolean(confirmReceivePO)}
+          onClose={() => setConfirmReceivePO(null)}
+          onConfirm={() => executeReceive(confirmReceivePO)}
+          title="Confirm Site Consignment Receipt"
+          description={`Confirm physical receipt of consignment for ${confirmReceivePO.poNumber} at Arabitra Head Office Store Khobar? This will stage the delivery and queue mandatory QA/QC inspection before inventory posting.`}
+          confirmText="Confirm Receipt & Stage for QC"
+          cancelText="Cancel"
+          intent="success"
+          details={[
+            { label: 'PO Number', value: confirmReceivePO.poNumber },
+            { label: 'Supplier Payee', value: confirmReceivePO.vendorName },
+            { label: 'Receiving Depot', value: 'Arabitra Head Office Store Khobar' },
+            { label: 'Total Value', value: `SAR ${confirmReceivePO.grandTotalSAR.toLocaleString()}` },
+            { label: 'Next Step', value: 'QA/QC Inspection in Deliveries (GRN)' },
           ]}
         />
       )}
