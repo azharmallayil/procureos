@@ -96,7 +96,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.22.pending_head_approval';
+    const PROD_LIVE_VER = '2026.11.22.enterprise_governance_khobar';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -247,6 +247,16 @@ const MainApplication: React.FC = () => {
   const handleAddVendor = (vendor: Vendor) => {
     setVendors((prev) => [vendor, ...prev]);
     recordAuditLog('Vendor Registered', 'Vendor', vendor.id, `Registered supplier ${vendor.name} (CR: ${vendor.crNumber})`, {
+      name: currentUser?.name,
+      role: activeRole || 'User',
+    });
+  };
+
+  const handleUpdateVendor = (updatedVendor: Vendor) => {
+    setVendors((prev) =>
+      prev.map((v) => (v.id === updatedVendor.id ? updatedVendor : v))
+    );
+    recordAuditLog('Vendor Updated', 'Vendor', updatedVendor.id, `Supplier ${updatedVendor.name} details updated (submitted for Head qualification)`, {
       name: currentUser?.name,
       role: activeRole || 'User',
     });
@@ -1064,6 +1074,7 @@ const MainApplication: React.FC = () => {
               <VendorsModule
                 vendors={vendors}
                 onAddVendor={handleAddVendor}
+                onUpdateVendor={handleUpdateVendor}
                 onApproveVendor={handleApproveVendor}
                 onRejectVendor={handleRejectVendor}
               />

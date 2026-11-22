@@ -40,7 +40,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
     assignedProject: 'Shedgum Plant Decarbonization Ph-2',
     custodian: 'Eng. Khalid Al-Shehri',
     acquisitionCostSAR: '',
-    location: 'Central Field Yard',
+    location: 'Arabitra Head Office Store Khobar',
   });
 
   const filteredAssets = assets.filter((ast) => {

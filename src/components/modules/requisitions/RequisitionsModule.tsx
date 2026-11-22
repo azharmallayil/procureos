@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { ClipboardList, Plus, CheckCircle2, XCircle, ArrowRight, Calendar, Package } from 'lucide-react';
+import {
+  ClipboardList,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Calendar,
+  Package,
+  Clock,
+  ShieldCheck,
+} from 'lucide-react';
 import { Item, EntityId, PurchaseRequisition, PurchaseRequisitionLineItem, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -35,14 +45,14 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
   const { currentUser, activeRole, permissions } = useAuth();
   const { success, warning } = useToast();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'Pending Approval' | 'Approved' | 'Converted to RFQ'>('Pending Approval');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [form, setForm] = useState({
     title: '', entity: 'ARABITRA' as EntityId, department: currentUser?.department || 'Procurement',
     requiredDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-    projectName: '', deliveryLocation: '', justification: '', priority: 'Normal' as 'Urgent' | 'High' | 'Normal',
+    projectName: '', deliveryLocation: 'Arabitra Head Office Store Khobar', justification: '', priority: 'Normal' as 'Urgent' | 'High' | 'Normal',
   });
   const [draftLines, setDraftLines] = useState<DraftLine[]>([{ itemId: '', quantity: 1 }]);
 
@@ -106,9 +116,9 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
       estimatedTotalSAR: lineItems.reduce((sum, line) => sum + line.estimatedTotalSAR, 0), lineItems,
     };
     onCreate(requisition);
-    success('Purchase requisition submitted', `${requisition.prNumber} is now in the approval queue.`);
+    success('Purchase requisition submitted', `${requisition.prNumber} is now in the approval queue awaiting Department Head sign-off.`);
     setIsModalOpen(false);
-    setForm({ ...form, title: '', projectName: '', deliveryLocation: '', justification: '' });
+    setForm({ ...form, title: '', projectName: '', deliveryLocation: 'Arabitra Head Office Store Khobar', justification: '' });
     setDraftLines([{ itemId: '', quantity: 1 }]);
   };
 
@@ -122,31 +132,88 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
     setRejectionReason('');
   };
 
+  const pendingPrCount = requisitions.filter((pr) => pr.status === 'Pending Approval').length;
+  const approvedPrCount = requisitions.filter((pr) => pr.status === 'Approved').length;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2"><ClipboardList className="w-6 h-6 text-cyan-400" />Purchase Requisitions</h1>
-          <p className="text-xs md:text-sm text-slate-400 mt-0.5">Internal demand requests, budget estimates and authorization before RFQ creation</p>
+          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+            <ClipboardList className="w-6 h-6 text-cyan-400" />
+            Purchase Requisitions
+          </h1>
+          <p className="text-xs md:text-sm text-slate-400 mt-0.5">
+            Internal demand requests, budget estimates and authorization before RFQ creation.{' '}
+            <span className="text-amber-400 font-medium">All requisitions require prior Department Head sign-off.</span>
+          </p>
         </div>
         <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>Create Requisition</Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          ['Total', requisitions.length], ['Pending Approval', requisitions.filter((pr) => pr.status === 'Pending Approval').length],
-          ['Approved', requisitions.filter((pr) => pr.status === 'Approved').length], ['Converted to RFQ', requisitions.filter((pr) => pr.status === 'Converted to RFQ').length],
-        ].map(([label, count]) => <div key={String(label)} className="glass-panel rounded-xl border border-slate-800 p-4"><div className="text-[10px] uppercase tracking-wider text-slate-400">{label}</div><div className="text-2xl font-bold text-white mt-1">{count}</div></div>)}
+      {/* Governance Status Navigation Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-900/40 border border-slate-800">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('Pending Approval')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              statusFilter === 'Pending Approval'
+                ? 'bg-amber-950/90 text-amber-300 border border-amber-500/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Clock className="w-4 h-4 text-amber-400" />
+            <span>Requisitions Pending Approval</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                statusFilter === 'Pending Approval'
+                  ? 'bg-amber-500 text-slate-950'
+                  : 'bg-amber-500/20 text-amber-400'
+              }`}
+            >
+              {pendingPrCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('Approved')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              statusFilter === 'Approved'
+                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Approved Requisitions</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                statusFilter === 'Approved'
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-emerald-500/20 text-emerald-400'
+              }`}
+            >
+              {approvedPrCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ALL')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              statusFilter === 'ALL'
+                ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            All Requisitions ({requisitions.length})
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
         <SearchInput value={search} onChange={setSearch} placeholder="Search PR number, project or requester..." className="w-full sm:w-96" />
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full sm:w-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">
-          {['ALL', 'Pending Approval', 'Approved', 'Rejected', 'Converted to RFQ', 'Draft', 'Cancelled'].map((status) => {
-            const count = status === 'ALL' ? requisitions.length : requisitions.filter((pr) => pr.status === status).length;
-            return <option key={status} value={status}>{status} ({count})</option>;
-          })}
-        </select>
       </div>
 
       {filtered.length === 0 ? (
@@ -187,7 +254,7 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
             <div><label className="block text-slate-300 mb-1">Department</label><input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>
             <div><label className="block text-slate-300 mb-1">Project / Cost Centre *</label><input required value={form.projectName} onChange={(e) => setForm({ ...form, projectName: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>
             <div><label className="block text-slate-300 mb-1">Required delivery date *</label><input required type="date" min={new Date().toISOString().split('T')[0]} value={form.requiredDate} onChange={(e) => setForm({ ...form, requiredDate: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" /></div>
-            <div><label className="block text-slate-300 mb-1">Delivery location *</label><input required value={form.deliveryLocation} onChange={(e) => setForm({ ...form, deliveryLocation: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" placeholder="Site / warehouse" /></div>
+            <div><label className="block text-slate-300 mb-1">Delivery location *</label><input required value={form.deliveryLocation} onChange={(e) => setForm({ ...form, deliveryLocation: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" placeholder="e.g. Arabitra Head Office Store Khobar" /></div>
           </div>
           <div><label className="block text-slate-300 mb-1">Purchase justification *</label><textarea required rows={2} value={form.justification} onChange={(e) => setForm({ ...form, justification: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100" placeholder="Explain why this purchase is required..." /></div>
           <div className="flex items-center justify-between"><span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Requisition items</span><button type="button" onClick={() => setDraftLines((prev) => [...prev, { itemId: '', quantity: 1 }])} className="text-cyan-300 hover:text-cyan-200">+ Add line</button></div>

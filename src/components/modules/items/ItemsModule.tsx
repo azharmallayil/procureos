@@ -105,6 +105,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedStockFilter, setSelectedStockFilter] = useState<'ALL' | 'RED' | 'ORANGE' | 'GREEN'>('ALL');
 
   // Primary navigation tabs: 'PENDING' (Items Pending Approval) & 'APPROVED' (Approved Items)
   const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED'>('PENDING');
@@ -130,7 +131,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     description: '',
     stockLevel: '0',
     reorderPoint: '5',
-    location: 'Riyadh Central IoT Depot',
+    location: 'Arabitra Head Office Store Khobar',
   });
 
   // Create form state
@@ -142,7 +143,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     uom: 'EA',
     stockLevel: '',
     reorderPoint: '',
-    location: 'Riyadh Central IoT Depot',
+    location: 'Arabitra Head Office Store Khobar',
   });
 
   const categories = [
@@ -181,6 +182,14 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     if (activeTab === 'PENDING' && !isItemPending) return false;
     if (activeTab === 'APPROVED' && !isItemApproved) return false;
 
+    // Stock Level Filter (Red, Orange, Green)
+    if (selectedStockFilter !== 'ALL') {
+      const stockStatus = getStockStatus(item.stockLevel, item.reorderPoint);
+      if (selectedStockFilter === 'RED' && stockStatus.color !== 'red') return false;
+      if (selectedStockFilter === 'ORANGE' && stockStatus.color !== 'orange') return false;
+      if (selectedStockFilter === 'GREEN' && stockStatus.color !== 'green') return false;
+    }
+
     // Category filter
     if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
 
@@ -208,7 +217,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       description: item.description || '',
       stockLevel: item.stockLevel.toString(),
       reorderPoint: item.reorderPoint.toString(),
-      location: item.location || 'Riyadh Central IoT Depot',
+      location: item.location || 'Arabitra Head Office Store Khobar',
     });
   };
 
@@ -271,7 +280,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       unitPriceSAR: 0,
       entity: 'ARABITRA',
       primaryVendorId: 'VND-001',
-      location: newFormData.location || 'Riyadh Central IoT Depot',
+      location: newFormData.location || 'Arabitra Head Office Store Khobar',
       status: 'Pending Head Approval',
       approvalStatus: 'Pending Head Approval',
       requestedBy: currentUser?.name || 'Telematics Specialist',
@@ -296,7 +305,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
       uom: 'EA',
       stockLevel: '',
       reorderPoint: '',
-      location: 'Riyadh Central IoT Depot',
+      location: 'Arabitra Head Office Store Khobar',
     });
   };
 
@@ -432,89 +441,59 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
         </div>
       )}
 
-      {/* Search Bar & Category Filter */}
-      <div className="space-y-3 bg-slate-900/40 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      {/* Search Bar & Dropdown Filters (Category & Stock Level) */}
+      <div className="bg-slate-900/40 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           <SearchInput
             value={search}
             onChange={setSearch}
             placeholder="Search by SKU, item name or technical specification..."
-            className="w-full md:w-96"
+            className="w-full lg:w-96"
           />
 
-          {/* Category Dropdown */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
-              Category:
-            </span>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[220px]"
-            >
-              {categories.map((c) => {
-                const count =
-                  c === 'ALL'
-                    ? items.filter((i) => matchesCompany(i.entity)).length
-                    : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
-                return (
-                  <option key={c} value={c}>
-                    {c === 'ALL' ? `All Categories (${count})` : `${c} (${count})`}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        </div>
-
-        {/* Quick Category Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
-          {categories.map((c) => {
-            const isSelected = selectedCategory === c;
-            const count =
-              c === 'ALL'
-                ? (activeTab === 'PENDING' ? pendingCount : approvedCount)
-                : items.filter(
-                    (i) =>
-                      matchesCompany(i.entity) &&
-                      i.category === c &&
-                      (activeTab === 'PENDING'
-                        ? i.approvalStatus === 'Pending Head Approval' || i.status === 'Pending Head Approval'
-                        : i.approvalStatus === 'Approved')
-                  ).length;
-
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setSelectedCategory(c)}
-                className={`px-3 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/50 shadow-sm'
-                    : 'bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800/80'
-                }`}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Category Dropdown */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                Category:
+              </span>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[210px]"
               >
-                <span>{c === 'ALL' ? 'All' : c}</span>
-                <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isSelected ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-          {selectedCategory !== 'ALL' && (
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('ALL')}
-              className="text-[11px] font-bold text-rose-500 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              Clear Filter
-            </button>
-          )}
+                {categories.map((c) => {
+                  const count =
+                    c === 'ALL'
+                      ? items.filter((i) => matchesCompany(i.entity)).length
+                      : items.filter((i) => matchesCompany(i.entity) && i.category === c).length;
+                  return (
+                    <option key={c} value={c}>
+                      {c === 'ALL' ? `All Categories (${count})` : `${c} (${count})`}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Stock Level Dropdown Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                Stock:
+              </span>
+              <select
+                value={selectedStockFilter}
+                onChange={(e) => setSelectedStockFilter(e.target.value as 'ALL' | 'RED' | 'ORANGE' | 'GREEN')}
+                className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-cyan-500 cursor-pointer min-w-[170px]"
+              >
+                <option value="ALL">All Stock Levels</option>
+                <option value="RED">🔴 Low Stock (Red)</option>
+                <option value="ORANGE">🟠 Reorder Buffer (Orange)</option>
+                <option value="GREEN">🟢 Good Stock (Green)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -552,8 +531,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
-                      onClick={() => handleOpenEdit(item)}
+                      className="hover:bg-slate-800/30 transition-colors group"
                     >
                       {/* 1. SKU & Code */}
                       <td className="py-3.5 px-4 whitespace-nowrap align-top">
@@ -1008,7 +986,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             </label>
             <input
               type="text"
-              placeholder="e.g. Riyadh Central IoT Depot Bay-1"
+              placeholder="e.g. Arabitra Head Office Store Khobar (Bay-1)"
               value={newFormData.location}
               onChange={(e) => setNewFormData({ ...newFormData, location: e.target.value })}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:border-cyan-500 focus:outline-none"
