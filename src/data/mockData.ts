@@ -240,7 +240,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 4G LTE Cat 1 GPS tracker with 2G (GSM) fallback, built-in Bluetooth, and an internal backup battery for vehicle and remote asset tracking",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 120,
+    "stockLevel": 300,
     "reorderPoint": 300,
     "unitPriceSAR": 92,
     "entity": "ARABITRA",
@@ -249,7 +249,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -259,7 +259,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 2G/GSM, GNSS, and Bluetooth 4.0 LE vehicle tracking terminal designed for fleet management, car rentals, taxis, logistics, and personal vehicles",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 45,
+    "stockLevel": 100,
     "reorderPoint": 100,
     "unitPriceSAR": 94,
     "entity": "ARABITRA",
@@ -268,7 +268,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -278,8 +278,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 2G (GSM/GNSS/Bluetooth LE) vehicle tracker with a built-in CAN data processor that reads CAN and CAN FD data from light vehicles, electric vehicles, trucks, buses, and special machinery",
     "category": "CAN Bus & Vehicle Interfaces",
     "uom": "EA",
-    "stockLevel": 30,
-    "reorderPoint": 20,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 624,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -287,7 +287,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -297,8 +297,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 2-in-1 GPS/GNSS, 2G GSM, and Bluetooth tracker with a built-in CAN bus data reader",
     "category": "CAN Bus & Vehicle Interfaces",
     "uom": "EA",
-    "stockLevel": 40,
-    "reorderPoint": 25,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 318,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -306,7 +306,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -316,7 +316,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 4G LTE Cat 1 GPS tracking terminal with 2G/3G fallback, GNSS positioning, Bluetooth connectivity, and an internal backup battery for fleet management and remote asset monitoring",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 85,
+    "stockLevel": 100,
     "reorderPoint": 100,
     "unitPriceSAR": 121,
     "entity": "ARABITRA",
@@ -325,7 +325,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -335,7 +335,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact, professional 4G LTE Cat 1 GPS/GNSS vehicle tracker with 2G fallback and serial interfaces for connecting external sensors and accessories",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 35,
+    "stockLevel": 25,
     "reorderPoint": 25,
     "unitPriceSAR": 182,
     "entity": "ARABITRA",
@@ -344,7 +344,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -354,7 +354,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact 4G LTE Cat 1 vehicle GPS tracker with a built-in CAN data processor that reads onboard vehicle data without needing a separate CAN adapter",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 20,
+    "stockLevel": 10,
     "reorderPoint": 10,
     "unitPriceSAR": 215,
     "entity": "ARABITRA",
@@ -363,7 +363,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -373,7 +373,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "professional 4G LTE Cat 1 GPS/GNSS tracker with 2G fallback, designed for complex commercial fleets, heavy machinery, logistics, and asset security",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 18,
+    "stockLevel": 10,
     "reorderPoint": 10,
     "unitPriceSAR": 333,
     "entity": "ARABITRA",
@@ -382,7 +382,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -392,7 +392,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "rugged, all-in-one satellite IoT communications terminal that adds global Short Burst Data (SBD) connectivity beyond cellular and terrestrial networks",
     "category": "Satellite IoT & Connectivity",
     "uom": "EA",
-    "stockLevel": 25,
+    "stockLevel": 15,
     "reorderPoint": 15,
     "unitPriceSAR": 1335,
     "entity": "ARABITRA",
@@ -401,7 +401,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -411,8 +411,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "registers a satellite phone, hotspot (such as Iridium GO! or GO! exec), or IoT/SBD modem with the Iridium satellite network and links it to a voice, data, or tracking airtime plan so it can communicate globally",
     "category": "Satellite IoT & Connectivity",
     "uom": "EA",
-    "stockLevel": 999,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 188,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -420,7 +420,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -430,8 +430,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "a low-bandwidth satellite Short Burst Data (SBD) or Machine-to-Machine (M2M) / IoT plan (most commonly on the Iridium network) designed to send and receive small data packets from remote equipment",
     "category": "Satellite IoT & Connectivity",
     "uom": "EA",
-    "stockLevel": 999,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 116.25,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -439,7 +439,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -449,7 +449,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact Bluetooth Low Energy (BLE) wireless sensor and ID beacon built to monitor assets, cargo conditions, and door/movement events in telematics and tracking setups",
     "category": "Sensors, Probes & IoT Monitoring",
     "uom": "EA",
-    "stockLevel": 90,
+    "stockLevel": 50,
     "reorderPoint": 50,
     "unitPriceSAR": 69.86,
     "entity": "ARABITRA",
@@ -458,7 +458,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -468,7 +468,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "electronic token, card, or fob used in fleet management and telematics systems to identify which specific driver is operating a vehicle. When presented to an in-cab reader or paired with a GPS tracker, it links trip data, driving behavior, and working hours to an individual driver rather than just the vehicle",
     "category": "Driver Identification & RFID",
     "uom": "EA",
-    "stockLevel": 250,
+    "stockLevel": 100,
     "reorderPoint": 100,
     "unitPriceSAR": 5,
     "entity": "ARABITRA",
@@ -477,7 +477,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -487,7 +487,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "electronic token reader used in fleet management and telematics systems to link vehicle ignition and trip data to individual driver keys",
     "category": "Driver Identification & RFID",
     "uom": "EA",
-    "stockLevel": 120,
+    "stockLevel": 10,
     "reorderPoint": 100,
     "unitPriceSAR": 14,
     "entity": "ARABITRA",
@@ -496,7 +496,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -506,7 +506,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "magnetic electronic driver ID key for secure quick-docking in commercial vehicles and harsh environments",
     "category": "Driver Identification & RFID",
     "uom": "EA",
-    "stockLevel": 180,
+    "stockLevel": 100,
     "reorderPoint": 100,
     "unitPriceSAR": 10,
     "entity": "ARABITRA",
@@ -515,7 +515,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -525,7 +525,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "magnetic vehicle cradle reader for high-reliability driver authentication",
     "category": "Driver Identification & RFID",
     "uom": "EA",
-    "stockLevel": 80,
+    "stockLevel": 100,
     "reorderPoint": 100,
     "unitPriceSAR": 25,
     "entity": "ARABITRA",
@@ -534,7 +534,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -544,7 +544,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "commercial vehicle AI dashcam designed for fleet monitoring, video surveillance, and driver safety across trucks, buses, taxis, vans, and delivery vehicles",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 25,
+    "stockLevel": 10,
     "reorderPoint": 10,
     "unitPriceSAR": 990,
     "entity": "ARABITRA",
@@ -553,18 +553,18 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-018",
     "sku": "ARB-DSP-ROOF-16",
-    "name": "16\u201d ROOF MTD SCREEN Android 7.1,WiFi, 4+32GB",
+    "name": "16” ROOF MTD SCREEN Android 7.1,WiFi, 4+32GB",
     "description": "16-inch high-brightness roof-mounted passenger information screen for buses and executive transit coaches",
     "category": "In-Vehicle Displays & Infotainment",
     "uom": "EA",
-    "stockLevel": 15,
-    "reorderPoint": 5,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 675,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -572,7 +572,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -582,8 +582,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "Transport General Authority (TGA) compliant public transit API telemetry integration and cloud connectivity subscription",
     "category": "Cloud Subscriptions & Software",
     "uom": "EA",
-    "stockLevel": 500,
-    "reorderPoint": 50,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 120,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -591,7 +591,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -601,8 +601,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "industrial high-endurance Class 10 video-grade micro SD card for continuous in-vehicle dashcam looping",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 60,
-    "reorderPoint": 20,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 150,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -610,7 +610,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -620,8 +620,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "Pedestrian Warning and Alarm System (PWAS) for heavy industrial machinery, construction cranes, and mining haulers",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 12,
-    "reorderPoint": 5,
+    "stockLevel": 15,
+    "reorderPoint": 15,
     "unitPriceSAR": 950,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -629,7 +629,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -639,8 +639,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact dual-lens 4K UHD smart fleet dashcam with built-in Wi-Fi and GPS logging",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 45,
-    "reorderPoint": 15,
+    "stockLevel": 10,
+    "reorderPoint": 10,
     "unitPriceSAR": 230,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -648,7 +648,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -658,7 +658,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "triple-channel 4K front, cabin, and rear dashcam with infrared night vision and 24-hour parking surveillance",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 30,
+    "stockLevel": 10,
     "reorderPoint": 10,
     "unitPriceSAR": 450,
     "entity": "ARABITRA",
@@ -667,7 +667,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -677,7 +677,7 @@ export const MOCK_ITEMS: Item[] = [
     "description": "illuminated emergency silent alarm switch for SOS duress alerts in hazardous logistics and cash transit vehicles",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 200,
+    "stockLevel": 50,
     "reorderPoint": 50,
     "unitPriceSAR": 6,
     "entity": "ARABITRA",
@@ -686,7 +686,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -696,8 +696,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "heavy-duty magnetic reed switch door sensor for cargo trailer breach detection and cold storage access monitoring",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 110,
-    "reorderPoint": 30,
+    "stockLevel": 10,
+    "reorderPoint": 10,
     "unitPriceSAR": 35,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -705,7 +705,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -715,8 +715,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "12V/24V 85dB acoustic in-cab buzzer for driver fatigue, speeding, and seatbelt alert warnings",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 180,
-    "reorderPoint": 50,
+    "stockLevel": 30,
+    "reorderPoint": 30,
     "unitPriceSAR": 6,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -724,7 +724,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -734,8 +734,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "rugged IP65 solar-assisted magnetic wireless GPS asset tracker with 10,000mAh battery for shipping containers and flatbed trailers",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 35,
-    "reorderPoint": 15,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 260,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -743,7 +743,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -753,8 +753,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "automotive pneumatic air brake pressure transducer for commercial fleet pneumatic line monitoring",
     "category": "Sensors, Probes & IoT Monitoring",
     "uom": "EA",
-    "stockLevel": 50,
-    "reorderPoint": 20,
+    "stockLevel": 10,
+    "reorderPoint": 100,
     "unitPriceSAR": 45,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -762,7 +762,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -772,8 +772,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "rotary mechanical suspension height level sensor for vehicle ride height and load monitoring",
     "category": "Sensors, Probes & IoT Monitoring",
     "uom": "EA",
-    "stockLevel": 40,
-    "reorderPoint": 15,
+    "stockLevel": 100,
+    "reorderPoint": 100,
     "unitPriceSAR": 52,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -781,7 +781,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 7,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -791,8 +791,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "protective vibration-resistant mounting collar and grip for automotive axle sensors",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 85,
-    "reorderPoint": 30,
+    "stockLevel": 200,
+    "reorderPoint": 200,
     "unitPriceSAR": 12,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -800,7 +800,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -810,8 +810,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "high-pressure forged brass T-connector 3/8-inch NPT for pneumatic brake line integration",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 150,
-    "reorderPoint": 50,
+    "stockLevel": 100,
+    "reorderPoint": 100,
     "unitPriceSAR": 5,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -819,7 +819,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -830,7 +830,7 @@ export const MOCK_ITEMS: Item[] = [
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
     "stockLevel": 200,
-    "reorderPoint": 50,
+    "reorderPoint": 200,
     "unitPriceSAR": 4,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -838,7 +838,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -848,8 +848,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "reinforced pneumatic connector studs 8mm rated up to 18 bar for heavy commercial braking circuits",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 180,
-    "reorderPoint": 50,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 8,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -857,7 +857,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -867,8 +867,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "heavy-duty pneumatic connector studs 12mm for mainline air supply connections",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 160,
-    "reorderPoint": 40,
+    "stockLevel": 50,
+    "reorderPoint": 50,
     "unitPriceSAR": 8,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -876,7 +876,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -886,8 +886,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compression end joint fitting for heavy commercial pneumatic tubing",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 140,
-    "reorderPoint": 30,
+    "stockLevel": 10,
+    "reorderPoint": 100,
     "unitPriceSAR": 8,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -895,7 +895,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 3,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -905,8 +905,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "multi-core automotive-grade shielded signal wire 1.5mm2 3-conductor (100m roll)",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 30,
-    "reorderPoint": 10,
+    "stockLevel": 15,
+    "reorderPoint": 15,
     "unitPriceSAR": 180,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -914,7 +914,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -924,8 +924,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "heavy vehicle 24V starter cut-off relay and immobilizer harness with automotive grip connector",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 60,
-    "reorderPoint": 20,
+    "stockLevel": 50,
+    "reorderPoint": 50,
     "unitPriceSAR": 9,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-007",
@@ -933,7 +933,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -943,8 +943,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "passenger car & light truck 12V engine starter cut relay with quick-release terminal grip",
     "category": "Driver Safety & Alarm Systems",
     "uom": "EA",
-    "stockLevel": 80,
-    "reorderPoint": 25,
+    "stockLevel": 50,
+    "reorderPoint": 50,
     "unitPriceSAR": 9,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-007",
@@ -952,7 +952,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -962,8 +962,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "long-life rugged battery-powered IoT tracker for unpowered assets, swap bodies, and sea containers with 5+ year autonomy",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 40,
-    "reorderPoint": 15,
+    "stockLevel": 10,
+    "reorderPoint": 10,
     "unitPriceSAR": 195,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -971,7 +971,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -981,8 +981,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "high-durability weatherproof polymer bracket with tamper-resistant steel bolts for Asset5 tracker",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 50,
-    "reorderPoint": 20,
+    "stockLevel": 15,
+    "reorderPoint": 15,
     "unitPriceSAR": 20,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -990,7 +990,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1000,8 +1000,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "Howen 4-channel AHD Mobile DVR with H.265 compression, dual SD storage, and GPS/4G telemetry gateway",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 15,
-    "reorderPoint": 5,
+    "stockLevel": 10,
+    "reorderPoint": 10,
     "unitPriceSAR": 550,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1009,7 +1009,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1019,8 +1019,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "1080p AHD vehicle surveillance camera manufactured by Howen Technologies for commercial fleet and telematics systems",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 35,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 110,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1028,7 +1028,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1038,8 +1038,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "5-meter, 6-pin aviation extension cable from Howen designed for IP cameras in mobile or fixed video surveillance systems",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 70,
-    "reorderPoint": 20,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 20,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1047,7 +1047,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1057,8 +1057,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "automotive 15.6-inch Android 12 transit infotainment bus console with capacitive touchscreen and anti-glare IPS display",
     "category": "In-Vehicle Displays & Infotainment",
     "uom": "EA",
-    "stockLevel": 18,
-    "reorderPoint": 5,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 670,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1066,7 +1066,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1076,8 +1076,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "Howen Vehicle Surveillance Software (VSS) enterprise client device license and cloud stream gateway seat",
     "category": "Cloud Subscriptions & Software",
     "uom": "EA",
-    "stockLevel": 100,
-    "reorderPoint": 20,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 550,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1085,7 +1085,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1095,8 +1095,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "3-channel Power-over-Network (PoN) switch made by Howen Technologies to expand IP camera connections on commercial vehicle MDVRs and MNVRs",
     "category": "Industrial Routers & Switches",
     "uom": "EA",
-    "stockLevel": 25,
-    "reorderPoint": 8,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 195,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1104,7 +1104,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1114,8 +1114,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "1080p AHD outdoor side-view vehicle camera designed for commercial fleet surveillance and blind-spot monitoring along the side of buses, trucks, and utility vehicles",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 30,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 125,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1123,7 +1123,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1133,8 +1133,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "1080p AHD weatherproof wide-angle rear camera for reverse and hitch monitoring",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 28,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 110,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-003",
@@ -1142,7 +1142,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1152,8 +1152,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "4G LTE multi-channel AI dashcam designed for commercial vehicles and fleets, supporting simultaneous recording across up to 5 camera channels with real-time cloud monitoring and AI driver-safety alerts",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 20,
-    "reorderPoint": 8,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 645,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1161,7 +1161,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1171,8 +1171,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "720p/1080p IR night vision in-cabin driver monitoring camera with built-in microphone for Jimi JC450 series",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 25,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 73.13,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1180,7 +1180,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1190,8 +1190,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact, IP67-rated external vehicle camera designed to monitor blind spots, rear views, trailer cargo, or fuel tanks when connected to a compatible Jimi dash cam main unit",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 30,
-    "reorderPoint": 10,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 65.63,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1199,7 +1199,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1209,8 +1209,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "annual Tracksolid Pro cloud fleet management platform license per device",
     "category": "Cloud Subscriptions & Software",
     "uom": "EA",
-    "stockLevel": 300,
-    "reorderPoint": 50,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 34.17,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1218,18 +1218,18 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
     "id": "ITM-TEL-053",
     "sku": "ARB-SNS-FUEL-1000",
     "name": "Mielta Fantom BLE Fuel Level Sensor 1000mm",
-    "description": "wireless capacitive fuel level sensor designed to measure light petroleum products\u2014such as diesel, gasoline, and kerosene\u2014in vehicle and stationary tanks",
+    "description": "wireless capacitive fuel level sensor designed to measure light petroleum products—such as diesel, gasoline, and kerosene—in vehicle and stationary tanks",
     "category": "Sensors, Probes & IoT Monitoring",
     "uom": "EA",
-    "stockLevel": 24,
-    "reorderPoint": 8,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 355,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1237,7 +1237,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1247,8 +1247,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "4G LTE GPS fleet dashcam with a single built-in front-facing camera and support for an optional secondary camera",
     "category": "Video Telematics & AI Dashcams",
     "uom": "EA",
-    "stockLevel": 22,
-    "reorderPoint": 8,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 531,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1256,7 +1256,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1266,8 +1266,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact, waterproof peripheral blind-spot camera connector featuring a 4-pin aviation connector for secure commercial vehicle installations",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 60,
-    "reorderPoint": 20,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 65,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1275,7 +1275,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1285,8 +1285,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "extends the reach of external vehicle dash cameras so they can be mounted in hard-to-reach spots like a rear bumper, pillar, or trailer",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 50,
-    "reorderPoint": 15,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 45,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1294,7 +1294,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1304,8 +1304,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "commercial automotive grade ultra-slim 15.6\" overhead digital signage monitor with dual HDMI and Android player",
     "category": "In-Vehicle Displays & Infotainment",
     "uom": "EA",
-    "stockLevel": 14,
-    "reorderPoint": 5,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 675,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1313,7 +1313,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 14,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1323,8 +1323,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "high-speed U3 Class 10 128GB micro TF card with FAT32 pre-formatting for automotive telematics dashcams",
     "category": "Cables, Wiring & Mounting Hardware",
     "uom": "EA",
-    "stockLevel": 120,
-    "reorderPoint": 40,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 87,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1332,7 +1332,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 5,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1342,8 +1342,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "annual Tracksolid Pro live video streaming & AI incident replay cloud service package",
     "category": "Cloud Subscriptions & Software",
     "uom": "EA",
-    "stockLevel": 200,
-    "reorderPoint": 30,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 35,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-006",
@@ -1351,7 +1351,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 1,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1361,8 +1361,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "GPS/GLONASS telematics and programmable automation terminal built for fleet tracking, remote asset monitoring, and industrial control with Easy Logic script engine",
     "category": "GPS Trackers & Asset Gateways",
     "uom": "EA",
-    "stockLevel": 16,
-    "reorderPoint": 5,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 450,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -1370,7 +1370,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 12,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1380,8 +1380,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "compact industrial 4G LTE cellular router with Wi-Fi, dual 10/100 Ethernet ports, digital I/O, and RutOS RMS support for mission-critical vehicle networking",
     "category": "Industrial Routers & Switches",
     "uom": "EA",
-    "stockLevel": 20,
-    "reorderPoint": 6,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 480,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -1389,7 +1389,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1399,8 +1399,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "rugged industrial 4G LTE Cat 6 cellular router with dual-SIM failover, Gigabit Ethernet, dual-band Wi-Fi 5, Bluetooth LE, and GNSS location tracking",
     "category": "Industrial Routers & Switches",
     "uom": "EA",
-    "stockLevel": 15,
-    "reorderPoint": 5,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 1250,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -1408,7 +1408,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   },
   {
@@ -1418,8 +1418,8 @@ export const MOCK_ITEMS: Item[] = [
     "description": "industrial managed PoE+ Ethernet switch with 8 Gigabit Ethernet ports (30W PoE+ per port, 240W total) and 2 SFP optical ports for transit video surveillance",
     "category": "Industrial Routers & Switches",
     "uom": "EA",
-    "stockLevel": 10,
-    "reorderPoint": 4,
+    "stockLevel": 0,
+    "reorderPoint": 0,
     "unitPriceSAR": 890,
     "entity": "ARABITRA",
     "primaryVendorId": "VND-004",
@@ -1427,7 +1427,7 @@ export const MOCK_ITEMS: Item[] = [
     "status": "Pending Head Approval",
     "approvalStatus": "Pending Head Approval",
     "leadTimeDays": 10,
-    "updatedAt": "2026-11-20",
+    "updatedAt": "2026-11-23",
     "requestedBy": "Telematics Operations Specialist"
   }
 ];
