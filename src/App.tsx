@@ -85,36 +85,36 @@ const MainApplication: React.FC = () => {
   // ── Persisted application state (Clean Production Defaults) ─────────────
   const [items, setItems] = useLocalStorage<Item[]>('procureos_items', MOCK_ITEMS);
   const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', MOCK_VENDORS);
-  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', MOCK_RFQS);
-  const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', MOCK_REQUISITIONS);
-  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', MOCK_QUOTATIONS);
+  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', []);
+  const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', []);
+  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', []);
   const [selectedQuoteRfqId, setSelectedQuoteRfqId] = useState<string | null>(null);
-  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', MOCK_PURCHASE_ORDERS);
-  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', MOCK_DELIVERIES);
-  const [payments, setPayments] = useLocalStorage<PaymentMilestone[]>('procureos_payments', MOCK_PAYMENTS);
-  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
+  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', []);
+  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', []);
+  const [payments, setPayments] = useLocalStorage<PaymentMilestone[]>('procureos_payments', []);
+  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', []);
 
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.23.prod_clean_deployment_v7';
+    const PROD_LIVE_VER = '2026.11.23.purge_sample_quotations_v8';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Seed official operational telematics datasets
-      setRfqs(MOCK_RFQS);
-      localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
-      setQuotations(MOCK_QUOTATIONS);
-      localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
-      setRequisitions(MOCK_REQUISITIONS);
-      localStorage.setItem('procureos_requisitions', JSON.stringify(MOCK_REQUISITIONS));
-      setPurchaseOrders(MOCK_PURCHASE_ORDERS);
-      localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
-      setDeliveries(MOCK_DELIVERIES);
-      localStorage.setItem('procureos_deliveries', JSON.stringify(MOCK_DELIVERIES));
-      setPayments(MOCK_PAYMENTS);
-      localStorage.setItem('procureos_payments', JSON.stringify(MOCK_PAYMENTS));
-      setAssets(MOCK_ASSETS);
-      localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
+      setRfqs([]);
+      localStorage.setItem('procureos_rfqs', JSON.stringify([]));
+      setQuotations([]);
+      localStorage.setItem('procureos_quotations', JSON.stringify([]));
+      setRequisitions([]);
+      localStorage.setItem('procureos_requisitions', JSON.stringify([]));
+      setPurchaseOrders([]);
+      localStorage.setItem('procureos_purchase_orders', JSON.stringify([]));
+      setDeliveries([]);
+      localStorage.setItem('procureos_deliveries', JSON.stringify([]));
+      setPayments([]);
+      localStorage.setItem('procureos_payments', JSON.stringify([]));
+      setAssets([]);
+      localStorage.setItem('procureos_assets', JSON.stringify([]));
 
       // 2. Initialize official telematics items & verified vendors from starter templates
       // Enforce Arabitra Head Office Store Khobar across all item depots
@@ -153,7 +153,13 @@ const MainApplication: React.FC = () => {
   // repairs older locally-saved RFQs that were created before this linkage existed.
   useEffect(() => {
     setQuotations((existing) => {
-      const knownRfqIds = new Set(existing.map((evaluation) => evaluation.rfqId));
+      // If there are no published RFQs, there should be no quotation workspaces
+      if (!rfqs || rfqs.length === 0) {
+        return [];
+      }
+      const validRfqIds = new Set(rfqs.map((rfq) => rfq.id));
+      const validExisting = (existing || []).filter((evaluation) => validRfqIds.has(evaluation.rfqId));
+      const knownRfqIds = new Set(validExisting.map((evaluation) => evaluation.rfqId));
       const missingEvaluations: QuotationEvaluation[] = rfqs
         .filter((rfq) => !knownRfqIds.has(rfq.id))
         .map((rfq) => ({
@@ -168,7 +174,7 @@ const MainApplication: React.FC = () => {
           status: rfq.status === 'Awarded' ? 'Awarded' : 'Draft Evaluation',
           submissions: [],
         }));
-      return missingEvaluations.length ? [...missingEvaluations, ...existing] : existing;
+      return [...missingEvaluations, ...validExisting];
     });
   }, [rfqs, setQuotations, currentUser?.name]);
 
