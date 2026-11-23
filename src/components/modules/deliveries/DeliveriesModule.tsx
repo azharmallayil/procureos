@@ -237,14 +237,14 @@ export const DeliveriesModule: React.FC<DeliveriesModuleProps> = ({
                         Arabitra
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4" title={`${del.vendorName} (${del.carrier})`}>
-                      <div className="font-semibold text-slate-100 truncate max-w-[200px]">{del.vendorName}</div>
-                      <div className="text-[11px] text-slate-400 truncate max-w-[200px]">{del.carrier}</div>
+                    <td className="py-3.5 px-4 min-w-[180px] max-w-[280px]" title={`${del.vendorName} (${del.carrier})`}>
+                      <div className="font-semibold text-slate-100 leading-snug break-words">{del.vendorName}</div>
+                      <div className="text-[11px] text-slate-400 leading-snug break-words mt-0.5">{del.carrier}</div>
                     </td>
-                    <td className="py-3.5 px-4 min-w-[180px]" title={del.destinationSite}>
+                    <td className="py-3.5 px-4 min-w-[180px] max-w-[300px]" title={del.destinationSite}>
                       <div className="flex items-center gap-1.5 text-slate-200">
                         <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span className="truncate max-w-[200px]">{del.destinationSite}</span>
+                        <span className="leading-snug break-words">{del.destinationSite}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap font-mono">

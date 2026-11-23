@@ -552,9 +552,9 @@ export const Topbar: React.FC<TopbarProps> = ({
               {currentUser?.name?.charAt(0) ?? '?'}
             </div>
             <div className="hidden md:block min-w-0 pr-1">
-              <p className="text-xs font-semibold text-slate-200 truncate">{currentUser?.name}</p>
+              <p className="text-xs font-semibold text-slate-200 truncate" title={currentUser?.name}>{currentUser?.name}</p>
               <div className="flex items-center gap-1">
-                <span className="text-[10px] text-cyan-400 font-medium truncate">{activeRole}</span>
+                <span className="text-[10px] text-cyan-400 font-medium truncate" title={activeRole || undefined}>{activeRole}</span>
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />

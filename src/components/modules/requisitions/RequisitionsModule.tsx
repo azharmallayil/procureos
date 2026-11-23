@@ -249,8 +249,8 @@ export const RequisitionsModule: React.FC<RequisitionsModuleProps> = ({
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-bold text-cyan-300">{pr.prNumber}</span><Badge variant={statusVariant(pr.status)} dot>{pr.status}</Badge><Badge variant="amber">Arabitra</Badge></div>
-                  <h3 className="text-sm font-bold text-slate-100 truncate max-w-2xl" title={pr.title}>{pr.title}</h3>
-                  <p className="text-xs text-slate-300 truncate max-w-2xl" title={`${pr.projectName} · ${pr.department} · Requested by ${pr.requestedBy}`}>{pr.projectName} · {pr.department} · Requested by {pr.requestedBy}</p>
+                  <h3 className="text-sm font-bold text-slate-100 leading-snug break-words" title={pr.title}>{pr.title}</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed break-words" title={`${pr.projectName} · ${pr.department} · Requested by ${pr.requestedBy}`}>{pr.projectName} · {pr.department} · Requested by {pr.requestedBy}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400"><span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> Required: {pr.requiredDate}</span><span className="inline-flex items-center gap-1"><Package className="w-3 h-3" /> {pr.lineItems.length} item line(s)</span><span className="font-mono text-emerald-300">Est. SAR {pr.estimatedTotalSAR.toLocaleString()}</span></div>
                   <div className="text-[11px] text-slate-400">{pr.lineItems.map((line) => `${line.quantity} ${line.uom} ${line.description}`).join(' · ')}</div>
                   {pr.rejectionReason && <p className="text-[11px] text-rose-300">Rejection reason: {pr.rejectionReason}</p>}

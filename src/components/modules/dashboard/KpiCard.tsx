@@ -58,8 +58,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-slate-400 tracking-wide truncate">{title}</p>
-          <h4 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white mt-1.5 tracking-tight font-sans whitespace-nowrap break-keep">
+          <p className="text-xs font-semibold text-slate-400 tracking-wide leading-snug break-words whitespace-normal" title={title}>{title}</p>
+          <h4 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-white mt-1.5 tracking-tight font-sans break-words leading-tight">
             {value}
           </h4>
         </div>
@@ -71,10 +71,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       </div>
 
       {(change || subtitle) && (
-        <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+        <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-1.5 text-xs">
           {change && (
             <span
-              className={`inline-flex items-center gap-0.5 font-semibold text-[11px] ${
+              className={`inline-flex items-center gap-0.5 font-semibold text-[11px] shrink-0 ${
                 isPositive ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
@@ -86,7 +86,11 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               {change}
             </span>
           )}
-          {subtitle && <span className="text-slate-400 text-[11px] truncate">{subtitle}</span>}
+          {subtitle && (
+            <span className="text-slate-400 text-[11px] leading-tight break-words" title={subtitle}>
+              {subtitle}
+            </span>
+          )}
         </div>
       )}
     </div>

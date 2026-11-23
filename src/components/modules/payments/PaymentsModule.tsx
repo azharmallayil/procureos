@@ -220,10 +220,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({
                           Arabitra
                         </Badge>
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px] max-w-[240px] truncate" title={pay.vendorName}>
+                      <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[180px] max-w-[320px] leading-snug break-words" title={pay.vendorName}>
                         {pay.vendorName}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 min-w-[220px] max-w-[280px] truncate" title={pay.milestoneDescription}>
+                      <td className="py-3.5 px-4 text-slate-300 min-w-[200px] max-w-[360px] leading-snug break-words" title={pay.milestoneDescription}>
                         {pay.milestoneDescription}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap text-sm">

@@ -371,10 +371,10 @@ export const PurchaseOrdersModule: React.FC<PurchaseOrdersModuleProps> = ({
                         Arabitra
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[200px] max-w-[240px] truncate" title={po.vendorName}>
+                    <td className="py-3.5 px-4 font-semibold text-slate-200 min-w-[180px] max-w-[300px] leading-snug break-words" title={po.vendorName}>
                       {po.vendorName}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap max-w-[180px] truncate" title={po.projectSite}>
+                    <td className="py-3.5 px-4 text-slate-300 min-w-[160px] max-w-[260px] leading-snug break-words" title={po.projectSite}>
                       {po.projectSite}
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">

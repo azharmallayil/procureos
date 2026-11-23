@@ -97,7 +97,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.23.operational_telemetry_v6';
+    const PROD_LIVE_VER = '2026.11.23.prod_clean_deployment_v7';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Seed official operational telematics datasets

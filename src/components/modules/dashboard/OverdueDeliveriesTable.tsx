@@ -64,7 +64,7 @@ export const OverdueDeliveriesTable: React.FC<OverdueDeliveriesTableProps> = ({
               <td className="py-3 px-3">
                 <div className="flex items-center gap-1 text-slate-300">
                   <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
-                  <span className="truncate max-w-[180px]">{del.destinationSite}</span>
+                  <span className="leading-snug break-words" title={del.destinationSite}>{del.destinationSite}</span>
                 </div>
               </td>
               <td className="py-3 px-3 whitespace-nowrap font-mono">

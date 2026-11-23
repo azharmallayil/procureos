@@ -248,13 +248,13 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ assets, onAddAsset }
                 <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
                   <div>
                     <span className="text-[10px] text-slate-400 block">Assigned Project</span>
-                    <span className="font-medium text-slate-200 truncate block">
+                    <span className="font-medium text-slate-200 leading-snug break-words block" title={asset.assignedProject}>
                       {asset.assignedProject}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Responsible Custodian</span>
-                    <span className="font-medium text-slate-200 truncate block">
+                    <span className="font-medium text-slate-200 leading-snug break-words block" title={asset.custodian}>
                       {asset.custodian}
                     </span>
                   </div>

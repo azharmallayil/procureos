@@ -555,10 +555,10 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                   return (
                     <tr key={vendor.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4 min-w-[220px]" title={vendor.name}>
-                        <div className="font-semibold text-slate-100 flex items-center gap-1.5 truncate max-w-xs" title={vendor.name}>
+                        <div className="font-semibold text-slate-100 flex items-center gap-1.5 leading-snug break-words" title={vendor.name}>
                           {vendor.name}
                         </div>
-                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate" title={`${vendor.city}, ${vendor.country}`}>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 leading-snug break-words" title={`${vendor.city}, ${vendor.country}`}>
                           <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
                           {vendor.city}, {vendor.country}
                         </div>
@@ -582,8 +582,8 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                         <div>CR: {vendor.crNumber}</div>
                         <div className="text-[10px] text-slate-400">VAT: {vendor.vatNumber}</div>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap" title={vendor.category}>
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700/60 inline-block truncate max-w-[200px]" title={vendor.category}>
+                      <td className="py-3.5 px-4 text-slate-300 min-w-[200px]" title={vendor.category}>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700/60 inline-block leading-tight break-words max-w-[260px]" title={vendor.category}>
                           {vendor.category}
                         </span>
                       </td>

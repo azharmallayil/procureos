@@ -85,11 +85,7 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
 
     const entries = Object.entries(categoryTotals);
     if (entries.length === 0) {
-      return SPEND_BY_CATEGORY.map((item, idx) => ({
-        name: item.name,
-        value: item.value || 0.1,
-        color: item.color || palette[idx % palette.length],
-      }));
+      return [];
     }
 
     return entries.map(([name, amount], idx) => ({
@@ -184,42 +180,52 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
           subtitle="Portfolio allocation YTD in SAR (M)"
           icon={<PieIcon className="w-5 h-5 text-emerald-400" />}
         >
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={52}
-                  outerRadius={78}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#0b1120" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={customTooltipStyle}
-                  formatter={(val: any) => [`SAR ${val}M`, 'Allocation']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Custom Category Legend */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="flex items-center gap-1.5 text-[11px] truncate">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-slate-300 truncate" title={cat.name}>
-                  {cat.name}
-                </span>
-                <span className="text-slate-400 ml-auto font-mono">{cat.value}M</span>
+          {categoryData.length === 0 ? (
+            <div className="h-52 w-full flex flex-col items-center justify-center text-center p-4">
+              <PieIcon className="w-8 h-8 text-slate-600 mb-2" />
+              <p className="text-xs font-semibold text-slate-300">No Commodity Spend Recorded</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Commodity allocations will visualize here as purchase orders are issued.</p>
+            </div>
+          ) : (
+            <>
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={52}
+                      outerRadius={78}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="#0b1120" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={customTooltipStyle}
+                      formatter={(val: any) => [`SAR ${val}M`, 'Allocation']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+
+              {/* Custom Category Legend */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+                {categoryData.map((cat) => (
+                  <div key={cat.name} className="flex items-center gap-1.5 text-[11px]">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-slate-300 leading-tight break-words flex-1" title={cat.name}>
+                      {cat.name}
+                    </span>
+                    <span className="text-slate-400 font-mono shrink-0 ml-auto pl-1">{cat.value}M</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       </div>
 

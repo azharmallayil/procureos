@@ -88,7 +88,7 @@ export const PendingApprovalsList: React.FC<PendingApprovalsListProps> = ({
                   Stage: {po.approvalStage}
                 </Badge>
               </div>
-              <p className="text-xs font-semibold text-slate-200 truncate">{po.vendorName}</p>
+              <p className="text-xs font-semibold text-slate-200 leading-snug break-words" title={po.vendorName}>{po.vendorName}</p>
               <div className="flex items-center gap-3 text-[11px] text-slate-400">
                 <span>Site: {po.projectSite}</span>
                 <span>•</span>

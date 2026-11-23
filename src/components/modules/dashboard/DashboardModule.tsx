@@ -136,7 +136,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard
           title="Total Spend YTD"
           value={formattedSpend}
@@ -301,7 +301,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                         {rfq.status}
                       </Badge>
                     </div>
-                    <p className="text-xs font-semibold text-slate-200 truncate">{rfq.title}</p>
+                    <p className="text-xs font-semibold text-slate-200 leading-snug break-words" title={rfq.title}>{rfq.title}</p>
                     <div className="flex items-center gap-3 text-[11px] text-slate-400">
                       <span>Project: {rfq.projectName}</span>
                       <span>•</span>
@@ -372,7 +372,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                       <span className="font-bold text-slate-100">{act.title}</span>
                       <Badge variant={act.variant as any} className="text-[10px]">{act.badge}</Badge>
                     </div>
-                    <p className="text-slate-400 text-[11px] truncate">{act.desc}</p>
+                    <p className="text-slate-400 text-[11px] leading-snug break-words" title={act.desc}>{act.desc}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-[10px] font-mono text-slate-500">{act.time}</span>

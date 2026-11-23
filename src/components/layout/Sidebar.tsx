@@ -296,7 +296,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] text-slate-400 uppercase font-semibold">Active Role</p>
-                  <p className="text-xs font-semibold text-slate-200 truncate">{activeRole}</p>
+                  <p className="text-xs font-semibold text-slate-200 leading-snug break-words" title={activeRole || undefined}>{activeRole}</p>
                 </div>
               </div>
             </div>
