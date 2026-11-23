@@ -14,7 +14,9 @@ import {
   Info,
   Check,
   RotateCcw,
+  Upload,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Item, ItemCategory, isHeadRole } from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -23,6 +25,7 @@ import { Button } from '../../common/Button';
 import { SearchInput } from '../../common/SearchInput';
 import { Modal } from '../../common/Modal';
 import { EmptyState } from '../../common/EmptyState';
+import { ImportItemsModal } from './ImportItemsModal';
 
 interface ItemsModuleProps {
   items: Item[];
@@ -30,6 +33,7 @@ interface ItemsModuleProps {
   onUpdateItem?: (updatedItem: Item) => void;
   onApproveItem?: (itemId: string) => void;
   onRejectItem?: (itemId: string, reason?: string) => void;
+  onBulkImportItems?: (importedItems: Item[]) => void;
   openCreateModal?: boolean;
   onCloseCreateModal?: () => void;
 }
@@ -87,6 +91,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
   onUpdateItem,
   onApproveItem,
   onRejectItem,
+  onBulkImportItems,
   openCreateModal = false,
   onCloseCreateModal,
 }) => {
@@ -111,6 +116,7 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
   const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED'>('PENDING');
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(openCreateModal);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   // Edit form state
@@ -309,6 +315,51 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
     });
   };
 
+  // Export current catalog items to Excel
+  const handleExportItems = () => {
+    try {
+      const exportData = items.map((item) => ({
+        'SKU': item.sku,
+        'Item Name': item.name,
+        'Category': item.category,
+        'UOM': item.uom || 'EA',
+        'Stock Level': item.stockLevel,
+        'Reorder Point': item.reorderPoint,
+        'Unit Price (SAR)': item.unitPriceSAR,
+        'Location': item.location || 'Arabitra Head Office Store Khobar',
+        'Approval Status': item.approvalStatus || item.status,
+        'Description': item.description || '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Items_Catalogue');
+      const today = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `procureos_items_catalogue_${today}.xlsx`);
+      success('Catalog Exported', `Downloaded ${items.length} items catalogue (.xlsx)`);
+    } catch (err) {
+      console.error('Export error:', err);
+      warning('Export Notice', 'Could not export catalogue file.');
+    }
+  };
+
+  // Bulk import callback
+  const handleConfirmImport = (importedItems: Item[]) => {
+    if (onBulkImportItems) {
+      onBulkImportItems(importedItems);
+    } else {
+      importedItems.forEach((itm) => {
+        const exists = items.some((i) => i.sku.toUpperCase() === itm.sku.toUpperCase());
+        if (exists && onUpdateItem) {
+          onUpdateItem(itm);
+        } else {
+          onAddItem(itm);
+        }
+      });
+      success('Items Imported', `Imported ${importedItems.length} items successfully.`);
+    }
+  };
+
   // Preview stock status for the edit modal
   const editStockPreview = getStockStatus(
     parseInt(editFormData.stockLevel) || 0,
@@ -337,9 +388,17 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
             variant="outline"
             size="sm"
             icon={<Download className="w-3.5 h-3.5" />}
-            onClick={() => success('Catalog Exported', 'Downloaded item catalogue dataset (.csv)')}
+            onClick={handleExportItems}
           >
             Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Upload className="w-3.5 h-3.5 text-cyan-400" />}
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            Import Items & Stocks
           </Button>
           <Button
             variant="primary"
@@ -1012,6 +1071,14 @@ export const ItemsModule: React.FC<ItemsModuleProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Item & Inventory Stock Import Modal */}
+      <ImportItemsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        existingItems={items}
+        onConfirmImport={handleConfirmImport}
+      />
     </div>
   );
 };

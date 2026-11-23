@@ -215,6 +215,22 @@ const MainApplication: React.FC = () => {
     success('Item Updated & Queued', `${updatedItem.sku} changes saved and submitted for Department Head sign-off.`);
   };
 
+  const handleBulkImportItems = (importedItems: Item[]) => {
+    setItems(importedItems);
+    localStorage.setItem('procureos_items', JSON.stringify(importedItems));
+    recordAuditLog(
+      'Bulk Items Imported',
+      'Item',
+      'BULK-IMPORT',
+      `Imported & synchronized ${importedItems.length} items/stocks from spreadsheet`,
+      {
+        name: currentUser?.name,
+        role: activeRole || 'User',
+      }
+    );
+    success('Inventory Synced & Live', `Successfully imported ${importedItems.length} items and stock counts.`);
+  };
+
   const handleApproveItem = (itemId: string) => {
     setItems((prev) =>
       prev.map((item) =>
@@ -1079,6 +1095,7 @@ const MainApplication: React.FC = () => {
                 onUpdateItem={handleUpdateItem}
                 onApproveItem={handleApproveItem}
                 onRejectItem={handleRejectItem}
+                onBulkImportItems={handleBulkImportItems}
                 openCreateModal={quickCreateModal === 'item'}
                 onCloseCreateModal={() => setQuickCreateModal(null)}
               />
