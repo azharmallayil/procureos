@@ -79,7 +79,6 @@ export const Topbar: React.FC<TopbarProps> = ({
     currentUser?.role === 'Super Admin' ||
     currentUser?.role === 'Managing Director / CEO' ||
     currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com' ||
     activeRole === 'Super Admin';
 
   const isAdmin =
@@ -89,8 +88,7 @@ export const Topbar: React.FC<TopbarProps> = ({
     currentUser?.role === 'Super Admin' ||
     currentUser?.role === 'Managing Director / CEO' ||
     currentUser?.role === 'General Manager (GM)' ||
-    currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com';
+    currentUser?.email === 'admin@procureos.com';
 
   // Edit Profile Modal State
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);

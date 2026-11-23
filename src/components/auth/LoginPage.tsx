@@ -464,13 +464,13 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={() => {
                 setEmail('admin@procureos.com');
-                setPassword('admin@251');
+                setPassword('admin@123');
                 setError('');
               }}
               className="w-full px-3.5 py-2.5 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-left shadow-sm"
             >
               <span>⚡ Admin Console (admin@procureos.com)</span>
-              <span className="text-[10px] text-cyan-400 font-mono">Fill & Sign In</span>
+              <span className="text-[10px] text-cyan-400 font-mono">admin@123</span>
             </button>
             <button
               type="button"
@@ -481,7 +481,7 @@ export const LoginPage: React.FC = () => {
               }}
               className="w-full px-3.5 py-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-left shadow-sm"
             >
-              <span>⚡ Executive Admin (muhammed.azhar@arabitra.com)</span>
+              <span>⚡ Procurement Engineer (muhammed.azhar@arabitra.com)</span>
               <span className="text-[10px] text-amber-400 font-mono">Fill & Sign In</span>
             </button>
           </div>

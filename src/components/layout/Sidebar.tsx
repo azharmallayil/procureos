@@ -58,8 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     currentUser?.role === 'Super Admin' ||
     currentUser?.role === 'Managing Director / CEO' ||
     currentUser?.role === 'General Manager (GM)' ||
-    currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com';
+    currentUser?.email === 'admin@procureos.com';
 
   const navigationItems: {
     id: ModuleId;

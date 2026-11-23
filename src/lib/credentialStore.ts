@@ -25,7 +25,7 @@ export const INITIAL_CREDENTIAL_STORE: StoredCredential[] = [
     userId: 'USR-ADMIN',
     email: 'admin@procureos.com',
     passwordHash:
-      '310000$2bced1292b79e97a5ff2b17c1f598e64$1a94042a6c2ee3ee04eb8e13f2986180c576e695248b1983c2b57841e25f17d9',
+      '310000$768966e72ac83cc7164a523422e23205$02285c28c95adba0635fd38dfb1641f414f64f5dbf4a9aff300c175f06159209',
     mustChangePassword: false,
   },
   {

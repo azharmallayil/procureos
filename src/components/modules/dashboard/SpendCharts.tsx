@@ -42,6 +42,10 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
 
   // Compute dynamic monthly spend from actual POs
   const monthlyData = React.useMemo(() => {
+    if (purchaseOrders.length === 0) {
+      return SPEND_BY_MONTH;
+    }
+
     const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
     const result = months.map((m) => ({
       month: `${m} 2026`,
@@ -72,19 +76,20 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
 
     purchaseOrders.forEach((po) => {
       if (!matchesCompany(po.entity)) return;
-      const cat = (po as any).category || 'General Procurement';
+      const matchedVendor = vendors.find(
+        (v) => v.id === po.vendorId || v.name?.toLowerCase() === po.vendorName?.toLowerCase()
+      );
+      const cat = matchedVendor?.category || (po as any).category || 'GPS Trackers & Asset Gateways';
       categoryTotals[cat] = (categoryTotals[cat] || 0) + (po.grandTotalSAR || 0);
     });
 
     const entries = Object.entries(categoryTotals);
     if (entries.length === 0) {
-      return [
-        { name: 'GPS Trackers & Asset Gateways', value: 0, color: '#06b6d4' },
-        { name: 'Video Telematics & AI Dashcams', value: 0, color: '#10b981' },
-        { name: 'CAN Bus & Vehicle Interfaces', value: 0, color: '#3b82f6' },
-        { name: 'Sensors, Probes & IoT Monitoring', value: 0, color: '#f59e0b' },
-        { name: 'Driver Safety & Alarm Systems', value: 0, color: '#ef4444' },
-      ];
+      return SPEND_BY_CATEGORY.map((item, idx) => ({
+        name: item.name,
+        value: item.value || 0.1,
+        color: item.color || palette[idx % palette.length],
+      }));
     }
 
     return entries.map(([name, amount], idx) => ({
@@ -92,7 +97,7 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
       value: Number((amount / 1000000).toFixed(2)),
       color: palette[idx % palette.length],
     }));
-  }, [purchaseOrders, matchesCompany]);
+  }, [purchaseOrders, vendors, matchesCompany]);
 
   // Compute supplier performance metrics from real vendors
   const supplierMetrics = React.useMemo(() => {

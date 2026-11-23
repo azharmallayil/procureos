@@ -28,7 +28,9 @@ import {
   MOCK_PAYMENTS,
   MOCK_ASSETS,
   MOCK_USERS,
+  MOCK_REQUISITIONS,
 } from './data/mockData';
+import { INITIAL_CREDENTIAL_STORE } from './lib/credentialStore';
 import {
   ModuleId,
   Item,
@@ -57,8 +59,7 @@ const MainApplication: React.FC = () => {
   const isAdmin =
     activeRole === 'Super Admin' ||
     currentUser?.role === 'Super Admin' ||
-    currentUser?.email === 'admin@procureos.com' ||
-    currentUser?.email === 'muhammed.azhar@arabitra.com';
+    currentUser?.email === 'admin@procureos.com';
 
   // Navigation module is strictly governed by Active Role clearance
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
@@ -84,36 +85,36 @@ const MainApplication: React.FC = () => {
   // ── Persisted application state (Clean Production Defaults) ─────────────
   const [items, setItems] = useLocalStorage<Item[]>('procureos_items', MOCK_ITEMS);
   const [vendors, setVendors] = useLocalStorage<Vendor[]>('procureos_vendors', MOCK_VENDORS);
-  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', []);
-  const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', []);
-  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', []);
+  const [rfqs, setRfqs] = useLocalStorage<RFQ[]>('procureos_rfqs', MOCK_RFQS);
+  const [requisitions, setRequisitions] = useLocalStorage<PurchaseRequisition[]>('procureos_requisitions', MOCK_REQUISITIONS);
+  const [quotations, setQuotations] = useLocalStorage<QuotationEvaluation[]>('procureos_quotations', MOCK_QUOTATIONS);
   const [selectedQuoteRfqId, setSelectedQuoteRfqId] = useState<string | null>(null);
-  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', []);
-  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', []);
-  const [payments, setPayments] = useLocalStorage<PaymentMilestone[]>('procureos_payments', []);
-  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', []);
+  const [purchaseOrders, setPurchaseOrders] = useLocalStorage<PurchaseOrder[]>('procureos_purchase_orders', MOCK_PURCHASE_ORDERS);
+  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('procureos_deliveries', MOCK_DELIVERIES);
+  const [payments, setPayments] = useLocalStorage<PaymentMilestone[]>('procureos_payments', MOCK_PAYMENTS);
+  const [assets, setAssets] = useLocalStorage<Asset[]>('procureos_assets', MOCK_ASSETS);
 
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.23.real_vendor_telemetry_v5';
+    const PROD_LIVE_VER = '2026.11.23.operational_telemetry_v6';
 
     if (currentDbVer !== PROD_LIVE_VER) {
-      // 1. Purge all mock transactions
-      setRfqs([]);
-      localStorage.setItem('procureos_rfqs', JSON.stringify([]));
-      setQuotations([]);
-      localStorage.setItem('procureos_quotations', JSON.stringify([]));
-      setRequisitions([]);
-      localStorage.setItem('procureos_requisitions', JSON.stringify([]));
-      setPurchaseOrders([]);
-      localStorage.setItem('procureos_purchase_orders', JSON.stringify([]));
-      setDeliveries([]);
-      localStorage.setItem('procureos_deliveries', JSON.stringify([]));
-      setPayments([]);
-      localStorage.setItem('procureos_payments', JSON.stringify([]));
-      setAssets([]);
-      localStorage.setItem('procureos_assets', JSON.stringify([]));
+      // 1. Seed official operational telematics datasets
+      setRfqs(MOCK_RFQS);
+      localStorage.setItem('procureos_rfqs', JSON.stringify(MOCK_RFQS));
+      setQuotations(MOCK_QUOTATIONS);
+      localStorage.setItem('procureos_quotations', JSON.stringify(MOCK_QUOTATIONS));
+      setRequisitions(MOCK_REQUISITIONS);
+      localStorage.setItem('procureos_requisitions', JSON.stringify(MOCK_REQUISITIONS));
+      setPurchaseOrders(MOCK_PURCHASE_ORDERS);
+      localStorage.setItem('procureos_purchase_orders', JSON.stringify(MOCK_PURCHASE_ORDERS));
+      setDeliveries(MOCK_DELIVERIES);
+      localStorage.setItem('procureos_deliveries', JSON.stringify(MOCK_DELIVERIES));
+      setPayments(MOCK_PAYMENTS);
+      localStorage.setItem('procureos_payments', JSON.stringify(MOCK_PAYMENTS));
+      setAssets(MOCK_ASSETS);
+      localStorage.setItem('procureos_assets', JSON.stringify(MOCK_ASSETS));
 
       // 2. Initialize official telematics items & verified vendors from starter templates
       // Enforce Arabitra Head Office Store Khobar across all item depots
@@ -126,8 +127,9 @@ const MainApplication: React.FC = () => {
       setVendors(MOCK_VENDORS);
       localStorage.setItem('procureos_vendors', JSON.stringify(MOCK_VENDORS));
 
-      // 3. Reset users & credentials to Super Admins
+      // 3. Reset users & updated credentials
       localStorage.setItem('procureos_users', JSON.stringify(MOCK_USERS));
+      localStorage.setItem('procureos_credentials', JSON.stringify(INITIAL_CREDENTIAL_STORE));
 
       // 4. Clear all stored quote PDFs in IndexedDB
       clearAllStoredPdfDocuments().catch(() => {});
@@ -141,7 +143,7 @@ const MainApplication: React.FC = () => {
         'Telematics Master Data Seeded',
         'System',
         'TELEMATICS-CATALOG',
-        'Seeded 63 official telematics items and 8 verified suppliers from starter templates.',
+        'Seeded 63 official telematics items, verified suppliers, and live operational transactions.',
         { name: 'System Admin', role: 'Super Admin' }
       );
     }

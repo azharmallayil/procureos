@@ -656,8 +656,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Fallback verification for known system credentials
     if (!valid) {
       if (
-        emailNorm === 'muhammed.azhar@arabitra.com' &&
-        (password === 'admin@251' || password === 'Fitco@2026!Admin' || password === 'Admin@2026!Procure')
+        (emailNorm === 'admin@procureos.com' && (password === 'admin@123' || password === 'admin@251')) ||
+        (emailNorm === 'muhammed.azhar@arabitra.com' &&
+          (password === 'admin@251' || password === 'admin@123' || password === 'Fitco@2026!Admin' || password === 'Admin@2026!Procure'))
       ) {
         valid = true;
       }
@@ -700,8 +701,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       saveStoredUsers([...users, user]);
     } else {
-      // Ensure primary admins keep Super Admin role, preserving their customized name and department
-      if (emailNorm === 'muhammed.azhar@arabitra.com' || emailNorm === 'admin@procureos.com') {
+      // Ensure primary system admin keeps Super Admin role
+      if (emailNorm === 'admin@procureos.com') {
         user = { ...user, role: 'Super Admin' };
       }
       // Update last login
@@ -934,6 +935,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (currentUser?.id === userId) {
         const updatedSelf = { ...currentUser, ...updates, ...(newEmailLower ? { email: newEmailLower } : {}) };
         setCurrentUser(updatedSelf);
+        if (updates.role) {
+          setSimulatedRole(null);
+          try {
+            sessionStorage.removeItem('procureos_simulated_role');
+          } catch {}
+        }
       }
 
       recordAuditLog(
@@ -1142,8 +1149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isSuperAdminAccount = useMemo(() => {
     return (
       currentUser?.role === 'Super Admin' ||
-      currentUser?.email?.toLowerCase() === 'admin@procureos.com' ||
-      currentUser?.email?.toLowerCase() === 'muhammed.azhar@arabitra.com'
+      currentUser?.email?.toLowerCase() === 'admin@procureos.com'
     );
   }, [currentUser]);
 
