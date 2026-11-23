@@ -102,14 +102,14 @@ export const SpendCharts: React.FC<SpendChartsProps> = ({
 
     if (approved.length === 0) {
       return [
-        { supplier: 'No Active Vendors', onTime: 100, quality: 100 },
+        { supplier: 'No Active Vendors', onTime: 0, quality: 0 },
       ];
     }
 
     return approved.map((v) => ({
       supplier: v.name.length > 18 ? `${v.name.slice(0, 16)}…` : v.name,
-      onTime: v.rating ? Math.round((v.rating / 5) * 100) : 95,
-      quality: 98,
+      onTime: v.onTimeDeliveryRate || (v.rating ? Math.round((v.rating / 5) * 100) : 0),
+      quality: v.qualityComplianceRate || (v.rating ? Math.round((v.rating / 5) * 100) : 0),
     }));
   }, [vendors, matchesCompany]);
 

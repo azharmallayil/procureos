@@ -96,7 +96,7 @@ const MainApplication: React.FC = () => {
   // ── Production Live Database Migration & Clean Slate Enforcement ────────
   useEffect(() => {
     const currentDbVer = localStorage.getItem('procureos_db_version');
-    const PROD_LIVE_VER = '2026.11.22.enterprise_khobar_v3';
+    const PROD_LIVE_VER = '2026.11.23.real_vendor_telemetry_v5';
 
     if (currentDbVer !== PROD_LIVE_VER) {
       // 1. Purge all mock transactions
@@ -277,7 +277,6 @@ const MainApplication: React.FC = () => {
               approvalStatus: 'Approved',
               approvedBy: currentUser?.name || 'Department Head',
               approvedAt: new Date().toISOString(),
-              rating: Math.max(v.rating, 4.5),
             }
           : v
       )
@@ -1080,6 +1079,9 @@ const MainApplication: React.FC = () => {
             {activeModule === 'vendors' && canAccessModule('vendors') && (
               <VendorsModule
                 vendors={vendors}
+                purchaseOrders={purchaseOrders}
+                deliveries={deliveries}
+                payments={payments}
                 onAddVendor={handleAddVendor}
                 onUpdateVendor={handleUpdateVendor}
                 onApproveVendor={handleApproveVendor}

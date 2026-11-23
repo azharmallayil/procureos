@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Building2,
   Plus,
@@ -17,7 +17,14 @@ import {
   Check,
   Info,
 } from 'lucide-react';
-import { Vendor, ItemCategory, isHeadRole } from '../../../types/procurement';
+import {
+  Vendor,
+  ItemCategory,
+  isHeadRole,
+  PurchaseOrder,
+  Delivery,
+  PaymentMilestone,
+} from '../../../types/procurement';
 import { useCompany } from '../../../context/CompanyContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -29,6 +36,9 @@ import { EmptyState } from '../../common/EmptyState';
 
 interface VendorsModuleProps {
   vendors: Vendor[];
+  purchaseOrders?: PurchaseOrder[];
+  deliveries?: Delivery[];
+  payments?: PaymentMilestone[];
   onAddVendor: (vendor: Vendor) => void;
   onUpdateVendor?: (vendor: Vendor) => void;
   onApproveVendor?: (vendorId: string) => void;
@@ -37,6 +47,9 @@ interface VendorsModuleProps {
 
 export const VendorsModule: React.FC<VendorsModuleProps> = ({
   vendors,
+  purchaseOrders = [],
+  deliveries = [],
+  payments = [],
   onAddVendor,
   onUpdateVendor,
   onApproveVendor,
@@ -140,6 +153,145 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
 
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
+  // Real dynamic telemetry computed from live POs, shipments and payments
+  const vendorMetricsMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        totalSpendSAR: number;
+        formattedSpend: string;
+        totalOrders: number;
+        activeContractsCount: number;
+        totalDeliveries: number;
+        onTimeRate: number | null;
+        qcRate: number | null;
+        rating: number | null;
+      }
+    >();
+
+    vendors.forEach((vendor) => {
+      const vendorIdNorm = vendor.id?.trim().toLowerCase();
+      const vendorNameNorm = vendor.name?.trim().toLowerCase();
+
+      // Find all POs matching this vendor (by ID or vendor name)
+      const vendorPOs = purchaseOrders.filter((po) => {
+        const poVendorId = po.vendorId?.trim().toLowerCase();
+        const poVendorName = po.vendorName?.trim().toLowerCase();
+        return (
+          (poVendorId && poVendorId === vendorIdNorm) ||
+          (poVendorName && poVendorName === vendorNameNorm)
+        );
+      });
+
+      const vendorPoNumbers = new Set(
+        vendorPOs.map((po) => po.poNumber?.trim().toUpperCase()).filter(Boolean)
+      );
+
+      // Real spend: valid PO commitments (exclude Draft and Cancelled)
+      const validPOs = vendorPOs.filter(
+        (po) => po.status !== 'Draft' && po.status !== 'Cancelled'
+      );
+      const computedPoSpend = validPOs.reduce((sum, po) => {
+        const val = Number(po.grandTotalSAR ?? po.totalAmountSAR ?? 0);
+        return sum + (isNaN(val) ? 0 : val);
+      }, 0);
+
+      // Real disbursements / payments if recorded
+      const vendorPayments = payments.filter((p) => {
+        const pVendorName = p.vendorName?.trim().toLowerCase();
+        const pPo = p.poNumber?.trim().toUpperCase();
+        return (
+          (pVendorName && pVendorName === vendorNameNorm) ||
+          (pPo && vendorPoNumbers.has(pPo))
+        );
+      });
+      const paidPaymentsSpend = vendorPayments
+        .filter((p) => p.status === 'Paid')
+        .reduce((sum, p) => sum + (Number(p.amountSAR) || 0), 0);
+
+      const totalSpendSAR = Math.max(computedPoSpend, paidPaymentsSpend, vendor.totalSpendSAR || 0);
+
+      // Active contracts (active PO commitments in progress)
+      const activePOs = vendorPOs.filter(
+        (po) => po.status !== 'Draft' && po.status !== 'Cancelled' && po.status !== 'Closed'
+      );
+      const activeContractsCount = activePOs.length > 0 ? activePOs.length : (vendor.activeContractsCount || 0);
+
+      // Deliveries matching vendor
+      const vendorDeliveries = deliveries.filter((d) => {
+        const dVendorName = d.vendorName?.trim().toLowerCase();
+        const dPo = d.poNumber?.trim().toUpperCase();
+        return (
+          (dVendorName && dVendorName === vendorNameNorm) ||
+          (dPo && vendorPoNumbers.has(dPo))
+        );
+      });
+
+      const totalDeliveries = vendorDeliveries.length;
+
+      // Real On-Time Delivery (OTD) rate
+      let onTimeRate: number | null = null;
+      if (totalDeliveries > 0) {
+        const onTimeCount = vendorDeliveries.filter(
+          (d) => !d.isOverdue && d.status !== 'Delayed'
+        ).length;
+        onTimeRate = Math.round((onTimeCount / totalDeliveries) * 100);
+      } else if (vendor.onTimeDeliveryRate > 0) {
+        onTimeRate = vendor.onTimeDeliveryRate;
+      }
+
+      // Real Quality Compliance (QC) rate
+      let qcRate: number | null = null;
+      const inspectedDeliveries = vendorDeliveries.filter(
+        (d) => d.qcInspectionStatus && d.qcInspectionStatus !== 'Pending Inspection'
+      );
+      if (inspectedDeliveries.length > 0) {
+        const passedCount = inspectedDeliveries.filter(
+          (d) => d.qcInspectionStatus === 'Passed' || d.qcInspectionStatus === 'Conditional Acceptance'
+        ).length;
+        qcRate = Math.round((passedCount / inspectedDeliveries.length) * 100);
+      } else if (vendor.qualityComplianceRate > 0) {
+        qcRate = vendor.qualityComplianceRate;
+      }
+
+      // Real Score / Rating: out of 5.0
+      let rating: number | null = null;
+      if (onTimeRate !== null && qcRate !== null) {
+        const score = ((onTimeRate * 0.5 + qcRate * 0.5) / 100) * 5.0;
+        rating = Math.min(5.0, Math.max(1.0, Number(score.toFixed(1))));
+      } else if (onTimeRate !== null) {
+        rating = Math.min(5.0, Math.max(1.0, Number(((onTimeRate / 100) * 5.0).toFixed(1))));
+      } else if (qcRate !== null) {
+        rating = Math.min(5.0, Math.max(1.0, Number(((qcRate / 100) * 5.0).toFixed(1))));
+      } else if (vendor.rating > 0) {
+        rating = vendor.rating;
+      }
+
+      // Currency formatting for spend
+      let formattedSpend = 'SAR 0';
+      if (totalSpendSAR >= 1_000_000) {
+        formattedSpend = `SAR ${(totalSpendSAR / 1_000_000).toFixed(2)}M`;
+      } else if (totalSpendSAR >= 1_000) {
+        formattedSpend = `SAR ${(totalSpendSAR / 1_000).toFixed(1)}k`;
+      } else if (totalSpendSAR > 0) {
+        formattedSpend = `SAR ${Math.round(totalSpendSAR).toLocaleString()}`;
+      }
+
+      map.set(vendor.id, {
+        totalSpendSAR,
+        formattedSpend,
+        totalOrders: vendorPOs.length,
+        activeContractsCount,
+        totalDeliveries,
+        onTimeRate,
+        qcRate,
+        rating,
+      });
+    });
+
+    return map;
+  }, [vendors, purchaseOrders, deliveries, payments]);
+
   const pendingCount = vendors.filter(
     (v) => matchesCompany(v.entityScope) && (v.status === 'Under Audit' || v.approvalStatus === 'Pending Head Approval')
   ).length;
@@ -184,9 +336,9 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
       approvedAt: isHead ? new Date().toISOString() : undefined,
       requestedBy: currentUser?.name || 'Staff User',
       entityScope: form.entityScope,
-      rating: isHead ? 4.8 : 3.5,
-      onTimeDeliveryRate: 95.0,
-      qualityComplianceRate: 98.0,
+      rating: 0,
+      onTimeDeliveryRate: 0,
+      qualityComplianceRate: 0,
       contactPerson: form.contactPerson || 'Vendor Representative',
       contactEmail: form.contactEmail || 'sales@vendor.com.sa',
       contactPhone: form.contactPhone || '+966 11 000 0000',
@@ -389,6 +541,16 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
               <tbody className="divide-y divide-slate-800/80">
                 {filteredVendors.map((vendor) => {
                   const isVendorPending = vendor.status === 'Under Audit' || vendor.approvalStatus === 'Pending Head Approval';
+                  const vMetrics = vendorMetricsMap.get(vendor.id) || {
+                    totalSpendSAR: 0,
+                    formattedSpend: 'SAR 0',
+                    totalOrders: 0,
+                    activeContractsCount: 0,
+                    totalDeliveries: 0,
+                    onTimeRate: null,
+                    qcRate: null,
+                    rating: null,
+                  };
 
                   return (
                     <tr key={vendor.id} className="hover:bg-slate-800/40 transition-colors">
@@ -426,16 +588,32 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1 font-bold text-amber-400">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{vendor.rating.toFixed(1)}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          OTD: {vendor.onTimeDeliveryRate}%
-                        </div>
+                        {vMetrics.rating !== null ? (
+                          <>
+                            <div className="inline-flex items-center gap-1 font-bold text-amber-400">
+                              <Star className="w-3.5 h-3.5 fill-amber-400" />
+                              <span>{vMetrics.rating.toFixed(1)}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              OTD: {vMetrics.onTimeRate !== null ? `${vMetrics.onTimeRate}%` : '—'}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="inline-flex items-center gap-1 font-semibold text-slate-400 text-xs">
+                              <Star className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Unrated</span>
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              {vMetrics.totalOrders > 0
+                                ? `${vMetrics.totalOrders} in pipeline`
+                                : '0 completed orders'}
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-200 whitespace-nowrap">
-                        SAR {(vendor.totalSpendSAR / 1000000).toFixed(2)}M
+                        {vMetrics.formattedSpend}
                       </td>
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
@@ -679,33 +857,84 @@ export const VendorsModule: React.FC<VendorsModuleProps> = ({
                 </Button>
               </div>
 
-              {/* KPI Banner */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Quality Compliance</span>
-                  <span className="text-base font-bold text-emerald-400">
-                    {selectedVendor.qualityComplianceRate}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">On-Time Delivery</span>
-                  <span className="text-base font-bold text-cyan-400">
-                    {selectedVendor.onTimeDeliveryRate}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Active Contracts</span>
-                  <span className="text-base font-bold text-slate-100">
-                    {selectedVendor.activeContractsCount} Packages
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Lifetime Spend</span>
-                  <span className="text-base font-mono font-bold text-slate-100">
-                    SAR {(selectedVendor.totalSpendSAR / 1000000).toFixed(1)}M
-                  </span>
-                </div>
-              </div>
+              {/* KPI Banner with Real Dynamic Telemetry */}
+              {(() => {
+                const sMetrics = selectedVendor ? vendorMetricsMap.get(selectedVendor.id) : null;
+                const hasOrders = sMetrics && sMetrics.totalOrders > 0;
+                const hasDeliveries = sMetrics && sMetrics.totalDeliveries > 0;
+
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Quality Compliance</span>
+                        <span className={`text-base font-bold ${sMetrics?.qcRate !== null && sMetrics?.qcRate !== undefined ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {sMetrics?.qcRate !== null && sMetrics?.qcRate !== undefined ? `${sMetrics.qcRate}%` : '—'}
+                        </span>
+                        {(sMetrics?.qcRate === null || sMetrics?.qcRate === undefined) && (
+                          <span className="text-[9px] text-slate-500 block">No QC logs yet</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">On-Time Delivery</span>
+                        <span className={`text-base font-bold ${sMetrics?.onTimeRate !== null && sMetrics?.onTimeRate !== undefined ? 'text-cyan-400' : 'text-slate-400'}`}>
+                          {sMetrics?.onTimeRate !== null && sMetrics?.onTimeRate !== undefined ? `${sMetrics.onTimeRate}%` : '—'}
+                        </span>
+                        {(sMetrics?.onTimeRate === null || sMetrics?.onTimeRate === undefined) && (
+                          <span className="text-[9px] text-slate-500 block">No shipments yet</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Active Contracts</span>
+                        <span className="text-base font-bold text-slate-100">
+                          {sMetrics?.activeContractsCount || 0} {(sMetrics?.activeContractsCount === 1) ? 'Package' : 'Packages'}
+                        </span>
+                        <span className="text-[9px] text-slate-500 block">
+                          {sMetrics?.totalOrders || 0} total PO{sMetrics?.totalOrders === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Lifetime Spend</span>
+                        <span className="text-base font-mono font-bold text-slate-100">
+                          {sMetrics?.formattedSpend || 'SAR 0'}
+                        </span>
+                        <span className="text-[9px] text-slate-500 block">
+                          {sMetrics && sMetrics.totalSpendSAR > 0 ? 'Committed & Paid' : 'No spend recorded'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Telemetry Status Summary */}
+                    <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/80 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-slate-800 text-cyan-400">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-200">
+                            {hasOrders ? `${sMetrics?.totalOrders} Purchase Orders Recorded` : 'No Transaction History'}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {hasDeliveries
+                              ? `${sMetrics?.totalDeliveries} deliveries tracked with live QC & OTD telemetry`
+                              : 'Real telemetry reflects automatically upon issuance of POs and receipt of shipments.'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                          sMetrics?.rating !== null && sMetrics?.rating !== undefined
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        }`}>
+                          <Star className={`w-3 h-3 ${sMetrics?.rating !== null && sMetrics?.rating !== undefined ? 'fill-amber-400' : 'text-slate-500'}`} />
+                          {sMetrics?.rating !== null && sMetrics?.rating !== undefined ? `${sMetrics.rating.toFixed(1)} Rating` : 'Unrated Supplier'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Contact & Banking Information */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

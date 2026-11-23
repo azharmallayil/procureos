@@ -330,10 +330,10 @@ export const UploadQuoteModal: React.FC<UploadQuoteModalProps> = ({
       category: newVendorForm.category as any,
       tier: 'Tier 2',
       status: 'Approved',
-      rating: 4.8,
+      rating: 0,
       entityScope: newVendorForm.entityScope,
-      onTimeDeliveryRate: 99,
-      qualityComplianceRate: 98,
+      onTimeDeliveryRate: 0,
+      qualityComplianceRate: 0,
       contactPerson: newVendorForm.contactPerson || 'Sales Coordinator',
       contactEmail:
         newVendorForm.contactEmail ||
