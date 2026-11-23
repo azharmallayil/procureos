@@ -120,32 +120,33 @@
 }
 
 /* ── 2. GLASSMORPHISM THEME: LIGHT (WHITE) ── */
-/* Apple iOS/iPadOS frosted glass: milky luminous panels, airy ambient depth */
+/* Nature-frosted glass: milky white panels over blurred green nature scene */
+/* Inspired by CareOS — pure white glass cards, green accents, misty mountain BG */
 [data-theme-style="glass"][data-theme-mode="light"],
 .theme-glass.light {
-  --bg-app: #eef1f8;
-  --bg-sidebar: rgba(255, 255, 255, 0.72);
-  --bg-topbar: rgba(255, 255, 255, 0.70);
-  --bg-card: rgba(255, 255, 255, 0.70);
-  --bg-card-subtle: rgba(248, 250, 255, 0.75);
-  --bg-input: rgba(255, 255, 255, 0.90);
-  --border-color: rgba(200, 210, 230, 0.70);
-  --border-subtle: rgba(220, 228, 244, 0.65);
-  --text-main: #0d1526;
-  --text-muted: #5a6a84;
+  --bg-app: #dde8e0;
+  --bg-sidebar: rgba(255, 255, 255, 0.82);
+  --bg-topbar: rgba(255, 255, 255, 0.80);
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --bg-card-subtle: rgba(248, 252, 250, 0.82);
+  --bg-input: rgba(255, 255, 255, 0.95);
+  --border-color: rgba(200, 220, 210, 0.60);
+  --border-subtle: rgba(220, 236, 228, 0.55);
+  --text-main: #111827;
+  --text-muted: #4b6a5a;
   /* Glass tokens */
-  --glass-bg: rgba(255, 255, 255, 0.68);
-  --glass-blur: 36px;
-  --glass-saturate: 160%;
-  --glass-brightness: 1.02;
-  --glass-border: rgba(255, 255, 255, 0.90);
-  --glass-highlight: rgba(255, 255, 255, 0.95);
-  --glass-shadow: 0 8px 40px rgba(60, 80, 140, 0.10), 0 2px 8px rgba(60, 80, 140, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  --glass-shadow-hover: 0 16px 56px rgba(60, 80, 140, 0.16), 0 4px 16px rgba(60, 80, 140, 0.10), inset 0 1px 0 rgba(255, 255, 255, 1.0);
-  /* Ambient orb colors */
-  --orb-1: rgba(100, 150, 240, 0.25);
-  --orb-2: rgba(60, 200, 220, 0.20);
-  --orb-3: rgba(180, 120, 240, 0.16);
+  --glass-bg: rgba(255, 255, 255, 0.76);
+  --glass-blur: 24px;
+  --glass-saturate: 140%;
+  --glass-brightness: 1.04;
+  --glass-border: rgba(255, 255, 255, 0.92);
+  --glass-highlight: rgba(255, 255, 255, 0.98);
+  --glass-shadow: 0 4px 24px rgba(30, 80, 50, 0.08), 0 1px 6px rgba(30, 80, 50, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  --glass-shadow-hover: 0 12px 48px rgba(30, 80, 50, 0.14), 0 3px 12px rgba(30, 80, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1.0);
+  /* Ambient orb colors — nature greens */
+  --orb-1: rgba(74, 180, 110, 0.28);
+  --orb-2: rgba(120, 200, 150, 0.22);
+  --orb-3: rgba(60, 160, 100, 0.20);
 }
 
 /* ── 3. CLEAN THEME: DARK ── */
@@ -408,6 +409,58 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
 }
 
+/* ==========================================================================
+   GLASS LIGHT THEME — SLATE BACKGROUND OVERRIDES
+   Override generic light mode slates to be white/translucent for glass
+   ========================================================================== */
+[data-theme-style="glass"][data-theme-mode="light"] .bg-slate-950,
+[data-theme-style="glass"][data-theme-mode="light"] [class*="bg-slate-950"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] .bg-slate-900,
+[data-theme-style="glass"][data-theme-mode="light"] [class*="bg-slate-900"] {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] .bg-slate-800,
+[data-theme-style="glass"][data-theme-mode="light"] [class*="bg-slate-800"] {
+  background-color: rgba(240, 248, 243, 0.80) !important;
+}
+/* Glass light: input/form field overrides — white with subtle green border */
+[data-theme-style="glass"][data-theme-mode="light"] input,
+[data-theme-style="glass"][data-theme-mode="light"] select,
+[data-theme-style="glass"][data-theme-mode="light"] textarea {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  color: #111827 !important;
+  border-color: rgba(180, 215, 195, 0.70) !important;
+}
+/* Nav active state for glass light — green accent */
+[data-theme-style="glass"][data-theme-mode="light"] .bg-cyan-950\/70 {
+  background-color: rgba(220, 248, 232, 0.80) !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] .text-cyan-200 {
+  color: #16a34a !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] .text-cyan-400 {
+  color: #16a34a !important;
+}
+/* Subtle table row hover for glass light */
+[data-theme-style="glass"][data-theme-mode="light"] tr:hover td {
+  background-color: rgba(240, 252, 244, 0.70) !important;
+}
+/* Glass light: softer border dividers */
+[data-theme-style="glass"][data-theme-mode="light"] .border-slate-800,
+[data-theme-style="glass"][data-theme-mode="light"] [class*="border-slate-800"] {
+  border-color: rgba(200, 230, 215, 0.60) !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] .border-slate-700,
+[data-theme-style="glass"][data-theme-mode="light"] [class*="border-slate-700"] {
+  border-color: rgba(180, 215, 198, 0.60) !important;
+}
+
 /* Clean Light: paper-white, no shadows */
 [data-theme-style="clean"][data-theme-mode="light"] .glass-panel {
   background: #ffffff !important;
@@ -417,9 +470,24 @@
 /* Glass Light: luminous frosted panels */
 [data-theme-style="glass"][data-theme-mode="light"] .bg-slate-900,
 [data-theme-style="glass"][data-theme-mode="light"] .bg-slate-950 {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+}
+
+/* Glass light panel: crisp white frosted look matching CareOS reference */
+[data-theme-style="glass"][data-theme-mode="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(24px) saturate(140%) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(140%) brightness(1.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.90) !important;
+  box-shadow: 0 4px 24px rgba(30, 80, 50, 0.08), 0 1px 6px rgba(30, 80, 50, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Glass light hover — slightly elevated green-tinted shadow */
+[data-theme-style="glass"][data-theme-mode="light"] .glass-panel-hover:hover {
+  box-shadow: 0 12px 48px rgba(30, 80, 50, 0.14), 0 3px 12px rgba(30, 80, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1.0) !important;
+  border-color: rgba(74, 180, 110, 0.35) !important;
 }
 
 /* ==========================================================================
@@ -648,6 +716,42 @@
   will-change: transform;
 }
 
+/* ── Nature scene background for glass light — blurred & layered ── */
+/* Mimics the CareOS misty mountain/nature environment behind glass panels */
+[data-theme-style="glass"][data-theme-mode="light"] body {
+  /* Multi-layered nature-inspired gradient mesh — mimics blurred foliage + sky + mountains */
+  background:
+    /* Foreground bokeh blobs — foliage green */
+    radial-gradient(ellipse 60% 40% at 8% 90%, rgba(60, 140, 80, 0.55) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 95% 85%, rgba(50, 120, 60, 0.45) 0%, transparent 65%),
+    /* Mid-layer: misty sage greens */
+    radial-gradient(ellipse 80% 60% at 15% 70%, rgba(90, 170, 110, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 55% at 80% 75%, rgba(70, 150, 90, 0.30) 0%, transparent 65%),
+    /* Horizon: soft mist band */
+    linear-gradient(180deg,
+      rgba(195, 220, 210, 0.90) 0%,
+      rgba(185, 215, 205, 0.85) 25%,
+      rgba(170, 210, 185, 0.80) 50%,
+      rgba(140, 185, 155, 0.85) 75%,
+      rgba(80, 140, 95, 0.90) 100%
+    ) !important;
+  backdrop-filter: none !important;
+}
+
+/* ── Additional foliage layer: pseudo-element bokeh on body::after ── */
+[data-theme-style="glass"][data-theme-mode="light"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 30% 25% at 3% 45%, rgba(40, 110, 55, 0.40) 0%, transparent 80%),
+    radial-gradient(ellipse 25% 30% at 97% 40%, rgba(35, 100, 50, 0.35) 0%, transparent 80%),
+    radial-gradient(ellipse 40% 20% at 50% 95%, rgba(55, 130, 70, 0.50) 0%, transparent 70%);
+  filter: blur(28px);
+}
+
 @keyframes glass-orb-drift-a {
   0%   { transform: translate(0, 0) scale(1); }
   33%  { transform: translate(6vw, 4vh) scale(1.08); }
@@ -692,6 +796,16 @@
   border-bottom: 1px solid var(--glass-border) !important;
   position: relative;
   z-index: 10;
+}
+
+/* Glass Light: sidebar extra opacity for the nature background */
+[data-theme-style="glass"][data-theme-mode="light"] aside {
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 2px 0 20px rgba(30, 80, 50, 0.08) !important;
+}
+[data-theme-style="glass"][data-theme-mode="light"] header {
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 2px 20px rgba(30, 80, 50, 0.08) !important;
 }
 
 /* Sidebar specular top-edge shimmer */
@@ -774,6 +888,11 @@
   border-color: rgba(6, 182, 212, 0.35) !important;
 }
 
+/* Glass light theme: green accent hover border */
+[data-theme-style="glass"][data-theme-mode="light"] .glass-panel-hover:hover {
+  border-color: rgba(74, 180, 110, 0.40) !important;
+}
+
 /* Dark mode specific enhancements */
 [data-theme-style="glass"][data-theme-mode="dark"] .glass-panel {
   box-shadow: var(--glass-shadow) !important;
@@ -793,11 +912,14 @@
   border-radius: 9999px;
 }
 [data-theme-style="glass"][data-theme-mode="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(100, 120, 180, 0.18);
+  background: rgba(74, 160, 100, 0.22);
   border-radius: 9999px;
 }
 [data-theme-style="glass"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.30);
+}
+[data-theme-style="glass"][data-theme-mode="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 180, 110, 0.38);
 }
 
 /* Clean theme specific effects (zero blur, zero heavy shadow) */
@@ -846,7 +968,22 @@
   background: #09090f !important;
 }
 [data-theme-style="glass"][data-theme-mode="light"] body {
-  background: #eef1f8 !important;
+  background: #c8ddd2 !important;
+  /* Rich nature-layered gradient as the base environment */
+  background:
+    radial-gradient(ellipse 60% 40% at 8% 92%, rgba(55, 130, 70, 0.60) 0%, transparent 68%),
+    radial-gradient(ellipse 50% 35% at 93% 88%, rgba(45, 115, 60, 0.50) 0%, transparent 65%),
+    radial-gradient(ellipse 80% 60% at 15% 68%, rgba(85, 165, 100, 0.38) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 55% at 78% 72%, rgba(65, 145, 85, 0.32) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 40% at 50% 50%, rgba(100, 180, 120, 0.20) 0%, transparent 70%),
+    linear-gradient(165deg,
+      #d4ece2 0%,
+      #c6e2d8 20%,
+      #bbd8cc 40%,
+      #aecfbf 60%,
+      #9ec5b2 80%,
+      #7dae96 100%
+    ) !important;
 }
 
 .glass-panel {
